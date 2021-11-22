@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
 from contextlib import contextmanager
 
 import numpy as np
@@ -30,7 +29,7 @@ from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
 
 
-def write2D(twodmesh, path, version):
+def write2D(twodmesh, path):
     
     mesh2d = meshgeom(meshgeomdim())
     mesh2d.meshgeomdim.dim = 2
@@ -46,36 +45,21 @@ def write2D(twodmesh, path, version):
     
     mesh2d.add_from_other(geometries)
     
-    with create_netcdf(path, version) as ncfile:
+    with create_netcdf(path) as ncfile:
         init_shared(ncfile)
         init_2dmesh(ncfile, mesh2d)
         set_2dmesh(ncfile, mesh2d)
 
 
 @contextmanager
-def create_netcdf(path, version):
+def create_netcdf(path):
     
-    # File format:
     outformat = "NETCDF4"
-    # File where we going to write
     ncfile = Dataset(path, 'w', format=outformat)
     
     # global attributes   (conventions must be CF-1.8 UGRID-1.0 Deltares-0.10
     #                      for the GUI)
     ncfile.Conventions = "CF-1.8 UGRID-1.0 Deltares-0.10"
-    ncfile.title = 'Delft3D-FM 1D2D network for model ' + \
-                                    os.path.split(path)[-1].rstrip('_net.nc')
-    ncfile.source = (f"delft3dfmpy v.{version['number']}, D-HyDAMO, model "
-                     f"{os.path.split(path)[-1].rstrip('_net.nc')}")
-    ncfile.history = (f"Created on {version['date']} by "
-                      f"{os.path.split(__file__)[-1]}.")
-    ncfile.institution = "Deltares/HKV"
-    ncfile.references = ("https://github.com/openearth/delft3dfmpy/; "
-                         "https://www.deltares.nl; https://www.hkv.nl")
-    ncfile.comment = (f"Tested and compatible with D-Flow FM "
-                      f"{version['dfm_version']}, DIMRset "
-                      f"{version['dimr_version']} and D-HYDRO suite 1D2D "
-                      f"{version['suite_version']}")
     
     try:
         yield ncfile
