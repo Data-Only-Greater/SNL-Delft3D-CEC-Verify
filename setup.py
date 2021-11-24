@@ -11,5 +11,5 @@ setup(name='SNL-Delft3D-CEC-Verify',
           'netCDF4',
           'numpy',
           'shapely'
-          ]
+          ],
       zip_safe=False)
