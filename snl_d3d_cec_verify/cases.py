@@ -29,10 +29,10 @@ class TemplateMultiValue(MultiValue[T], Template):
 
 
 # Reused compound types
-SMFloat = Union[float, MultiValue[float]]
-SMInt = Union[int, MultiValue[int]]
-TSMFloat = Union[TemplateValue[float], TemplateMultiValue[float]]
-TSMInt = Union[TemplateValue[int], TemplateMultiValue[int]]
+SMFloat = Union[float, MultiValue[float], None]
+SMInt = Union[int, MultiValue[int], None]
+TSMFloat = Union[TemplateValue[float], TemplateMultiValue[float], None]
+TSMInt = Union[TemplateValue[int], TemplateMultiValue[int], None]
 
 
 @dataclass
@@ -43,9 +43,17 @@ class CaseStudy:
     sigma: TSMInt = TemplateValue[int](3)
     discharge: TSMFloat = TemplateValue[float](6.0574)
     
+    @classmethod
     @property
-    def fields(self):
-        return [x.name for x in fields(self)]
+    def fields(cls):
+        return [x.name for x in fields(cls)]
+    
+    @classmethod
+    @property
+    def empty(cls):
+        n_fields = len(cls.fields)
+        nulls = [None] * n_fields
+        return cls(*nulls)
     
     @property
     def values(self):
@@ -73,6 +81,10 @@ class CaseStudy:
         main_msg += '\n'.join(msgs)
         
         raise ValueError(main_msg)
+    
+    def nullify(self):
+        for name in self.fields:
+            setattr(self, name, None)
     
     def get_case(self, index: int = -1) -> CaseStudy:
         
@@ -109,6 +121,18 @@ class CaseStudy:
             new_values.append(value)
         
         return CaseStudy(*new_values)
+    
+    def remove_case(self, index: int = -1):
+        
+        self.check()
+        
+        mutli_values = {n: dc for n in self.fields
+                        if isinstance((dc := getattr(self, n)), MultiValue)}
+        
+        # All single valued variables, so only 0 and -1 index available
+        if not mutli_values:
+            if index not in [0, -1]: raise IndexError("index out of range")
+            self.nullify()
     
     def __len__(self) -> int:
         

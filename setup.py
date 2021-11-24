@@ -6,7 +6,7 @@ setup(name='SNL-Delft3D-CEC-Verify',
       author='Mathew Topper',
       author_email='mathew.topper@dataonlygreater.com',
       packages=['snl_d3d_cec_verify'],
-      python_requires='>=3.8',
+      python_requires='>=3.9',
       install_requires=[
           'netCDF4',
           'numpy',
