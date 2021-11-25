@@ -16,6 +16,9 @@ class Template:
 @dataclass
 class TemplateValue(Generic[T], Template):
     value: T
+    
+    def __format__(self, format_spec):
+        return str(self.value)
 
 
 @dataclass(init=False)
@@ -140,6 +143,38 @@ class CaseStudy:
         self.remove_case(index)
         
         return case
+    
+    def add_case(self, case: CaseStudy):
+        
+        if len(case) != 1:
+            raise ValueError("Added case study must have length one")
+        
+        if self.empty:
+            for name, value in zip(case.fields, case.values):
+                setattr(self, name, value)
+            return
+        
+        if len(self) == 1:
+            
+            for name, value in zip(case.fields, case.values):
+                
+                src_value = getattr(self, name)
+                
+                if not type(value) != type(src_value):
+                    raise RuntimeError("parameter type mismatch")
+                
+                if isinstance(src_value, Template):
+                    new_value = TemplateMultiValue(src_value.value,
+                                                   value.value)
+                else:
+                    new_value = MultiValue(src_value, value)
+                
+                setattr(self, name, new_value)
+    
+    @classmethod
+    def null(cls):
+        nulls = [None] * len(cls.fields)
+        return cls(*nulls)
     
     def _init_check(self):
         

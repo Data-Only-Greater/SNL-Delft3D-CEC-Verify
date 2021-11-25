@@ -3,16 +3,17 @@
 import os
 import shutil
 import posixpath
-from typing import Any, Dict, List, Optional, Union
+from typing import List, Optional
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
+from .types import AnyByStrDict, StrOrPath
 
-def copy(src_path: Union[str, Path],
-         dst_path: Union[str, Path],
-         data: Optional[Dict[str, Any]] = None,
-         rename_root: Optional[Dict[str, Any]] = None,
+
+def copy(src_path: StrOrPath,
+         dst_path: StrOrPath,
+         data: Optional[AnyByStrDict] = None,
          exist_ok: bool = False):
     
     if data is None: data = {}
@@ -44,8 +45,8 @@ def copy(src_path: Union[str, Path],
             basic_copy(src_path, dst_path, rel_path)
 
 
-def basic_copy(src_path: Union[str, Path],
-               dst_path: Union[str, Path],
+def basic_copy(src_path: StrOrPath,
+               dst_path: StrOrPath,
                rel_path: str):
     
     from_copy = Path(src_path).joinpath(rel_path)
@@ -59,9 +60,9 @@ def basic_copy(src_path: Union[str, Path],
 
 
 def template_copy(env: Environment,
-                  dst_path: Union[str, Path],
+                  dst_path: StrOrPath,
                   rel_path: str,
-                  data: Dict[str, Any]):
+                  data: AnyByStrDict):
     
     template = env.get_template(rel_path)
     rendered = template.render(**data)
@@ -72,7 +73,7 @@ def template_copy(env: Environment,
         f.write(rendered)
 
 
-def get_posix_relative_paths(root: Union[str, Path]) -> List[str]:
+def get_posix_relative_paths(root: StrOrPath) -> List[str]:
     
     all_paths = []
     
