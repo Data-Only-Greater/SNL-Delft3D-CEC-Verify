@@ -18,14 +18,19 @@ class TemplateValue(Generic[T], Template):
     value: T
 
 
-@dataclass
+@dataclass(init=False)
 class MultiValue(Generic[T]):
     values: List[T]
+    
+    def __init__(self, *args: T):
+        self.values = list(args)
 
 
-@dataclass
+@dataclass(init=False)
 class TemplateMultiValue(MultiValue[T], Template):
-    pass
+    
+    def __init__(self, *args: T):
+        self.values = list(args)
 
 
 # Reused compound types
@@ -43,65 +48,37 @@ class CaseStudy:
     sigma: TSMInt = TemplateValue[int](3)
     discharge: TSMFloat = TemplateValue[float](6.0574)
     
+    def __post_init__(self):
+        self._init_check()
+    
     @classmethod
     @property
     def fields(cls):
         return [x.name for x in fields(cls)]
     
-    @classmethod
-    @property
-    def empty(cls):
-        n_fields = len(cls.fields)
-        nulls = [None] * n_fields
-        return cls(*nulls)
-    
     @property
     def values(self):
         return [getattr(self, x) for x in self.fields]
     
-    def check(self, quiet: bool=False) -> bool:
-        
-        mutli_values = {n: dc for n in self.fields
-                        if isinstance((dc := getattr(self, n)), MultiValue)}
-        
-        if not mutli_values: return True
-        
-        lengths = {n: len(x.values) for n, x in mutli_values.items()}
-        
-        if len(set(lengths.values())) == 1: return True
-        if quiet: return False
-        
-        main_msg = "Multi valued variables have non-equal lengths:\n"
-        pad = 8
-        
-        msgs = []
-        for k, v in lengths.items():
-            msgs.append(f'{k: >{pad}}: {v}')
-        
-        main_msg += '\n'.join(msgs)
-        
-        raise ValueError(main_msg)
+    @property
+    def empty(self):
+        return not bool(len(self))
     
     def nullify(self):
         for name in self.fields:
             setattr(self, name, None)
     
-    def get_case(self, index: int = -1) -> CaseStudy:
+    def get_case(self, index: int = 0) -> CaseStudy:
         
-        self.check()
-        
-        mutli_values = {n: dc for n in self.fields
-                        if isinstance((dc := getattr(self, n)), MultiValue)}
+        mutli_values = {n: v for n, v in zip(self.fields, self.values)
+                                                if isinstance(v, MultiValue)}
         
         # All single valued variables, so only 0 and -1 index available
         if not mutli_values:
-            if index not in [0, -1]: raise IndexError("index out of range")
+            self._single_index_check(index)
             return CaseStudy(*self.values)
         
-        length = len(self)
-        
-        if -1 * length > index > length - 1:
-            raise IndexError("index out of range")
+        self._multi_index_check(index)
         
         new_values = []
         
@@ -122,24 +99,93 @@ class CaseStudy:
         
         return CaseStudy(*new_values)
     
-    def remove_case(self, index: int = -1):
+    def remove_case(self, index: int = 0):
         
-        self.check()
+        if self.empty:
+            raise IndexError("remove from empty study")
         
-        mutli_values = {n: dc for n in self.fields
-                        if isinstance((dc := getattr(self, n)), MultiValue)}
+        mutli_values = {n: v for n, v in zip(self.fields, self.values)
+                                                if isinstance(v, MultiValue)}
         
         # All single valued variables, so only 0 and -1 index available
         if not mutli_values:
-            if index not in [0, -1]: raise IndexError("index out of range")
+            self._single_index_check(index)
             self.nullify()
+            return
+        
+        self._multi_index_check(index)
+        
+        if len(self) > 2:
+            for name, mutli_value in mutli_values.items():
+                mutli_value.values.pop(index)
+            return
+        
+        # Switching to single value types
+        for name, mutli_value in mutli_values.items():
+            
+            mutli_value.values.pop(index)
+            new_value = mutli_value.values[0]
+            
+            if isinstance(mutli_value, Template):
+                setattr(self, name, TemplateValue(new_value))
+            else:
+                setattr(self, name, new_value)
+    
+    def pop_case(self, index: int = 0) -> CaseStudy:
+        
+        if self.empty:
+            raise IndexError("pop from empty study")
+        
+        case = self.get_case(index)
+        self.remove_case(index)
+        
+        return case
+    
+    def _init_check(self):
+        
+        check_nones = tuple(x is None for x in self.values)
+        
+        if 0 < sum(check_nones) < len(self.fields):
+            raise ValueError("None may only be used to initialise all values")
+        
+        mutli_values = {n: v for n, v in zip(self.fields, self.values)
+                                                if isinstance(v, MultiValue)}
+        
+        if not mutli_values:
+            check_nones = tuple(x for x in range(10))
+            
+            
+            return
+        
+        lengths = {n: len(x.values) for n, x in mutli_values.items()}
+        
+        if len(set(lengths.values())) == 1: return
+        
+        main_msg = "Multi valued variables have non-equal lengths:\n"
+        pad = 8
+        
+        msgs = []
+        for k, v in lengths.items():
+            msgs.append(f'{k: >{pad}}: {v}')
+        
+        main_msg += '\n'.join(msgs)
+        
+        raise ValueError(main_msg)
+    
+    def _single_index_check(self, index: int):
+        if index not in [0, -1]: raise IndexError("index out of range")
+    
+    def _multi_index_check(self, index: int):
+        length = len(self)
+        if -1 * length > index > length - 1:
+            raise IndexError("index out of range")
     
     def __len__(self) -> int:
         
-        self.check()
+        if all(x is None for x in self.values): return 0
         
-        mutli_values = [dc for n in self.fields
-                        if isinstance((dc := getattr(self, n)), MultiValue)]
+        mutli_values = [v for n, v in zip(self.fields, self.values)
+                                                if isinstance(v, MultiValue)]
         
         if not mutli_values: return 1
         return len(mutli_values[0].values)

@@ -8,6 +8,7 @@ setup(name='SNL-Delft3D-CEC-Verify',
       packages=['snl_d3d_cec_verify'],
       python_requires='>=3.9',
       install_requires=[
+          'jinja2',
           'netCDF4',
           'numpy',
           'shapely'
