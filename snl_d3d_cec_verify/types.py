@@ -6,5 +6,6 @@ from typing import Any, Dict, Union
 from pathlib import Path
 
 # Compound types
+Num = Union[int, float]
 StrOrPath = Union[str, Path]
 AnyByStrDict = Dict[str, Any]

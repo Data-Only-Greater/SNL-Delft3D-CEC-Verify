@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import Optional, TYPE_CHECKING, Union
 from pathlib import Path
 
-from .cases import CaseStudy, Template
+from .cases import CaseStudy, TemplateValue
 from .copier import copy
 from .gridfm import write_gridfm_rectangle
 from .types import StrOrPath
-
 
 
 class Runner:
@@ -20,7 +18,6 @@ class Runner:
                        d3d_bin_path: StrOrPath):
         self._template_path = template_path
         self._d3d_bin_path = d3d_bin_path
-        self.cases = CaseStudy.null()
         return
     
     def make_case_files(self, case: CaseStudy,
@@ -33,17 +30,13 @@ class Runner:
         # Copy templated files
         data = {field: value.value
                     for field, value in zip(case.fields, case.values)
-                                            if isinstance(value, Template)}
+                                        if isinstance(value, TemplateValue)}
         
         copy(self._template_path, project_path, data=data, exist_ok=exist_ok)
         write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
                                case.dx,
                                case.dy)
-    
-    def __call__(self, case: CaseStudy
-                       project_path: Optional[StrOrPath] = None):
-        pass
-        
+
 
 def run_dflowfm(d3d_bin_path: StrOrPath,
                 project_path: StrOrPath,

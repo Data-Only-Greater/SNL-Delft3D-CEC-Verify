@@ -2,197 +2,90 @@
 
 from __future__ import annotations
 
-from typing import Generic, List, TypeVar, Union
-from dataclasses import dataclass, fields
+from typing import List, Union
+from collections.abc import Sequence
+from dataclasses import dataclass
 
-# Generics
-T = TypeVar("T")
+from .types import Num
 
-
-class Template:
-    pass
+# Reused compound types
+OneOrManyNum = Union[Num, Sequence[Num]]
 
 
 @dataclass
-class TemplateValue(Generic[T], Template):
-    value: T
+class TemplateValue:
+    value: OneOrManyNum
     
     def __format__(self, format_spec):
         return str(self.value)
 
 
-@dataclass(init=False)
-class MultiValue(Generic[T]):
-    values: List[T]
-    
-    def __init__(self, *args: T):
-        self.values = list(args)
-
-
-@dataclass(init=False)
-class TemplateMultiValue(MultiValue[T], Template):
-    
-    def __init__(self, *args: T):
-        self.values = list(args)
-
-
-# Reused compound types
-SMFloat = Union[float, MultiValue[float], None]
-SMInt = Union[int, MultiValue[int], None]
-TSMFloat = Union[TemplateValue[float], TemplateMultiValue[float], None]
-TSMInt = Union[TemplateValue[int], TemplateMultiValue[int], None]
-
-
-@dataclass
 class CaseStudy:
     """Class for defining cases to test."""
-    dx: SMFloat = 1.
-    dy: SMFloat = 1.
-    sigma: TSMInt = TemplateValue[int](3)
-    discharge: TSMFloat = TemplateValue[float](6.0574)
     
-    def __post_init__(self):
-        self._init_check()
+    __slots__ = ['_dx', '_dy', '_sigma', '_discharge']
+    
+    def __init__(self, dx: OneOrManyNum = 1,
+                       dy: OneOrManyNum = 1,
+                       sigma: OneOrManyNum = 3,
+                       discharge: OneOrManyNum = 6.0574):
+        
+        self._init_check(dx, dy, sigma, discharge)
+        
+        self._dx: OneOrManyNum = dx
+        self._dy: OneOrManyNum = dy
+        self._sigma: TemplateValue = TemplateValue(sigma)
+        self._discharge: TemplateValue = TemplateValue(discharge)
+    
+    @property
+    def dx(self) -> OneOrManyNum:
+        return self._dx
+    
+    @property
+    def dy(self) -> OneOrManyNum:
+        return self._dy
+    
+    @property
+    def sigma(self) -> TemplateValue:
+        return self._sigma
+    
+    @property
+    def discharge(self) -> TemplateValue:
+        return self._discharge
     
     @classmethod
     @property
-    def fields(cls):
-        return [x.name for x in fields(cls)]
+    def fields(cls) -> List[str]:
+        return [x.strip('_') for x in cls.__slots__]
     
     @property
-    def values(self):
+    def values(self) -> List[Union[OneOrManyNum, TemplateValue]]:
         return [getattr(self, x) for x in self.fields]
-    
-    @property
-    def empty(self):
-        return not bool(len(self))
-    
-    def nullify(self):
-        for name in self.fields:
-            setattr(self, name, None)
     
     def get_case(self, index: int = 0) -> CaseStudy:
         
-        mutli_values = {n: v for n, v in zip(self.fields, self.values)
-                                                if isinstance(v, MultiValue)}
+        safe_values = [x.value if isinstance(x, TemplateValue) else x
+                                                       for x in self.values]
         
         # All single valued variables, so only 0 and -1 index available
-        if not mutli_values:
-            self._single_index_check(index)
-            return CaseStudy(*self.values)
-        
-        self._multi_index_check(index)
-        
-        new_values = []
-        
-        # Need to be careful if we need to convert to a TemplateValue
-        for i, n in enumerate(self.fields):
-            
-            if n not in mutli_values:
-                new_values.append(self.values[i])
-                continue
-            
-            mutli_value = mutli_values[n]
-            value = mutli_value.values[index]
-            
-            if isinstance(mutli_value, Template):
-                value = TemplateValue(value)
-            
-            new_values.append(value)
-        
-        return CaseStudy(*new_values)
-    
-    def remove_case(self, index: int = 0):
-        
-        if self.empty:
-            raise IndexError("remove from empty study")
-        
-        mutli_values = {n: v for n, v in zip(self.fields, self.values)
-                                                if isinstance(v, MultiValue)}
-        
-        # All single valued variables, so only 0 and -1 index available
-        if not mutli_values:
-            self._single_index_check(index)
-            self.nullify()
-            return
-        
-        self._multi_index_check(index)
-        
-        if len(self) > 2:
-            for name, mutli_value in mutli_values.items():
-                mutli_value.values.pop(index)
-            return
-        
-        # Switching to single value types
-        for name, mutli_value in mutli_values.items():
-            
-            mutli_value.values.pop(index)
-            new_value = mutli_value.values[0]
-            
-            if isinstance(mutli_value, Template):
-                setattr(self, name, TemplateValue(new_value))
-            else:
-                setattr(self, name, new_value)
-    
-    def pop_case(self, index: int = 0) -> CaseStudy:
-        
-        if self.empty:
-            raise IndexError("pop from empty study")
-        
-        case = self.get_case(index)
-        self.remove_case(index)
-        
-        return case
-    
-    def add_case(self, case: CaseStudy):
-        
-        if len(case) != 1:
-            raise ValueError("Added case study must have length one")
-        
-        if self.empty:
-            for name, value in zip(case.fields, case.values):
-                setattr(self, name, value)
-            return
-        
         if len(self) == 1:
-            
-            for name, value in zip(case.fields, case.values):
-                
-                src_value = getattr(self, name)
-                
-                if not type(value) != type(src_value):
-                    raise RuntimeError("parameter type mismatch")
-                
-                if isinstance(src_value, Template):
-                    new_value = TemplateMultiValue(src_value.value,
-                                                   value.value)
-                else:
-                    new_value = MultiValue(src_value, value)
-                
-                setattr(self, name, new_value)
+            self._single_index_check(index)
+            return CaseStudy(*safe_values)
+        
+        self._multi_index_check(index)
+        case_values = [value[index] if isinstance(value, Sequence) else value
+                                                   for value in safe_values]
+        
+        return CaseStudy(*case_values)
     
-    @classmethod
-    def null(cls):
-        nulls = [None] * len(cls.fields)
-        return cls(*nulls)
-    
-    def _init_check(self):
+    def _init_check(self, *args):
         
-        check_nones = tuple(x is None for x in self.values)
+        mutli_values = {n: v for n, v in zip(self.fields, args)
+                                                if isinstance(v, Sequence)}
         
-        if 0 < sum(check_nones) < len(self.fields):
-            raise ValueError("None may only be used to initialise all values")
+        if not mutli_values: return
         
-        mutli_values = {n: v for n, v in zip(self.fields, self.values)
-                                                if isinstance(v, MultiValue)}
-        
-        if not mutli_values:
-            check_nones = tuple(x for x in range(10))
-            
-            
-            return
-        
-        lengths = {n: len(x.values) for n, x in mutli_values.items()}
+        lengths = {n: len(x) for n, x in mutli_values.items()}
         
         if len(set(lengths.values())) == 1: return
         
@@ -215,12 +108,18 @@ class CaseStudy:
         if -1 * length > index > length - 1:
             raise IndexError("index out of range")
     
+    def __getitem__(self, item: int) -> CaseStudy:
+        return self.get_case(item)
+    
     def __len__(self) -> int:
         
-        if all(x is None for x in self.values): return 0
-        
-        mutli_values = [v for n, v in zip(self.fields, self.values)
-                                                if isinstance(v, MultiValue)]
+        safe_values = [x.value if isinstance(x, TemplateValue) else x
+                                                       for x in self.values]
+        mutli_values = [v for v in safe_values if isinstance(v, Sequence)]
         
         if not mutli_values: return 1
-        return len(mutli_values[0].values)
+        return len(mutli_values[0])
+    
+    def __repr__(self) -> str:
+        vars_str = [f"{n}={repr(v)}" for n, v in zip(self.fields, self.values)]
+        return "CaseStudy({})".format(", ".join(vars_str))
