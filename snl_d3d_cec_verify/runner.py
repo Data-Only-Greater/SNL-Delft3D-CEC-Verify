@@ -4,38 +4,33 @@ from __future__ import annotations
 
 import os
 import subprocess
+from typing import Optional
 from pathlib import Path
+from dataclasses import dataclass
 
-from .cases import CaseStudy, TemplateValue
-from .copier import copy
-from .gridfm import write_gridfm_rectangle
 from .types import StrOrPath
 
 
+@dataclass
 class Runner:
+    d3d_bin_path: StrOrPath
+    omp_num_threads: int = 1
+    show_stdout: bool = False
     
-    def __init__(self, template_path: StrOrPath,
-                       d3d_bin_path: StrOrPath):
-        self._template_path = template_path
-        self._d3d_bin_path = d3d_bin_path
-        return
-    
-    def make_case_files(self, case: CaseStudy,
-                              project_path: StrOrPath,
-                              exist_ok: bool = False):
+    def __call__(self, project_path: StrOrPath,
+                       omp_num_threads: Optional[int] = None,
+                       show_stdout: Optional[bool] = None):
         
-        if len(case) != 1:
-            raise ValueError("Case study must have length one")
+        if omp_num_threads is None:
+            omp_num_threads = self.omp_num_threads
         
-        # Copy templated files
-        data = {field: value.value
-                    for field, value in zip(case.fields, case.values)
-                                        if isinstance(value, TemplateValue)}
+        if show_stdout is None:
+            show_stdout = self.show_stdout
         
-        copy(self._template_path, project_path, data=data, exist_ok=exist_ok)
-        write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
-                               case.dx,
-                               case.dy)
+        run_dflowfm(self.d3d_bin_path,
+                    project_path,
+                    omp_num_threads,
+                    show_stdout)
 
 
 def run_dflowfm(d3d_bin_path: StrOrPath,
