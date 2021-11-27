@@ -23,11 +23,18 @@ class TemplateValue:
 class CaseStudy:
     """Class for defining cases to test."""
     
-    __slots__ = ['_dx', '_dy', '_sigma', '_discharge']
+    __slots__ = ['_dx',
+                 '_dy',
+                 '_sigma',
+                 '_dt_max',
+                 '_dt_init',
+                 '_discharge']
     
     def __init__(self, dx: OneOrManyNum = 1,
                        dy: OneOrManyNum = 1,
                        sigma: OneOrManyNum = 3,
+                       dt_max: OneOrManyNum = 1,
+                       dt_init: OneOrManyNum = 1,
                        discharge: OneOrManyNum = 6.0574):
         
         self._init_check(dx, dy, sigma, discharge)
@@ -35,6 +42,8 @@ class CaseStudy:
         self._dx: OneOrManyNum = dx
         self._dy: OneOrManyNum = dy
         self._sigma: TemplateValue = TemplateValue(sigma)
+        self._dt_max = TemplateValue(dt_max)
+        self._dt_init = TemplateValue(dt_init)
         self._discharge: TemplateValue = TemplateValue(discharge)
     
     @property
@@ -48,6 +57,14 @@ class CaseStudy:
     @property
     def sigma(self) -> TemplateValue:
         return self._sigma
+    
+    @property
+    def dt_max(self) -> TemplateValue:
+        return self._dt_max
+    
+    @property
+    def dt_init(self) -> TemplateValue:
+        return self._dt_init
     
     @property
     def discharge(self) -> TemplateValue:
