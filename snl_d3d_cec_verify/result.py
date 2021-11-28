@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import collections
+from typing import Optional, Sequence
 from pathlib import Path
 
 import numpy as np
@@ -106,6 +108,64 @@ class Interp:
 def load_map(project_path: StrOrPath) -> xr.Dataset:
     map_path = Path(project_path) / "output" / "FlowFM_map.nc"
     return xr.load_dataset(map_path)
+
+
+def map_to_grid(project_path: StrOrPath,
+                t_steps: Optional[Sequence[int]] = None):
+    
+    if t_steps is None:
+        t_steps = [-1]
+    
+    map_path = Path(project_path) / "output" / "FlowFM_map.nc"
+    
+    coords = collections.defaultdict(list)
+    data = collections.defaultdict(list)
+    
+    with xr.open_dataset(map_path) as ds:
+        
+        for t_step in t_steps:
+        
+            coords["time"].append(ds.time[t_step])
+            
+            for iface in ds.mesh2d_nFaces.values:
+                
+                coords["x"].append(ds.mesh2d_face_x[iface].values.take(0))
+                coords["y"].append(ds.mesh2d_face_y[iface].values.take(0))
+                
+                for ilayer in ds.mesh2d_nLayers.values:
+                    
+                    coords["z"].append(
+                        ds.mesh2d_layer_sigma[ilayer].values * \
+                                ds.mesh2d_waterdepth[t_step, iface].values)
+                    
+                    data["u"].append(
+                        ds.mesh2d_ucx[t_step, iface, ilayer].values.take(0))
+                    data["v"].append(
+                        ds.mesh2d_ucy[t_step, iface, ilayer].values.take(0))
+                    data["w"].append(
+                        ds.mesh2d_ucz[t_step, iface, ilayer].values.take(0))
+    
+    xr.Dataset(
+        data_vars=dict(
+            u=(["x", "y", "z", "time"], data["u"]),
+            v=(["x", "y", "z", "time"], data["v"]),
+            w=(["x", "y", "z", "time"], data["w"]),
+        ),
+        coords=dict(
+            x=(["x", "y"], lon),
+            lat=(["x", "y"], lat),
+            time=time,
+            reference_time=reference_time,
+        ),
+        attrs=dict(description="Weather related data."),
+    )
+
+
+
+def get_coordinates(ds: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
+    x = np.unique(ds.mesh2d_face_x.values)
+    y = np.unique(ds.mesh2d_face_y.values)
+    return x, y
 
 
 def get_cell_data(ds, t=-1):
