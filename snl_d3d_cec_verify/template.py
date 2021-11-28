@@ -29,7 +29,7 @@ class Template:
                        exist_ok: Optional[bool] = None):
         
         if len(case) != 1:
-            raise ValueError("Case study must have length one")
+            raise ValueError("case study must have length one")
         
         if exist_ok is None:
             exist_ok = self.exist_ok
@@ -44,4 +44,3 @@ class Template:
         write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
                                case.dx,
                                case.dy)
-

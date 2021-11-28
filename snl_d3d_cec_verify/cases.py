@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Union
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 from .types import Num
 
@@ -20,60 +20,42 @@ class TemplateValue:
         return str(self.value)
 
 
+@dataclass(frozen=True)
 class CaseStudy:
     """Class for defining cases to test."""
+    dx: OneOrManyNum = 1
+    dy: OneOrManyNum = 1
+    sigma: OneOrManyNum = 3
+    dt_max: OneOrManyNum = 1
+    dt_init: OneOrManyNum = 1
+    discharge: OneOrManyNum = 6.0574
     
-    __slots__ = ['_dx',
-                 '_dy',
-                 '_sigma',
-                 '_dt_max',
-                 '_dt_init',
-                 '_discharge']
-    
-    def __init__(self, dx: OneOrManyNum = 1,
-                       dy: OneOrManyNum = 1,
-                       sigma: OneOrManyNum = 3,
-                       dt_max: OneOrManyNum = 1,
-                       dt_init: OneOrManyNum = 1,
-                       discharge: OneOrManyNum = 6.0574):
+    def __post_init__(self):
         
-        self._init_check(dx, dy, sigma, discharge)
+        mutli_values = {n: v for n, v in zip(self.fields, self.values)
+                                                if isinstance(v, Sequence)}
         
-        self._dx: OneOrManyNum = dx
-        self._dy: OneOrManyNum = dy
-        self._sigma: TemplateValue = TemplateValue(sigma)
-        self._dt_max = TemplateValue(dt_max)
-        self._dt_init = TemplateValue(dt_init)
-        self._discharge: TemplateValue = TemplateValue(discharge)
-    
-    @property
-    def dx(self) -> OneOrManyNum:
-        return self._dx
-    
-    @property
-    def dy(self) -> OneOrManyNum:
-        return self._dy
-    
-    @property
-    def sigma(self) -> TemplateValue:
-        return self._sigma
-    
-    @property
-    def dt_max(self) -> TemplateValue:
-        return self._dt_max
-    
-    @property
-    def dt_init(self) -> TemplateValue:
-        return self._dt_init
-    
-    @property
-    def discharge(self) -> TemplateValue:
-        return self._discharge
+        if not mutli_values: return
+        
+        lengths = {n: len(x) for n, x in mutli_values.items()}
+        
+        if len(set(lengths.values())) == 1: return
+        
+        main_msg = "Multi valued variables have non-equal lengths:\n"
+        pad = 8
+        
+        msgs = []
+        for k, v in lengths.items():
+            msgs.append(f'{k: >{pad}}: {v}')
+        
+        main_msg += '\n'.join(msgs)
+        
+        raise ValueError(main_msg)
     
     @classmethod
     @property
     def fields(cls) -> List[str]:
-        return [x.strip('_') for x in cls.__slots__]
+        return [x.name for x in fields(cls)]
     
     @property
     def values(self) -> List[Union[OneOrManyNum, TemplateValue]]:
@@ -95,28 +77,6 @@ class CaseStudy:
         
         return CaseStudy(*case_values)
     
-    def _init_check(self, *args):
-        
-        mutli_values = {n: v for n, v in zip(self.fields, args)
-                                                if isinstance(v, Sequence)}
-        
-        if not mutli_values: return
-        
-        lengths = {n: len(x) for n, x in mutli_values.items()}
-        
-        if len(set(lengths.values())) == 1: return
-        
-        main_msg = "Multi valued variables have non-equal lengths:\n"
-        pad = 8
-        
-        msgs = []
-        for k, v in lengths.items():
-            msgs.append(f'{k: >{pad}}: {v}')
-        
-        main_msg += '\n'.join(msgs)
-        
-        raise ValueError(main_msg)
-    
     def _single_index_check(self, index: int):
         if index not in [0, -1]: raise IndexError("index out of range")
     
@@ -136,7 +96,3 @@ class CaseStudy:
         
         if not mutli_values: return 1
         return len(mutli_values[0])
-    
-    def __repr__(self) -> str:
-        vars_str = [f"{n}={repr(v)}" for n, v in zip(self.fields, self.values)]
-        return "CaseStudy({})".format(", ".join(vars_str))
