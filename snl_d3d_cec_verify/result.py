@@ -15,7 +15,7 @@ from .types import StrOrPath
 class Result:
     
     def __init__(self, project_path: StrOrPath):
-        self.map: xr.Dataset = read_map(project_path)
+        self.map: xr.Dataset = load_map(project_path)
 
 
 class Interp:
@@ -103,9 +103,9 @@ class Interp:
 
 
 
-def read_map(project_path: StrOrPath) -> xr.Dataset:
+def load_map(project_path: StrOrPath) -> xr.Dataset:
     map_path = Path(project_path) / "output" / "FlowFM_map.nc"
-    return xr.open_dataset(map_path)
+    return xr.load_dataset(map_path)
 
 
 def get_cell_data(ds, t=-1):
