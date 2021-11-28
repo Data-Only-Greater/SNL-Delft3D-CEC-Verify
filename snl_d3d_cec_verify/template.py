@@ -7,7 +7,7 @@ from typing import Optional
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from .cases import CaseStudy, TemplateValue
+from .cases import CaseStudy, NoTemplate
 from .copier import copy
 from .gridfm import write_gridfm_rectangle
 from .types import StrOrPath
@@ -35,12 +35,12 @@ class Template:
             exist_ok = self.exist_ok
         
         # Copy templated files
-        data = {field: value.value
+        data = {field: value
                     for field, value in zip(case.fields, case.values)
-                                        if isinstance(value, TemplateValue)}
+                                        if not isinstance(value, NoTemplate)}
         
         template_path = Path(self.template_path)
         copy(template_path, project_path, data=data, exist_ok=exist_ok)
         write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
-                               case.dx,
-                               case.dy)
+                               case.dx.value,
+                               case.dy.value)
