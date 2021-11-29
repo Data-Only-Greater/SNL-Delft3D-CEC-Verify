@@ -2,17 +2,17 @@
 
 import os
 import collections
-from typing import Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 from pathlib import Path
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 from shapely.geometry import LineString
 
-from .types import StrOrPath
+from .types import Num, StrOrPath
 
 
 class Result:
@@ -21,129 +21,149 @@ class Result:
         self.map: xr.Dataset = load_map(project_path)
 
 
-class Interp:
-    
-    def __init__(self):
-        
-        self.points = {}
-        self.values = {}
-
-    def get_cell_data(self, ds, t=-1):
-        
-        time = ds.time[t].values
-        
-        if time in self.points:
-            return self.points[time].copy(), self.values[time].copy()
-
-        points = []
-        v = []
-
-        for iface in ds.mesh2d_nFaces.values:
-
-            x = ds.mesh2d_face_x[iface].values.take(0)
-            y = ds.mesh2d_face_y[iface].values.take(0)
-
-            for ilayer in ds.mesh2d_nLayers.values:
-
-                z = ds.mesh2d_layer_sigma[ilayer].values * ds.mesh2d_waterdepth[t, iface].values
-                points.append([x, y, z])
-                v.append(ds.mesh2d_ucx[t, iface, ilayer].values.take(0))
-
-        np_points = np.array(points)
-        np_v = np.array(v)
-        
-        self.points[time] = np_points.copy()
-        self.values[time] = np_v.copy()
-
-        return np_points, np_v
-
-    def get_turb_v(self, ds, x, y, t=-1, ldimension=None, x0=None, y0=None, vdimension=None, method='linear'):
-
-        x = np.array(x, copy=True).astype(float)
-        y = np.array(y, copy=True).astype(float)
-
-        if ldimension is not None:
-            x *= ldimension
-            y *= ldimension
-
-        if x0 is not None: x += x0
-        if y0 is not None: y += y0
-
-        points, values = self.get_cell_data(ds, t)
-        X, Y, Z = np.meshgrid(x, y, -1)
-        V = griddata(points, values, (X.flatten(),Y.flatten(),Z.flatten()), method=method)
-
-        if vdimension is not None: V /= vdimension
-
-        return V
-
-    def transect_2norm_error(self, ds, df, t=-1):
-
-        y = df["y*"].copy()
-        v = self.get_turb_v(ds, 5, y, ldimension=0.7, x0=6, y0=3, vdimension=0.8, t=t)
-        error = np.linalg.norm(v - df["ubar*"]) / np.linalg.norm(df["ubar*"])
-
-        return error
-    
-    def __getstate__(self):
-        
-        basic_points = {str(time): np_points.tolist() for time, np_points in self.points.items()}
-        basic_values = {str(time): np_values.tolist() for time, np_values in self.values.items()}
-        d = {"points": basic_points,
-             "values": basic_values}
-        
-        return d
-    
-    def __setstate__(self, d):
-        
-        np_points = {np.datetime64(time): np.array(basic_points) for time, basic_points in d["points"].items()}
-        np_values = {np.datetime64(time): np.array(basic_values) for time, basic_values in d["values"].items()}
-        
-        self.points = np_points
-        self.values = np_values
-        
-        return
-
-
-
 def load_map(project_path: StrOrPath) -> xr.Dataset:
     map_path = Path(project_path) / "output" / "FlowFM_map.nc"
     return xr.load_dataset(map_path)
 
 
-def map_to_grid(map_path: StrOrPath,
-                t_steps: Optional[Sequence[int]] = None):
+@dataclass
+class Faces:
+    map_path: StrOrPath
+    _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
+                                              init=False,
+                                              repr=False)
+    _frame: Optional[pd.DataFrame] = field(default=None,
+                                           init=False,
+                                           repr=False)
     
-    if t_steps is None:
-        t_steps = [-1]
+    def _extract(foo):
+        
+        def magic(self, t_step: int,
+                        kz: Union[int, Num],
+                        x: Optional[Sequence[Num]] = None,
+                        y: Optional[Sequence[Num]] = None) -> xr.Dataset:
+            
+            do_interp = sum((bool(x is not None),
+                             bool(y is not None)))
+            
+            if do_interp == 1:
+                raise RuntimeError("x and y must both be set")
+            
+            if t_step not in self._t_steps:
+                self._load_t_step(t_step)
+            
+            ds = foo(self, t_step, kz)
+            
+            if not do_interp: return ds
+            
+            x = xr.DataArray(x)
+            y = xr.DataArray(y)
+            
+            return ds.interp(x=x, y=y)
+            
+        return magic
+    
+    @_extract
+    def extract_z(self, t_step: int,
+                        z: Num) -> xr.Dataset:
+        return dataframe_to_dataset(self._frame,
+                                    self._t_steps[t_step],
+                                    z=z)
+    
+    @_extract
+    def extract_k(self, t_step: int,
+                        k: int) -> xr.Dataset:
+        return dataframe_to_dataset(self._frame,
+                                    self._t_steps[t_step],
+                                    k=k)
+    
+    def _load_t_step(self, t_step: int):
+        
+        frame = map_to_dataframe(self.map_path, t_step)
+        
+        if self._frame is None:
+            self._frame = frame
+        else:
+            self._frame = self._frame.append(frame,
+                                             ignore_index=True,
+                                             sort=False)
+        
+        self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
+
+
+def map_to_dataframe(map_path: StrOrPath,
+                     t_step: int = None) -> pd.DataFrame:
     
     data = collections.defaultdict(list)
     
     with xr.open_dataset(map_path) as ds:
         
-        for t_step in t_steps:
-            for iface in ds.mesh2d_nFaces.values:
-                for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
-                    
-                    data["x"].append(ds.mesh2d_face_x[iface].values.take(0))
-                    data["y"].append(ds.mesh2d_face_y[iface].values.take(0))
-                    data["k"].append(k)
-                    data["time"].append(ds.time[t_step].values.take(0))
-                    
-                    data["z"].append(
+        for iface in ds.mesh2d_nFaces.values:
+            for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
+                
+                data["x"].append(ds.mesh2d_face_x[iface].values.take(0))
+                data["y"].append(ds.mesh2d_face_y[iface].values.take(0))
+                data["z"].append(
                         ds.mesh2d_layer_sigma[ilayer].values * \
                                 ds.mesh2d_waterdepth[t_step, iface].values)
-                    data["u"].append(
-                        ds.mesh2d_ucx[t_step, iface, ilayer].values.take(0))
-                    data["v"].append(
-                        ds.mesh2d_ucy[t_step, iface, ilayer].values.take(0))
-                    data["w"].append(
-                        ds.mesh2d_ucz[t_step, iface, ilayer].values.take(0))
+                
+                data["k"].append(k)
+                data["time"].append(ds.time[t_step].values.take(0))
+                
+                data["u"].append(
+                    ds.mesh2d_ucx[t_step, iface, ilayer].values.take(0))
+                data["v"].append(
+                    ds.mesh2d_ucy[t_step, iface, ilayer].values.take(0))
+                data["w"].append(
+                    ds.mesh2d_ucz[t_step, iface, ilayer].values.take(0))
     
-    df = pd.DataFrame(data)
-    df = df.set_index(['x', 'y', 'k', 'time'])
+    return pd.DataFrame(data)
+
+
+def dataframe_to_dataset(frame: pd.DataFrame,
+                         sim_time: pd.Timestamp,
+                         k: Optional[int] = None,
+                         z: Optional[Num] = None) -> xr.Dataset:
     
-    return df
+    if (k is None and z is None) or (k is not None and z is not None):
+        raise RuntimeError("either k or z must be given")
+    
+    frame = frame.set_index(['x', 'y', 'z', 'time'])
+    frame = frame.xs(sim_time, level=3)
+    
+    if z is None:
+        
+        kframe = frame[frame["k"] == k]
+        kframe = kframe.drop("k", axis=1)
+        kframe = kframe.reset_index(2)
+        ds = kframe.to_xarray()
+        ds = ds.assign_coords({"k": k})
+    
+    else:
+        
+        data = collections.defaultdict(list)
+        
+        for (x, y), group in frame.groupby(level=[0,1]):
+            
+            gframe = group.droplevel([0,1])
+            zvalues = gframe.reindex(
+                        gframe.index.union([z])).interpolate('values').loc[z]
+            
+            data["x"].append(x)
+            data["y"].append(y)
+            data["k"].append(zvalues["k"])
+            data["u"].append(zvalues["u"])
+            data["v"].append(zvalues["v"])
+            data["w"].append(zvalues["w"])
+            
+        zframe = pd.DataFrame(data)
+        zframe = zframe.set_index(['x', 'y'])
+        ds = zframe.to_xarray()
+        ds = ds.assign_coords({"z": z})
+    
+    ds = ds.assign_coords({"time": sim_time})
+    
+    return ds
 
 
 def get_cell_data(ds, t=-1):
@@ -188,18 +208,6 @@ def get_edge_lines(ds):
         lines.append(LineString(points))
         
     return lines
-
-
-def get_turb_v(ds, method='linear', t=-1):
-    
-    points, values = get_cell_data(ds, t)
-    X, Y, Z = np.meshgrid(6, 3, -1)
-    V = griddata(points,
-                 values,
-                 (X.flatten(),Y.flatten(),Z.flatten()),
-                 method=method)
-    
-    return V[0]
 
 
 def plot_result(project_path, project_name):
