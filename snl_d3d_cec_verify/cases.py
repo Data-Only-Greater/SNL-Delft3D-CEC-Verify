@@ -28,6 +28,9 @@ class CaseStudy:
     sigma: OneOrManyNum = 3
     dt_max: OneOrManyNum = 1
     dt_init: OneOrManyNum = 1
+    turb_pos_x: OneOrManyNum = 6
+    turb_pos_y: OneOrManyNum = 3
+    turb_pos_z: OneOrManyNum = -1
     discharge: OneOrManyNum = 6.0574
     
     def __post_init__(self):
