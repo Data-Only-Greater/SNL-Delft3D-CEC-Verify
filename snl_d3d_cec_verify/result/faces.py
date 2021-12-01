@@ -79,16 +79,24 @@ class Faces:
     @_extract
     def extract_z(self, t_step: int,
                         z: Num) -> xr.Dataset:
-        return faces_frame_to_dataset(self._frame,
-                                      self._t_steps[t_step],
-                                      z=z)
+        return faces_frame_to_slice(self._frame,
+                                    self._t_steps[t_step],
+                                    z=z)
     
     @_extract
     def extract_k(self, t_step: int,
                         k: int) -> xr.Dataset:
-        return faces_frame_to_dataset(self._frame,
+        return faces_frame_to_slice(self._frame,
                                       self._t_steps[t_step],
                                       k=k)
+    
+    def extract_depth(self, t_step: int) -> xr.DataArray:
+        
+        if t_step not in self._t_steps:
+            self._load_t_step(t_step)
+        
+        return faces_frame_to_depth(self._frame,
+                                    self._t_steps[t_step])
     
     def _load_t_step(self, t_step: int):
         
@@ -117,6 +125,7 @@ def map_to_faces_frame(map_path: StrOrPath,
             
             x = ds.mesh2d_face_x[iface].values.take(0)
             y = ds.mesh2d_face_y[iface].values.take(0)
+            depth = ds.mesh2d_waterdepth[t_step, iface].values.take(0)
             
             for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
                 
@@ -131,6 +140,7 @@ def map_to_faces_frame(map_path: StrOrPath,
                 data["z"].append(z)
                 data["k"].append(k)
                 data["time"].append(time)
+                data["depth"].append(depth)
                 data["u"].append(u)
                 data["v"].append(v)
                 data["w"].append(w)
@@ -138,10 +148,10 @@ def map_to_faces_frame(map_path: StrOrPath,
     return pd.DataFrame(data)
 
 
-def faces_frame_to_dataset(frame: pd.DataFrame,
-                           sim_time: pd.Timestamp,
-                           k: Optional[int] = None,
-                           z: Optional[Num] = None) -> xr.Dataset:
+def faces_frame_to_slice(frame: pd.DataFrame,
+                         sim_time: pd.Timestamp,
+                         k: Optional[int] = None,
+                         z: Optional[Num] = None) -> xr.Dataset:
     
     if (k is None and z is None) or (k is not None and z is not None):
         raise RuntimeError("either k or z must be given")
@@ -182,3 +192,15 @@ def faces_frame_to_dataset(frame: pd.DataFrame,
     ds = ds.assign_coords({"time": sim_time})
     
     return ds
+
+
+def faces_frame_to_depth(frame: pd.DataFrame,
+                         sim_time: pd.Timestamp) -> xr.DataArray:
+    
+    frame = frame.set_index(['x', 'y', 'k', 'time'])
+    frame = frame.xs((0, sim_time), level=(2, 3))
+    frame = frame.drop(["z", "u", "v", "w"], axis=1)
+    ds = frame.to_xarray()
+    ds = ds.assign_coords({"time": sim_time})
+    
+    return ds.depth
