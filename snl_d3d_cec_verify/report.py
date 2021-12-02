@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import textwrap
 from abc import ABC, abstractmethod
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 from pathlib import Path
 from dataclasses import dataclass, field
 
@@ -72,7 +72,6 @@ class WrappedParagraph(Wrapped, BaseParagraph):
 
 @dataclass
 class MetaLine:
-    width: Optional[int] = field(default=None)
     line: Optional[Line] = field(default=None, init=False)
     
     @property
@@ -83,7 +82,7 @@ class MetaLine:
         if text is None:
             self.line = None
         else:
-            self.line = Line(text, self.width)
+            self.line = Line(text)
     
     def __call__(self):
         
@@ -96,8 +95,9 @@ class MetaLine:
 @dataclass
 class Content:
     width: Optional[int] = field(default=None)
-    body: List[Union[BaseLine, BaseParagraph]] = field(default_factory=list,
-                                                       init=False)
+    body: List[Tuple[str, [Union[BaseLine, BaseParagraph]]]] = field(
+                                                    default_factory=list,
+                                                    init=False)
     
     def clear(self):
         self.body = []
@@ -112,8 +112,7 @@ class Content:
         else:
             Para = Paragraph
         
-        p = Para(text, self.width)
-        self.body.append(p)
+        self.body.append((text, Para))
     
     def add_heading(self, text: str, level: int = 1):
         start = '#' * level + ' '
@@ -149,7 +148,8 @@ class Content:
         
         parts = []
         
-        for part in self.body:
+        for text, Para in self.body:
+            part = Para(text, self.width)
             parts.append(part())
         
         return parts
@@ -161,8 +161,17 @@ class Report:
                        date_format: Optional[str] = None):
         self._width = width
         self._date_format = date_format
-        self._meta: List[MetaLine] = [MetaLine(width) for _ in range(3)]
+        self._meta: List[MetaLine] = [MetaLine() for _ in range(3)]
+        self._date: Optional[dt.date] = None
         self.content: Content = Content(width)
+    
+    @property
+    def width(self):
+        return self._width
+    
+    @property
+    def date_format(self):
+        return self._date_format
     
     @property
     def title(self):
@@ -175,6 +184,17 @@ class Report:
     @property
     def date(self):
         return self._get_meta_text(2)
+    
+    @width.setter
+    def width(self, value: Optional[int]):
+        self._width = value
+        self.content.width = value
+    
+    @date_format.setter
+    def date_format(self, text: str):
+        self._date_format = text
+        if self._date is None: return
+        self.date = str(self._date)
     
     @title.setter
     def title(self, text: Optional[str]):
@@ -195,17 +215,18 @@ class Report:
         
         if date is None:
             self._meta[2].add_line()
+            self._date = None
             return
         
         if date == "today":
-            date = dt.date.today()
+            self._date = dt.date.today()
         else:
-            date = dt.date.fromisoformat(date)
+            self._date = dt.date.fromisoformat(date)
         
         if self._date_format is None:
-            date_str = str(date)
+            date_str = str(self._date)
         else:
-            date_str = date.strftime(self._date_format)
+            date_str = self._date.strftime(self.date_format)
         
         self._meta[2].add_line(date_str)
     
@@ -254,6 +275,12 @@ class Report:
         repr_str = "Report("
         arg_strs = []
         
+        if self.width is not None:
+            arg_strs.append(f"width={self.width}")
+        
+        if self.date_format is not None:
+            arg_strs.append(f"date_format={self.date_format}")
+        
         if self.title is not None:
             arg_strs.append(f"title={self.title}")
         
@@ -261,7 +288,7 @@ class Report:
             arg_strs.append(f"authors={self.authors}")
         
         if self.date is not None:
-            arg_strs.append(f"date={self.date}")
+            arg_strs.append(f"date={self._date}")
         
         repr_str += ", ".join(arg_strs) + ")"
         
