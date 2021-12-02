@@ -15,5 +15,6 @@ setup(name='SNL-Delft3D-CEC-Verify',
                         'pandas',
                         'scipy',
                         'shapely',
+                        'tabulate',
                         'xarray'],
       zip_safe=False)
