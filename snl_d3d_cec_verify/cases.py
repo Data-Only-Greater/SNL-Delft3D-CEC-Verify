@@ -73,7 +73,7 @@ class CaseStudy:
     
     def _multi_index_check(self, index: int):
         length = len(self)
-        if -1 * length > index > length - 1:
+        if not (-1 * length <= index <= length - 1):
             raise IndexError("index out of range")
     
     def __getitem__(self, item: int) -> CaseStudy:
