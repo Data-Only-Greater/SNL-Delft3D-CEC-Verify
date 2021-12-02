@@ -49,6 +49,11 @@ class Faces:
         
         return self.extract_z(t_step, case.turb_pos_z + offset_z, x, y)
     
+    def extract_turbine_z(self, t_step: int,
+                                case: CaseStudy,
+                                offset_z: Num = 0) -> xr.Dataset:
+        return self.extract_z(t_step, case.turb_pos_z + offset_z)
+    
     def _extract(foo):
         
         def magic(self, t_step: int,

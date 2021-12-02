@@ -24,10 +24,23 @@ def copy(src_path: StrOrPath,
     to_copy = Path(dst_path)
     
     if to_copy.exists():
-        if not exist_ok: raise FileExistsError("dst_path path already exists")
-        shutil.rmtree(to_copy)
+        
+        is_empty = not any(to_copy.iterdir())
+        
+        if not is_empty and not exist_ok:
+            raise FileExistsError("dst_path path contains files")
+        
+        for p in to_copy.iterdir():
+            if p.is_file():
+                p.unlink()
+            elif p.is_dir():
+                shutil.rmtree(p)
+            else:
+                raise RuntimeError("unhandled file type")
     
-    to_copy.mkdir(parents=True)
+    else:
+        
+        to_copy.mkdir(parents=True)
     
     relative_paths = get_posix_relative_paths(src_path)
     env = Environment(loader=FileSystemLoader(str(src_path)),

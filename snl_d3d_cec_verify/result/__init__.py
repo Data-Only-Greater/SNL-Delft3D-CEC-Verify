@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Tuple, TYPE_CHECKING
+from typing import List, Optional, Tuple, TYPE_CHECKING
+from pathlib import Path
 
 import xarray as xr
 
@@ -17,13 +18,19 @@ if TYPE_CHECKING:
 
 class Result:
     
-    def __init__(self, map_path: StrOrPath):
-        self._map_path = map_path
-        self._x_lim = get_x_lim(map_path)
-        self._y_lim = get_y_lim(map_path)
-        self._times: npt.NDArray[np.datetime64] = get_step_times(map_path)
-        self._edges: Edges = Edges(map_path)
-        self._faces: Faces = Faces(map_path, self._x_lim[1])
+    def __init__(self, project_path: StrOrPath,
+                       relative_map_parts: Optional[List[str]] = None):
+        
+        if relative_map_parts is None:
+            relative_map_parts = ["output", "FlowFM_map.nc"]
+        
+        self._map_path = Path(project_path).joinpath(*relative_map_parts)
+        self._x_lim = get_x_lim(self._map_path)
+        self._y_lim = get_y_lim(self._map_path)
+        self._times: npt.NDArray[np.datetime64] = get_step_times(
+                                                                self._map_path)
+        self._edges: Edges = Edges(self._map_path)
+        self._faces: Faces = Faces(self._map_path, self._x_lim[1])
     
     @property
     def x_lim(self):

@@ -258,7 +258,7 @@ class Report:
         
         for part in parts:
             part_lines = part.split("\n")
-            lines += part_lines
+            lines += [p + "\n" for p in part_lines]
         
         return lines
     
@@ -293,3 +293,13 @@ class Report:
         repr_str += ", ".join(arg_strs) + ")"
         
         return repr_str
+    
+    def __str__(self) -> str:
+        
+        lines = []
+        number_width = len(str(len(self)))
+        
+        for i, part in enumerate(self):
+            lines.append(f"{i+1:>{number_width}}: {part}")
+        
+        return "".join(lines)
