@@ -31,9 +31,7 @@ from shapely.geometry import MultiPolygon, Polygon
 from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
 from .geometry import (as_polygon_list,
-                       minimum_bounds_fixed_rotation,
-                       points_in_polygon,
-                       rotate_coordinates)
+                       points_in_polygon)
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +94,7 @@ class Mesh2D:
         logger.info('Remove edges with only a single node within the clip '
                     'area.')
         unique, count = np.unique(edge_nodes, return_counts=True)
+        
         while any(count == 1):
             count1nodes = unique[count == 1]
             edge_nodes = edge_nodes[~np.isin(edge_nodes,
@@ -114,72 +113,6 @@ class Mesh2D:
                                 edge_nodes.shape)
         
         return xnodes, ynodes, edge_nodes
-    
-    def clip_mesh_by_polygon(self, polygon, outside=True):
-        """
-        Removes part of the existing mesh within the given polygon.
-        
-        Parameters
-        ----------
-        polygon : list, Polygon, MultiPolygon
-            A polygon, multi-polygon or list of multiple polygons or 
-            multipolygons. The faces within the polygons are removed.
-        """
-        logger.info('Clipping 2D mesh by polygon.')
-        
-        # Check if the input arguments is indeed some kind of polygon
-        check_argument(polygon, 'polygon', (list, Polygon, MultiPolygon))
-        
-        # Get xnodes, ynodes and edge_nodes
-        xnodes = self.meshgeom.get_values('nodex', as_array=True)
-        ynodes = self.meshgeom.get_values('nodey', as_array=True)
-        edge_nodes = self.meshgeom.get_values('edge_nodes', as_array=True)
-        
-        # Clip
-        logger.info('Clipping nodes.')
-        xnodes, ynodes, edge_nodes = self.clip_nodes(xnodes,
-                                                     ynodes,
-                                                     edge_nodes,
-                                                     polygon,
-                                                     keep_outside=outside)
-        # edge_nodes = np.sort(edge_nodes, axis=1)
-        
-        # Update dimensions
-        self.meshgeomdim.numnode = len(xnodes)
-        self.meshgeomdim.numedge = len(edge_nodes)
-        
-        # Add nodes and links
-        self.meshgeom.set_values('nodex', xnodes)
-        self.meshgeom.set_values('nodey', ynodes)
-        self.meshgeom.set_values('edge_nodes', np.ravel(edge_nodes).tolist())
-        
-        # Determine what the cells are
-        logger.info('Finding cell faces within clipped nodes.')
-        self._find_cells(self.meshgeom)
-        
-        # Clean nodes, this function deletes nodes based on no longer existing
-        # cells
-        face_nodes = self.meshgeom.get_values('face_nodes', as_array=True)
-        logger.info('Removing incomplete faces.')
-        cleaned = self.clean_nodes(xnodes, ynodes, edge_nodes, face_nodes)
-       
-        # If cleaning leaves no whole cells, return None
-        if cleaned is None:
-            raise ValueError('Clipping the grid does not leave any nodes.')
-        # Else, get the arguments from the returned tuple
-        else:
-            xnodes, ynodes, edge_nodes, face_nodes = cleaned
-        
-        logger.info('Update mesh with clipped nodes, edges and faces.')
-        # Update dimensions
-        self.meshgeomdim.numnode = len(xnodes)
-        self.meshgeomdim.numedge = len(edge_nodes)
-        
-        # Add nodes and links
-        self.meshgeom.set_values('nodex', xnodes)
-        self.meshgeom.set_values('nodey', ynodes)
-        self.meshgeom.set_values('edge_nodes', np.ravel(edge_nodes).tolist())
-        self.meshgeom.set_values('face_nodes', np.ravel(face_nodes).tolist())
     
     def clean_nodes(self, xnodes, ynodes, edge_nodes, face_nodes):
         """
@@ -313,24 +246,6 @@ class Mesh2D:
     
     def set_missing_z_value(self, value):
         self.missing_z_value = value
-    
-    def faces_to_centroid(self):
-        """
-        The find_cells function does not always return face coordinates
-        that are all accepted by the interactor. The coordinates
-        are placed on the circumcenters, and placed on the face border
-        in case of a coordinate that is outside the cells.
-        
-        This function shifts the face coordinates towards the centroid
-        (center of gravity) of the cell.
-        """
-        # Calculate centroids
-        centroids = np.vstack([cell.mean(axis=0)
-                                   for cell in self.meshgeom.get_faces()]).T
-        
-        # Set values back to geometry
-        self.meshgeom.set_values('facex', centroids[0])
-        self.meshgeom.set_values('facey', centroids[1])
 
 
 class Rectangular(Mesh2D):
@@ -346,8 +261,7 @@ class Rectangular(Mesh2D):
                             dy,
                             ncols,
                             nrows,
-                            clipgeo=None,
-                            rotation=0):
+                            clipgeo=None):
         """
         Generate rectangular grid based on the origin (x0, y0) the cell sizes (dx, dy),
         the number of columns and rows (ncols, nrows) and a rotation in degrees (default=0)
@@ -360,14 +274,6 @@ class Rectangular(Mesh2D):
         
         # Get nodes
         xnodes, ynodes = np.meshgrid(x, y)
-        
-        # Rotate
-        if rotation != 0:
-            self.rotated = True
-            xnodes, ynodes = rotate_coordinates((x0, y0),
-                                                np.radians(rotation),
-                                                xnodes,
-                                                ynodes)
         
         # Get nodes as list
         nodes = {crd: i+1 for i, crd in enumerate(zip(xnodes.ravel(),
@@ -440,7 +346,7 @@ class Rectangular(Mesh2D):
         # Add to mesh
         self.meshgeom.add_from_other(geometries)
     
-    def generate_within_polygon(self, polygon, dx, dy, rotation=0):
+    def generate_within_polygon(self, polygon, dx, dy):
         """
         Function to generate a grid within a polygon. It uses the function
         'generate_grid' but automatically detects the extent.
@@ -455,19 +361,12 @@ class Rectangular(Mesh2D):
         
         polygons = as_polygon_list(polygon)
         
-        logger.info(f'Generating grid with cellsize {dx}x{dy} m and rotation '
-                    f'{rotation} degrees.')
+        logger.info(f'Generating grid with cellsize {dx}x{dy} m')
         convex = MultiPolygon(polygons).convex_hull
         
-        # In case of a rotation, extend the grid far enough to make sure
-        if rotation != 0:
-            # Find a box that contains the whole polygon
-            (x0, y0), xsize, ysize = minimum_bounds_fixed_rotation(convex,
-                                                                   rotation)
-        else:
-            xsize = convex.bounds[2] - convex.bounds[0]
-            ysize= convex.bounds[3] - convex.bounds[1]
-            x0, y0 = convex.bounds[0], convex.bounds[1]
+        xsize = convex.bounds[2] - convex.bounds[0]
+        ysize= convex.bounds[3] - convex.bounds[1]
+        x0, y0 = convex.bounds[0], convex.bounds[1]
         
         self.generate_grid(x0=x0,
                            y0=y0,
@@ -475,5 +374,4 @@ class Rectangular(Mesh2D):
                            dy=dy,
                            ncols=int(xsize / dx) + 1,
                            nrows=int(ysize / dy) + 1,
-                           clipgeo=polygon,
-                           rotation=rotation)
+                           clipgeo=polygon)

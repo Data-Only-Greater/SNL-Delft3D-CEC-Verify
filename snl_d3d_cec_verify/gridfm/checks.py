@@ -20,17 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def check_argument(argument, name, types, columns=None):
+def check_argument(argument, name, types):
     
     if not isinstance(argument, types):
         raise TypeError(f'Expected argument type {types} for variable {name}, '
                         f'got {type(argument)}.')
-    
-    # Check columns
-    if columns is not None:
-        if isinstance(columns, str):
-            columns = [columns]
-        missing = ', '.join([col for col in columns
-                                         if col not in argument.columns])
-        if any(missing):
-            raise KeyError(f'Missing column(s) "{missing}"')

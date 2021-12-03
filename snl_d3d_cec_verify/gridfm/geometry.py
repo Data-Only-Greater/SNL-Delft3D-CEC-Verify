@@ -23,63 +23,15 @@
 import logging
 
 import numpy as np
-from shapely import affinity
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.prepared import prep
 
 logger = logging.getLogger(__name__)
 
 
-def rotate_coordinates(origin, theta, xcrds, ycrds):
-    """
-    Rotate coordinates around origin (x0, y0) with a certain angle (radians)
-    """
-    
-    x0, y0 = origin
-    xcrds_rot = x0 + (xcrds - x0) * np.cos(theta) + \
-                                                (ycrds - y0) * np.sin(theta)
-    ycrds_rot = y0 - (xcrds - x0) * np.sin(theta) + \
-                                                (ycrds - y0) * np.cos(theta)
-    
-    return xcrds_rot, ycrds_rot
-
-
-def minimum_bounds_fixed_rotation(polygon, angle):
-    """Get the minimum box for a polygon with a given axes rotation.
-    
-    Parameters
-    ----------
-    polygon : shapely.geometry.Polygon
-        Polygon that is rotated
-    angle : int or float
-        Rotation of the polygon in degrees
-        
-    Returns
-    -------
-    tuple
-        Tuple with origin (x, y), xsize and ysize
-    """
-    # Determine spinning point
-    spinpt = (polygon.envelope.bounds[0], polygon.envelope.bounds[1])
-    
-    # Rotate clip polygon with rotation, get envelope and rotate back.
-    rotbox1 = affinity.rotate(polygon, angle=angle, origin=spinpt).envelope
-    
-    # Determine size of grid
-    xsize = rotbox1.bounds[2] - rotbox1.bounds[0]
-    ysize = rotbox1.bounds[3] - rotbox1.bounds[1]
-    
-    # Rotate again, and get origin
-    rotbox2 = affinity.rotate(rotbox1, angle=-angle, origin=spinpt)
-    origin = rotbox2.exterior.coords[0]
-    
-    return origin, xsize, ysize
-
-
 def points_in_polygon(points, polygon):
     """
-    Determine points that are inside a polygon, taking
-    holes into account.
+    Determine points that are inside a polygon
     
     Parameters
     ----------
@@ -95,25 +47,9 @@ def points_in_polygon(points, polygon):
     boxpoints = points[mainindex]
     
     extp = prep(Polygon(polygon.exterior))
-    intps = [prep(Polygon(interior)) for interior in polygon.interiors]
     
     # create first index. Everything within exterior is True
     index = np.array([extp.intersects(Point(*x)) for x in boxpoints])
-    
-    # set points in holes also to nan
-    if intps:
-        subset = boxpoints[index]
-        # Start with all False
-        subindex = np.zeros(len(subset), dtype=bool)
-        
-        for intp in intps:
-            # update mask, set to True where point in interior
-            subindex = subindex | np.array([extp.intersects(Point(*x))
-                                                            for x in subset])
-        
-        # Everything within interiors should be True
-        # So, set everything within interiors (subindex == True), to True
-        index[np.where(index)[0][subindex]] = False
     
     # Set index in main index to False
     mainindex[np.where(mainindex)[0][~index]] = False
