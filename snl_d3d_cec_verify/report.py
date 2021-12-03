@@ -5,14 +5,14 @@ from __future__ import annotations
 import datetime as dt
 import textwrap
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import List, Optional, Tuple, Type, TYPE_CHECKING, Union
 from pathlib import Path
 from dataclasses import dataclass, field
 
 from .types import StrOrPath
 
 if TYPE_CHECKING:
-    import pandas as pd
+    import pandas as pd # type: ignore
 
 
 @dataclass
@@ -28,13 +28,7 @@ class BaseLine(ABC, TextDataclassMixin):
         pass
     
     def __call__(self):
-        
-        if self.width is None:
-            line = self.text
-        else:
-            line = "\n".join(self.wrap())
-        
-        return line
+        return "\n".join(self.wrap())
 
 
 class BaseParagraph(BaseLine):
@@ -44,30 +38,28 @@ class BaseParagraph(BaseLine):
         return line + "\n"
 
 
-class NotWrapped:
+class Line(BaseLine):
     def wrap(self) -> List[str]:
         return [self.text]
 
 
-class Wrapped:
+class Paragraph(BaseParagraph):
     def wrap(self) -> List[str]:
+        return [self.text]
+
+
+class WrappedLine(BaseLine):
+    def wrap(self) -> List[str]:
+        if self.width is None:
+            return [self.text]
         return textwrap.wrap(self.text, self.width)
 
 
-class Line(NotWrapped, BaseLine):
-    pass
-
-
-class Paragraph(NotWrapped, BaseParagraph):
-    pass
-
-
-class WrappedLine(Wrapped, BaseLine):
-    pass
-
-
-class WrappedParagraph(Wrapped, BaseParagraph):
-    pass
+class WrappedParagraph(BaseParagraph):
+    def wrap(self) -> List[str]:
+        if self.width is None:
+            return [self.text]
+        return textwrap.wrap(self.text, self.width)
 
 
 @dataclass
@@ -95,9 +87,8 @@ class MetaLine:
 @dataclass
 class Content:
     width: Optional[int] = field(default=None)
-    body: List[Tuple[str, [Union[BaseLine, BaseParagraph]]]] = field(
-                                                    default_factory=list,
-                                                    init=False)
+    body: List[Tuple[str, Type[BaseParagraph]]] = field(default_factory=list,
+                                                        init=False)
     
     def clear(self):
         self.body = []
@@ -108,11 +99,9 @@ class Content:
     def add_text(self, text: str, wrapped: bool = True):
         
         if wrapped:
-            Para = WrappedParagraph
+            self.body.append((text, WrappedParagraph))
         else:
-            Para = Paragraph
-        
-        self.body.append((text, Para))
+            self.body.append((text, Paragraph))
     
     def add_heading(self, text: str, level: int = 1):
         start = '#' * level + ' '
