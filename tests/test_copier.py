@@ -8,7 +8,8 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from snl_d3d_cec_verify.copier import (get_posix_relative_paths,
                                        template_copy,
-                                       basic_copy)
+                                       basic_copy,
+                                       copy)
 
 
 def test_get_posix_relative_paths(tmp_path):
@@ -160,3 +161,124 @@ def test_basic_copy_file(tmp_path):
     
     assert expected_p.exists()
     assert cmp(p, expected_p)
+
+
+@pytest.fixture
+def test_path(tmp_path):
+    
+    # Fake a src and destination
+    src_path = tmp_path / "src_path"
+    src_path.mkdir()
+    
+    p = src_path / "hello.txt"
+    p.write_text("content")
+    
+    p = src_path / "hello.bin"
+    p.write_bytes(os.urandom(1024))
+    
+    dst_path = tmp_path / "dst_path"
+    
+    return (src_path, dst_path)
+
+
+def test_copy_src_path_missing(tmp_path):
+    
+    src_path = tmp_path / "src_path"
+    dst_path = tmp_path / "dst_path"
+    
+    with pytest.raises(ValueError) as excinfo:
+        copy(src_path, dst_path)
+    
+    assert "src_path does not exist" in str(excinfo)
+
+
+def test_copy_dst_path_missing(test_path):
+    
+    src_path, dst_path = test_path
+    copy(src_path, dst_path)
+    expected_txt = dst_path / "hello.txt"
+    expected_bin = dst_path / "hello.bin"
+    
+    assert expected_txt.exists()
+    assert expected_bin.exists()
+    
+    text = expected_txt.read_text()
+    assert text == "content"
+
+
+def test_copy_dst_path_empty(test_path):
+    
+    src_path, dst_path = test_path
+    dst_path.mkdir()
+    
+    copy(src_path, dst_path)
+    expected_txt = dst_path / "hello.txt"
+    expected_bin = dst_path / "hello.bin"
+    
+    assert expected_txt.exists()
+    assert expected_bin.exists()
+    
+    text = expected_txt.read_text()
+    assert text == "content"
+
+
+def test_copy_dst_path_contains_error(test_path):
+    
+    src_path, dst_path = test_path
+    dst_path.mkdir()
+    
+    p = dst_path / "anything.txt"
+    p.write_text("content")
+    
+    with pytest.raises(FileExistsError) as excinfo:
+        copy(src_path, dst_path)
+    
+    assert "contains files" in str(excinfo)
+
+
+def test_copy_dst_path_contains_exist_ok(test_path):
+    
+    src_path, dst_path = test_path
+    dst_path.mkdir()
+    
+    p = dst_path / "anything.txt"
+    p.write_text("content")
+    
+    sub_d = dst_path / "sub"
+    sub_d.mkdir()
+    
+    copy(src_path, dst_path, exist_ok=True)
+    expected_txt = dst_path / "hello.txt"
+    expected_bin = dst_path / "hello.bin"
+    
+    assert expected_txt.exists()
+    assert expected_bin.exists()
+    
+    text = expected_txt.read_text()
+    assert text == "content"
+
+
+def test_copy_dst_path_contains_unknown_file(test_path, mocker):
+    
+    src_path, dst_path = test_path
+    dst_path.mkdir()
+    
+    p = dst_path / "anything.txt"
+    p.write_text("content")
+    
+    # Mock discovery of unhandled file type
+    mock_p = mocker.MagicMock()
+    mock_p.is_file = mocker.MagicMock(return_value=False)
+    mock_p.is_dir = mocker.MagicMock(return_value=False)
+    
+    to_copy = mocker.MagicMock()
+    to_copy.exists = mocker.MagicMock(return_value=True)
+    to_copy.iterdir = mocker.MagicMock(return_value=[mock_p])
+    
+    mocker.patch("snl_d3d_cec_verify.copier.Path",
+                 return_value=to_copy)
+    
+    with pytest.raises(RuntimeError) as excinfo:
+        copy(src_path, dst_path, exist_ok=True)
+    
+    assert "unhandled file type" in str(excinfo)
