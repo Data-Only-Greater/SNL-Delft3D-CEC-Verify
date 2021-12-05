@@ -124,11 +124,11 @@ class Content:
         path = Path(path)
         
         if caption is None:
-            alt_text = path
+            text = f"![{path}]"
         else:
-            alt_text = caption
+            text = f"![{caption}]"
         
-        text = f"![{alt_text}]({path})"
+        text += f"({path})"
         if caption is None: text += "\\"
         
         self.add_text(text, wrapped=False)
@@ -158,32 +158,24 @@ class Report:
     def width(self):
         return self._width
     
-    @property
-    def date_format(self):
-        return self._date_format
-    
-    @property
-    def title(self):
-        return self._get_meta_text(0)
-    
-    @property
-    def authors(self):
-        return self._get_meta_text(1)
-    
-    @property
-    def date(self):
-        return self._get_meta_text(2)
-    
     @width.setter
     def width(self, value: Optional[int]):
         self._width = value
         self.content.width = value
+    
+    @property
+    def date_format(self):
+        return self._date_format
     
     @date_format.setter
     def date_format(self, text: str):
         self._date_format = text
         if self._date is None: return
         self.date = str(self._date)
+    
+    @property
+    def title(self):
+        return self._get_meta_text(0)
     
     @title.setter
     def title(self, text: Optional[str]):
@@ -192,12 +184,20 @@ class Report:
         else:
             self._meta[0].add_line(text)
     
+    @property
+    def authors(self):
+        return self._get_meta_text(1)
+    
     @authors.setter
     def authors(self, names: Optional[List[str]]):
         if names is None:
             self._meta[1].add_line()
         else:
             self._meta[1].add_line("; ".join(names))
+    
+    @property
+    def date(self):
+        return self._get_meta_text(2)
     
     @date.setter
     def date(self, date: Optional[str]):
@@ -220,8 +220,12 @@ class Report:
         self._meta[2].add_line(date_str)
     
     def _get_meta_text(self, index: int) -> Optional[str]:
-        if self._meta[index].defined:
-            return self._meta[index].line.text
+        
+        meta_line = self._meta[index].line
+        
+        if meta_line is not None:
+            return meta_line.text
+        
         return None
     
     def _get_meta(self) -> List[str]:
@@ -254,6 +258,10 @@ class Report:
     def __getitem__(self, index: int) -> List[str]:
         lines = self._parts_to_lines()
         return lines[index]
+    
+    def __iter__(self):
+        lines = self._parts_to_lines()
+        return iter(lines)
     
     def __len__(self) -> int:
         lines = self._parts_to_lines()
