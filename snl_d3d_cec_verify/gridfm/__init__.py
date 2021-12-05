@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
-from shapely.geometry import box
+from shapely.geometry import box # type: ignore
 
 from ..types import StrOrPath
 from .writer import write2D
