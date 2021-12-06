@@ -12,6 +12,7 @@ import geopandas as gpd
 import xarray as xr
 from shapely.geometry import LineString
 
+from .base import TimeStepResolver
 from ..types import StrOrPath
 
 if TYPE_CHECKING:
@@ -19,8 +20,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Edges:
-    map_path: StrOrPath
+class Edges(TimeStepResolver):
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,
                                               repr=False)
@@ -32,6 +32,8 @@ class Edges:
                         k: int,
                         goem: Optional[BaseGeometry] = None
                                                     ) -> gpd.GeoDataFrame:
+        
+        t_step = self.resolve_t_step(t_step)
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
@@ -54,10 +56,13 @@ class Edges:
         gframe = gframe.drop_duplicates(["wkt"])
         gframe = gframe.drop("wkt", axis=1)
         
-        return gframe
+        return gframe.reset_index(drop=True)
     
     def _load_t_step(self, t_step: int):
-    
+        
+        t_step = self.resolve_t_step(t_step)
+        if t_step in self._t_steps: return
+        
         frame = map_to_edges_geoframe(self.map_path, t_step)
         
         if self._frame is None:

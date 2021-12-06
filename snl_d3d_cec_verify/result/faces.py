@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from .base import TimeStepResolver
 from ..types import Num, StrOrPath
 
 if TYPE_CHECKING:
@@ -17,8 +18,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Faces:
-    map_path: StrOrPath
+class Faces(TimeStepResolver):
     xmax: Num
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,
@@ -167,7 +167,7 @@ def faces_frame_to_slice(frame: pd.DataFrame,
     if z is None:
         
         kframe = frame[frame["k"] == k]
-        kframe = kframe.drop("k", axis=1)
+        kframe = kframe.drop(["depth", "k"], axis=1)
         kframe = kframe.reset_index(2)
         ds = kframe.to_xarray()
         ds = ds.assign_coords({"k": k})
@@ -176,9 +176,9 @@ def faces_frame_to_slice(frame: pd.DataFrame,
         
         data = collections.defaultdict(list)
         
-        for (x, y), group in frame.groupby(level=[0,1]):
+        for (x, y), group in frame.groupby(level=[0, 1]):
             
-            gframe = group.droplevel([0,1])
+            gframe = group.droplevel([0, 1])
             zvalues = gframe.reindex(
                         gframe.index.union([z])).interpolate('values').loc[z]
             
