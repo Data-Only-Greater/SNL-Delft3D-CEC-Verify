@@ -3,18 +3,51 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, Optional, Sequence, TYPE_CHECKING, Union
+from typing import (cast,
+                    Dict,
+                    Optional,
+                    Sequence,
+                    Union,
+                    TYPE_CHECKING)
 from dataclasses import dataclass, field
 
 import numpy as np
-import pandas as pd
+import pandas as pd # type: ignore
 import xarray as xr
 
 from .base import TimeStepResolver
 from ..types import Num, StrOrPath
 
 if TYPE_CHECKING:
-    from ..cases import CaseStudy
+    from ..cases import CaseStudy # pragma: no cover
+
+
+# TODO: I'd like to type check this, but I can't get it to work.
+def _extract(method):
+    
+    def magic(self, t_step: int,
+                    kz: Union[int, Num],
+                    x: Optional[Sequence[Num]] = None,
+                    y: Optional[Sequence[Num]] = None) -> xr.Dataset:
+        
+        do_interp = sum((bool(x is not None),
+                         bool(y is not None)))
+        
+        if do_interp == 1:
+            raise RuntimeError("x and y must both be set")
+        
+        t_step = self.resolve_t_step(t_step)
+        
+        if t_step not in self._t_steps:
+            self._load_t_step(t_step)
+        
+        ds = method(self, t_step, kz)
+        
+        if not do_interp: return ds
+        
+        return ds.interp(x=xr.DataArray(x), y=xr.DataArray(y))
+        
+    return magic
 
 
 @dataclass
@@ -32,54 +65,47 @@ class Faces(TimeStepResolver):
                                      offset_x: Num = 0,
                                      offset_y: Num = 0,
                                      offset_z: Num = 0) -> xr.Dataset:
+        
+        _check_case_study(case)
+        
+        # Inform the type checker that we have Num for single value cases
+        turb_pos_z = cast(Num, case.turb_pos_z)
+        turb_pos_x = cast(Num, case.turb_pos_x)
+        turb_pos_y = cast(Num, case.turb_pos_y)
+        
         return self.extract_z(t_step,
-                              case.turb_pos_z + offset_z,
-                              [case.turb_pos_x + offset_x],
-                              [case.turb_pos_y + offset_y])
+                              turb_pos_z + offset_z,
+                              [turb_pos_x + offset_x],
+                              [turb_pos_y + offset_y])
     
     def extract_turbine_centreline(self, t_step: int,
                                          case: CaseStudy,
-                                         step: Num = 0.5,
+                                         x_step: Num = 0.5,
                                          offset_x: Num = 0,
                                          offset_y: Num = 0,
                                          offset_z: Num = 0) -> xr.Dataset:
         
-        x = np.arange(case.turb_pos_x + offset_x, self.xmax + step, step)
-        y = [case.turb_pos_y + offset_y] * len(x)
+        _check_case_study(case)
         
-        return self.extract_z(t_step, case.turb_pos_z + offset_z, x, y)
+        # Inform the type checker that we have Num for single value cases
+        turb_pos_z = cast(Num, case.turb_pos_z)
+        turb_pos_x = cast(Num, case.turb_pos_x)
+        turb_pos_y = cast(Num, case.turb_pos_y)
+        
+        x = np.arange(turb_pos_x + offset_x, self.xmax, x_step)
+        if np.isclose(x[-1] + x_step, self.xmax): x = np.append(x, self.xmax)
+        y = [turb_pos_y + offset_y] * len(x)
+        
+        return self.extract_z(t_step, turb_pos_z + offset_z, x, y)
     
     def extract_turbine_z(self, t_step: int,
                                 case: CaseStudy,
                                 offset_z: Num = 0) -> xr.Dataset:
-        return self.extract_z(t_step, case.turb_pos_z + offset_z)
-    
-    def _extract(foo):
         
-        def magic(self, t_step: int,
-                        kz: Union[int, Num],
-                        x: Optional[Sequence[Num]] = None,
-                        y: Optional[Sequence[Num]] = None) -> xr.Dataset:
-            
-            do_interp = sum((bool(x is not None),
-                             bool(y is not None)))
-            
-            if do_interp == 1:
-                raise RuntimeError("x and y must both be set")
-            
-            if t_step not in self._t_steps:
-                self._load_t_step(t_step)
-            
-            ds = foo(self, t_step, kz)
-            
-            if not do_interp: return ds
-            
-            x = xr.DataArray(x)
-            y = xr.DataArray(y)
-            
-            return ds.interp(x=x, y=y)
-            
-        return magic
+        _check_case_study(case)
+        turb_pos_z = cast(Num, case.turb_pos_z)
+        
+        return self.extract_z(t_step, turb_pos_z + offset_z)
     
     @_extract
     def extract_z(self, t_step: int,
@@ -92,10 +118,12 @@ class Faces(TimeStepResolver):
     def extract_k(self, t_step: int,
                         k: int) -> xr.Dataset:
         return faces_frame_to_slice(self._frame,
-                                      self._t_steps[t_step],
-                                      k=k)
+                                    self._t_steps[t_step],
+                                    k=k)
     
     def extract_depth(self, t_step: int) -> xr.DataArray:
+        
+        t_step = self.resolve_t_step(t_step)
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
@@ -104,6 +132,9 @@ class Faces(TimeStepResolver):
                                     self._t_steps[t_step])
     
     def _load_t_step(self, t_step: int):
+        
+        t_step = self.resolve_t_step(t_step)
+        if t_step in self._t_steps: return
         
         frame = map_to_faces_frame(self.map_path, t_step)
         
@@ -115,6 +146,11 @@ class Faces(TimeStepResolver):
                                              sort=False)
         
         self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
+
+
+def _check_case_study(case: CaseStudy):
+    if len(case) != 1:
+        raise ValueError("case study must have length one")
 
 
 def map_to_faces_frame(map_path: StrOrPath,

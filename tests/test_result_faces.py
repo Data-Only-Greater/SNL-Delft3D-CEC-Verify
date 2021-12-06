@@ -7,9 +7,12 @@ import pandas as pd
 import xarray as xr
 import pytest
 
+from snl_d3d_cec_verify.cases import CaseStudy
 from snl_d3d_cec_verify.result.faces import (map_to_faces_frame,
                                              faces_frame_to_slice,
-                                             faces_frame_to_depth)
+                                             faces_frame_to_depth,
+                                             Faces,
+                                             _check_case_study)
 
 
 @pytest.fixture
@@ -146,3 +149,210 @@ def test_faces_frame_to_depth(faces_frame):
     # Same bounds as the frame
     assert da.min() >= faces_frame["depth"].min()
     assert da.max() <= faces_frame["depth"].max()
+
+
+@pytest.fixture
+def faces(data_dir):
+    map_path = data_dir / "output" / "FlowFM_map.nc"
+    return Faces(map_path, 2, 18)
+
+
+def test_faces_load_t_step_first(faces):
+    
+    t_step = -1
+    expected_t_step = faces.resolve_t_step(t_step)
+    faces._load_t_step(t_step)
+    
+    assert len(faces._frame) == 216
+    assert expected_t_step in faces._t_steps
+    assert faces._t_steps[expected_t_step] == \
+                                        pd.Timestamp('2001-01-01 01:00:00')
+
+
+def test_faces_load_t_step_second(faces):
+    
+    faces._load_t_step(-1)
+    faces._load_t_step(0)
+    
+    assert len(faces._frame) == 216 * 2
+    assert len(faces._t_steps) == 2
+    assert set(faces._frame["time"]) == set([
+                                        pd.Timestamp('2001-01-01 01:00:00'),
+                                        pd.Timestamp('2001-01-01')])
+
+
+def test_faces_load_t_step_no_repeat(faces):
+    
+    faces._load_t_step(-1)
+    faces._load_t_step(1)
+    
+    assert len(faces._frame) == 216
+    assert len(faces._t_steps) == 1
+
+
+def test_faces_extract_depth(mocker, faces):
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces.faces_frame_to_depth')
+    faces.extract_depth(-1)
+    mock.assert_called()
+
+
+def test_faces_extract_k(mocker, faces):
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces.faces_frame_to_slice')
+    faces.extract_k(-1, 0)
+    mock.assert_called()
+    assert 'k' in mock.call_args.kwargs
+    assert 'z' not in mock.call_args.kwargs
+
+
+def test_faces_extract_k_interp(faces):
+    
+    t_step = -1
+    k = 0
+    x = 1
+    y = 3
+    
+    ds = faces.extract_k(t_step, k, x, y)
+    t_step = faces.resolve_t_step(t_step)
+    ts = faces._t_steps[t_step]
+    
+    assert isinstance(ds, xr.Dataset)
+    
+    assert ds.k.values.take(0) == k
+    assert ds.time.values.take(0) == ts
+    assert ds.x.values.take(0) == x
+    assert ds.y.values.take(0) == y
+    assert np.isclose(ds.z.values, -1.66857945)
+    
+    # Same bounds as the frame
+    assert (faces._frame["u"].min() <= ds.u.values.take(0) <=
+                                                    faces._frame["u"].max())
+    assert (faces._frame["v"].min() <= ds.v.values.take(0) <=
+                                                    faces._frame["v"].max())
+    assert (faces._frame["w"].min() <= ds.w.values.take(0) <=
+                                                    faces._frame["w"].max())
+
+
+def test_faces_extract_z(mocker, faces):
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces.faces_frame_to_slice')
+    faces.extract_z(-1, -1)
+    mock.assert_called()
+    assert 'z' in mock.call_args.kwargs
+    assert 'k' not in mock.call_args.kwargs
+
+
+def test_faces_extract_z_interp(faces):
+    
+    t_step = -1
+    z = -1
+    x = 1
+    y = 3
+    
+    ds = faces.extract_z(t_step, z, x, y)
+    t_step = faces.resolve_t_step(t_step)
+    ts = faces._t_steps[t_step]
+    
+    assert isinstance(ds, xr.Dataset)
+    
+    assert ds.z.values.take(0) == z
+    assert ds.time.values.take(0) == ts
+    assert ds.x.values.take(0) == x
+    assert ds.y.values.take(0) == y
+    assert np.isclose(ds.k.values, 1.00171953)
+    
+    # Same bounds as the frame
+    assert (faces._frame["u"].min() <= ds.u.values.take(0) <=
+                                                    faces._frame["u"].max())
+    assert (faces._frame["v"].min() <= ds.v.values.take(0) <=
+                                                    faces._frame["v"].max())
+    assert (faces._frame["w"].min() <= ds.w.values.take(0) <=
+                                                    faces._frame["w"].max())
+
+
+@pytest.mark.parametrize("x, y", [
+                            ("mock", None),
+                            (None, "mock")])
+def test_faces_extract_interp_error(faces, x, y):
+    
+    with pytest.raises(RuntimeError) as excinfo:
+        faces.extract_z("mock", "mock", x, y)
+    
+    assert "x and y must both be set" in str(excinfo)
+
+
+def test_check_case_study_error():
+    
+    case = CaseStudy(dx=[1, 2, 3])
+    
+    with pytest.raises(ValueError) as excinfo:
+        _check_case_study(case)
+    
+    assert "case study must have length one" in str(excinfo)
+
+
+def test_faces_extract_turbine_z(mocker, faces):
+    
+    case = CaseStudy()
+    offset_z = 0.5
+    t_step = -1
+    mock = mocker.patch.object(faces, 'extract_z')
+    faces.extract_turbine_z(t_step, case, offset_z)
+    
+    mock.assert_called_with(t_step, case.turb_pos_z + offset_z)
+
+
+def test_faces_extract_turbine_centreline(mocker, faces):
+    
+    case = CaseStudy()
+    t_step = -1
+    x_step = 0.5
+    offset_x = 0.5
+    offset_y = 0.5
+    offset_z = 0.5
+    mock = mocker.patch.object(faces, 'extract_z')
+    faces.extract_turbine_centreline(t_step,
+                                     case,
+                                     x_step,
+                                     offset_x,
+                                     offset_y,
+                                     offset_z)
+    
+    mock.assert_called()
+    
+    assert mock.call_args.args[0] == t_step
+    assert mock.call_args.args[1] == case.turb_pos_z + offset_z
+    
+    x = mock.call_args.args[2]
+    y = mock.call_args.args[3]
+    
+    assert x.min() == case.turb_pos_x + offset_x
+    assert x.max() <= faces.xmax
+    assert np.unique(np.diff(x)).take(0) == x_step
+    assert set(y) == set([case.turb_pos_y + offset_y])
+
+
+def test_faces_extract_turbine_centre(mocker, faces):
+    
+    case = CaseStudy()
+    t_step = -1
+    offset_x = 0.5
+    offset_y = 0.5
+    offset_z = 0.5
+    mock = mocker.patch.object(faces, 'extract_z')
+    faces.extract_turbine_centre(t_step,
+                                 case,
+                                 offset_x,
+                                 offset_y,
+                                 offset_z)
+    
+    mock.assert_called()
+    
+    assert mock.call_args.args[0] == t_step
+    assert mock.call_args.args[1] == case.turb_pos_z + offset_z
+    
+    x = mock.call_args.args[2]
+    y = mock.call_args.args[3]
+    
+    assert len(x) == 1
+    assert len(y) == 1
+    assert x[0] == case.turb_pos_x + offset_x
+    assert y[0] == case.turb_pos_y + offset_y

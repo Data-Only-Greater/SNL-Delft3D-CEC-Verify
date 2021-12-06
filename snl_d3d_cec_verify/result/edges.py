@@ -7,16 +7,16 @@ from typing import Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 import numpy as np
-import pandas as pd
-import geopandas as gpd
+import pandas as pd # type: ignore
+import geopandas as gpd # type: ignore
 import xarray as xr
-from shapely.geometry import LineString
+from shapely.geometry import LineString # type: ignore
 
 from .base import TimeStepResolver
 from ..types import StrOrPath
 
 if TYPE_CHECKING:
-    from shapely.geometry.base import BaseGeometry
+    from shapely.geometry.base import BaseGeometry # type: ignore # pragma: no cover
 
 
 @dataclass
@@ -37,6 +37,8 @@ class Edges(TimeStepResolver):
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
+        
+        assert self._frame is not None
         
         kframe = self._frame.set_index(['time', 'k'])
         kframe = kframe.sort_index()

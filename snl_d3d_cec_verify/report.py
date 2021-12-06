@@ -5,14 +5,14 @@ from __future__ import annotations
 import datetime as dt
 import textwrap
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Type, TYPE_CHECKING, Union
+from typing import List, Optional, Tuple, Type, TYPE_CHECKING
 from pathlib import Path
 from dataclasses import dataclass, field
 
 from .types import StrOrPath
 
 if TYPE_CHECKING:
-    import pandas as pd # type: ignore
+    import pandas as pd # type: ignore # pragma: no cover
 
 
 @dataclass
@@ -25,7 +25,7 @@ class BaseLine(ABC, TextDataclassMixin):
     
     @abstractmethod
     def wrap(self) -> List[str]:
-        pass
+        pass    # pragma: no cover
     
     def __call__(self):
         return "\n".join(self.wrap())
