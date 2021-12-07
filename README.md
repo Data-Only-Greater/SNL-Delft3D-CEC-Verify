@@ -8,6 +8,10 @@ experiment conducted by Mycek et al.[[1]](#1).
 
 ## Installation
 
+:warning: This repository uses [Git LFS][8] to store large files, so if you
+want to clone the repository, make sure to use `git lfs clone` to download all
+of the files and set up LFS.
+
 The preferred method of installation is to use [Anaconda Python][4]. Download
 this package, open an Anaconda prompt and then change directory into the
 package root. Now create a conda environment using the following command:
@@ -123,3 +127,4 @@ Renewable Energy, 66, 729–746.
 [5]: https://pandoc.org/
 [6]: https://github.com/openearth/delft3dfmpy
 [7]: https://github.com/django/django
+[8]: https://git-lfs.github.com/
