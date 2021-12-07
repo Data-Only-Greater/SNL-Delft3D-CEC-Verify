@@ -8,6 +8,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ['3.9']
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
@@ -16,6 +19,8 @@ jobs:
           environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
           auto-activate-base: false
+      - run: |
+          conda info
       - name: Install package
         run: |
           pip install --no-deps -e .
