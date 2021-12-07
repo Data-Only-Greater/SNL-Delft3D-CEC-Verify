@@ -9,12 +9,8 @@ from snl_d3d_cec_verify.template import package_fm_template_path, Template
 
 
 def test_package_fm_template_path():
-    
-    expected = Path("SNL-Delft3D-CEC-Verify").joinpath("snl_d3d_cec_verify",
-                                                       "templates",
-                                                       "fm")
+    expected = Path("snl_d3d_cec_verify") / "templates" / "fm"
     result = package_fm_template_path()
-    
     assert str(expected) in str(result)
 
 
