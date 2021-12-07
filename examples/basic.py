@@ -10,10 +10,19 @@ import matplotlib.pyplot as plt
 
 from snl_d3d_cec_verify import CaseStudy, Report, Result, Runner, Template
 
-env = dict(os.environ)
-d3d_bin_path = Path(env['D3D_BIN'].replace('"', ''))
+def get_d3d_bin_path():
+    
+    env = dict(os.environ)
+    
+    if 'D3D_ROOT' in env:
+        root = Path(env['D3D_ROOT'].replace('"', ''))
+    else:
+        root = Path("..")
+    
+    return (root / "src" / "bin").resolve()
+
 template = Template()
-runner = Runner(d3d_bin_path)
+runner = Runner(get_d3d_bin_path())
 report = Report(79, "%d %B %Y")
 report_dir = Path("basic_report")
 report_dir.mkdir(exist_ok=True)

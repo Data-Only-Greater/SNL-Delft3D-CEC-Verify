@@ -1,0 +1,13 @@
+name: _snld3d
+dependencies:
+  - python=3.9
+  - pip
+  - geopandas-base
+  - jinja2
+  - netCDF4
+  - numpy>=1.21
+  - pandas
+  - scipy
+  - shapely
+  - tabulate
+  - xarray
