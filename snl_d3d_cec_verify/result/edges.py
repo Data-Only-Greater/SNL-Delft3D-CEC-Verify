@@ -15,8 +15,8 @@ from shapely.geometry import LineString # type: ignore
 from .base import TimeStepResolver
 from ..types import StrOrPath
 
-if TYPE_CHECKING:
-    from shapely.geometry.base import BaseGeometry # type: ignore # pragma: no cover
+if TYPE_CHECKING: # pragma: no cover
+    from shapely.geometry.base import BaseGeometry # type: ignore
 
 
 @dataclass

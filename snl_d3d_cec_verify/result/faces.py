@@ -18,8 +18,8 @@ import xarray as xr
 from .base import TimeStepResolver
 from ..types import Num, StrOrPath
 
-if TYPE_CHECKING:
-    from ..cases import CaseStudy # pragma: no cover
+if TYPE_CHECKING: # pragma: no cover
+    from ..cases import CaseStudy
 
 
 # TODO: I'd like to type check this, but I can't get it to work.

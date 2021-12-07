@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 
 from .types import StrOrPath
 
-if TYPE_CHECKING:
-    import pandas as pd # type: ignore # pragma: no cover
+if TYPE_CHECKING: # pragma: no cover
+    import pandas as pd # type: ignore
 
 
 @dataclass

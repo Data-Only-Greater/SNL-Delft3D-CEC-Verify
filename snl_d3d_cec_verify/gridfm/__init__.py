@@ -5,18 +5,18 @@ from __future__ import annotations
 import numpy as np
 from shapely.geometry import box # type: ignore
 
-from ..types import StrOrPath
+from ..types import Num, StrOrPath
 from .writer import write2D
 from .mesh2d import Rectangular
 
 
 def write_gridfm_rectangle(path: StrOrPath,
-                           dx: float,
-                           dy: float,
-                           x0: float = 0.,
-                           x1: float = 18.,
-                           y0: float = 1.,
-                           y1: float = 5.):
+                           dx: Num,
+                           dy: Num,
+                           x0: Num = 0,
+                           x1: Num = 18,
+                           y0: Num = 1,
+                           y1: Num = 5):
     
     poly = box(x0, y0, x1, y1)
     mesh = Rectangular()

@@ -23,7 +23,7 @@
 from contextlib import contextmanager
 
 import numpy as np
-from netCDF4 import Dataset
+from netCDF4 import Dataset # type: ignore
 
 from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim

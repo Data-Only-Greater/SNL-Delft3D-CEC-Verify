@@ -11,8 +11,8 @@ from .edges import Edges
 from .faces import Faces
 from ..types import StrOrPath
 
-if TYPE_CHECKING:
-    import numpy as np
+if TYPE_CHECKING: # pragma: no cover
+    import numpy as np 
     import numpy.typing as npt
 
 

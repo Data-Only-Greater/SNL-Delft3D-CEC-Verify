@@ -88,7 +88,7 @@ def test_runner_call(mocker):
     runner = Runner(d3d_bin_path)
     runner(project_path)
     
-    assert mock.assert_called_with(d3d_bin_path,
-                                   project_path,
-                                   runner.omp_num_threads,
-                                   runner.show_stdout)
+    mock.assert_called_with(d3d_bin_path,
+                            project_path,
+                            runner.omp_num_threads,
+                            runner.show_stdout)

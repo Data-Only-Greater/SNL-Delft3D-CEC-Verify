@@ -23,8 +23,8 @@
 import logging
 
 import numpy as np
-from shapely.geometry import MultiPolygon, Point, Polygon
-from shapely.prepared import prep
+from shapely.geometry import MultiPolygon, Point, Polygon # type: ignore
+from shapely.prepared import prep # type: ignore
 
 logger = logging.getLogger(__name__)
 

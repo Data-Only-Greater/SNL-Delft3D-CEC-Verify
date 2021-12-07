@@ -26,7 +26,7 @@ from ctypes import CDLL, byref, c_char, c_int, pointer
 from itertools import combinations
 
 import numpy as np
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Polygon # type: ignore
 
 from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
