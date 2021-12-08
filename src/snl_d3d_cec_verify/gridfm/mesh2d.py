@@ -6,12 +6,12 @@
 from __future__ import annotations
 
 from ctypes import c_char, pointer
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from itertools import product
 from collections import defaultdict
 
 import numpy as np
-import pandas as pd
+import pandas as pd # type: ignore
 
 from shapely.geometry import MultiPolygon, Polygon # type: ignore
 
@@ -197,13 +197,13 @@ class Rectangular(Mesh2D):
 
 
 def _get_face_nodes(df: pd.DataFrame,
-                    node: npt.NDArray[float],
+                    node: npt.NDArray[np.float64],
                     dx: Num,
                     dy: Num,
                     x1: Num,
                     y1: Num,
                     c0: float,
-                    c1: float) -> npt.NDArray[int]:
+                    c1: float) -> npt.NDArray[np.int_]:
     
     shift_x = dx / 2
     shift_y = dy / 2
@@ -239,7 +239,7 @@ def _get_face_nodes(df: pd.DataFrame,
 
 
 def _get_index(df: pd.DataFrame,
-               node: npt.NDArray[float]) -> int:
+               node: npt.NDArray[np.float64]) -> Optional[int]:
     
     xcheck = np.isclose(df["x"], node[0])
     ycheck = np.isclose(df["y"], node[1])
