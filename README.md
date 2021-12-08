@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/H0R5E/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/H0R5E/SNL-Delft3D-CEC-Verify)
+
 # SNL-Delft3D-CEC-Verify
 
 SNL-Delft3D-CEC-Verify is a python package for automated testing of 
