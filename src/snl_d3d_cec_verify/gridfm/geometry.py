@@ -1,60 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2019, Guus Rongen
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in 
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
-import logging
-
-import numpy as np
-from shapely.geometry import MultiPolygon, Point, Polygon # type: ignore
-from shapely.prepared import prep # type: ignore
-
-logger = logging.getLogger(__name__)
-
-
-def points_in_polygon(points, polygon):
-    """
-    Determine points that are inside a polygon
-    
-    Parameters
-    ----------
-    points : numpy.array
-        Nx2 - array
-    polygon : shapely.geometry.Polygon
-        Polygon (can have holes)
-    """
-    # First select points in square box around polygon
-    ptx, pty = points.T
-    mainindex = possibly_intersecting(
-        dataframebounds=np.c_[[ptx, pty, ptx, pty]], geometry=polygon)
-    boxpoints = points[mainindex]
-    
-    extp = prep(Polygon(polygon.exterior))
-    
-    # create first index. Everything within exterior is True
-    index = np.array([extp.intersects(Point(*x)) for x in boxpoints])
-    
-    # Set index in main index to False
-    mainindex[np.where(mainindex)[0][~index]] = False
-    
-    return mainindex
+from shapely.geometry import MultiPolygon, Polygon # type: ignore
 
 
 def possibly_intersecting(dataframebounds, geometry, buffer=1e-4):

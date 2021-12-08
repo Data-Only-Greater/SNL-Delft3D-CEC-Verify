@@ -1,39 +1,27 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2021, Mathew Topper
 # Copyright (c) 2019, Guus Rongen
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in 
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
-import logging
-import os
-from ctypes import CDLL, byref, c_char, c_int, pointer
-from itertools import combinations
+from __future__ import annotations
+
+from ctypes import c_char, pointer
+from typing import TYPE_CHECKING
+from itertools import product
+from collections import defaultdict
 
 import numpy as np
+import pandas as pd
+
 from shapely.geometry import MultiPolygon, Polygon # type: ignore
 
 from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
-from .geometry import (as_polygon_list,
-                       points_in_polygon)
+from .geometry import as_polygon_list
+from ..types import Num
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING: # pragma: no cover
+    import numpy.typing as npt
 
 
 class Mesh2D:
@@ -55,190 +43,6 @@ class Mesh2D:
                                        -1,
                                        0)
         self.meshgeom = meshgeom(self.meshgeomdim)
-
-    def clip_nodes(self, xnodes,
-                         ynodes,
-                         edge_nodes,
-                         polygon,
-                         keep_outside=False):
-        """
-        Method that returns a set of nodes that is clipped within a given
-        polygon.
-        
-        Parameters
-        ----------
-        xnodes : 
-            X-coordinates of mesh nodes
-        ynodes : 
-            Y-coordinates of mesh nodes
-        edge_nodes : 
-            node ids of edges. These are assumed in 1-based numbering
-        polygon : Polygon, Multipolygon or list of
-        
-        """
-        
-        # Find nodes within one of the polygons
-        logger.info('Selecting nodes within polygon.')
-        index = np.zeros(len(xnodes), dtype=bool)
-        for poly in as_polygon_list(polygon):
-            index = index | points_in_polygon(np.c_[xnodes, ynodes], poly)
-        if keep_outside:
-            index = ~index
-        
-        # Filter edge nodes, keep the ones that are within a polygon with both points
-        nodeids_in_polygon = np.where(index)[0] + 1
-        edge_nodes = edge_nodes[np.isin(edge_nodes,
-                                        nodeids_in_polygon).all(axis=1)]
-        
-        # Remove edges that have a 1 count, until none are left
-        logger.info('Remove edges with only a single node within the clip '
-                    'area.')
-        unique, count = np.unique(edge_nodes, return_counts=True)
-        
-        while any(count == 1):
-            count1nodes = unique[count == 1]
-            edge_nodes = edge_nodes[~np.isin(edge_nodes,
-                                             count1nodes).any(axis=1)]
-            unique, count = np.unique(edge_nodes, return_counts=True)
-        
-        # Select remaining nodes
-        xnodes = xnodes[unique - 1]
-        ynodes = ynodes[unique - 1]
-        
-        # Make mapping for new id's
-        new_id_mapping = {old_id: new_id + 1
-                                  for new_id, old_id in enumerate(unique)}
-        edge_nodes = np.reshape([new_id_mapping[old_id]
-                                     for old_id in edge_nodes.ravel()],
-                                edge_nodes.shape)
-        
-        return xnodes, ynodes, edge_nodes
-    
-    def clean_nodes(self, xnodes, ynodes, edge_nodes, face_nodes):
-        """
-        Method to clean the nodes. Edges that do not form a cell are deleted.
-        Alternative method based on checking tuple pairs
-        """
-        
-        # Select nodes the occur in any face
-        node_selection = np.unique(face_nodes)
-        node_selection = node_selection[node_selection!=-999]
-        # If no nodes (because no faces), return None
-        if not node_selection.any():
-            return None
-        
-        # Remove all edges that are not in this selection
-        edge_nodes = edge_nodes[np.isin(edge_nodes,
-                                        node_selection).all(axis=1)]
-                
-        # Remove all segments that are not part of any face
-        # Direction is irrelevant, sort to compare in ascending order
-        # Convert to a contiguous array for faster comparison
-        dtype = np.dtype((np.void,
-                          edge_nodes.dtype.itemsize * edge_nodes.shape[1]))
-        sorted_edges = np.ascontiguousarray(
-                                    np.sort(edge_nodes, axis=1)).view(dtype)
-        idx = np.zeros(len(sorted_edges), dtype=bool)
-        
-        # Get combinations of face nodes that can form an edge
-        combs = list(combinations(range(len(face_nodes[0])), 2))
-        
-        for comb in combs:
-            # Get the first, second, third, etc. possible edge of every face
-            arr = face_nodes[:, comb]
-            # Remove nodata (so for example the non-existing fourth edge of a
-            # triangular face)
-            arr = arr[(arr != -999).all(axis=1)]
-            arr = np.sort(arr, axis=1)
-            # Convert to a contiguous array for faster comparison
-            dtype = np.dtype((np.void, arr.dtype.itemsize * arr.shape[1]))
-            sorted_face_edges = np.ascontiguousarray(arr).view(dtype)
-            # Check if face edges are in edges
-            idx |= np.isin(sorted_edges, sorted_face_edges)[:, 0]
-        
-        # Select the nodes that are present in faces
-        edge_nodes = edge_nodes[idx]
-        
-        xnodes = xnodes[node_selection - 1]
-        ynodes = ynodes[node_selection - 1]
-        
-        # Make mapping for new id's
-        new_id_mapping = {old_id: new_id + 1
-                              for new_id, old_id in enumerate(node_selection)}
-        
-        remap = lambda x: np.reshape(
-            [-999 if old_id == -999 else new_id_mapping[old_id]
-                                                     for old_id in x.ravel()],
-            x.shape)
-        
-        edge_nodes = remap(edge_nodes)
-        face_nodes = remap(face_nodes)
-        
-        return xnodes, ynodes, edge_nodes, face_nodes
-    
-    @staticmethod
-    def _find_cells(geometries, maxnumfacenodes=None):
-        """
-        Determine what the cells are in a grid.
-        """
-        
-        dimensions = geometries.meshgeomdim
-        
-        wrapperGridgeom = CDLL(os.path.join(os.path.dirname(__file__),
-                                            'gridgeom.dll'))
-        ierr = wrapperGridgeom.ggeo_deallocate()
-        assert ierr == 0
-        
-        start_index = c_int(1)
-        
-        meshdimout = meshgeomdim()
-        meshout = meshgeom(meshdimout)
-        
-        ierr = wrapperGridgeom.ggeo_find_cells(byref(dimensions),
-                                               byref(geometries),
-                                               byref(meshdimout),
-                                               byref(meshout),
-                                               byref(start_index))
-        assert ierr == 0
-        
-        dimensions.numface = meshdimout.numface
-        
-        if maxnumfacenodes is None:
-            dimensions.maxnumfacenodes = meshdimout.maxnumfacenodes
-        else:
-            dimensions.maxnumfacenodes = maxnumfacenodes
-        
-        # Allocate
-        for mesh in [geometries, meshout]:
-            for var in ['facex', 'facey', 'face_nodes']:
-                mesh.allocate(var)
-        
-        ierr = wrapperGridgeom.ggeo_find_cells(byref(dimensions),
-                                               byref(geometries),
-                                               byref(meshdimout),
-                                               byref(meshout),
-                                               byref(start_index))
-        assert ierr == 0
-        
-        # Copy content to self meshgeom
-        for var in ['facex', 'facey', 'face_nodes']:
-            # Create array of allocated size. In case of deviating
-            # maxnumfacenodes
-            if (maxnumfacenodes is not None) and (var == 'face_nodes'):
-                # Create an empty integer. Empty values should only be present
-                # in the integer arrays
-                arr = np.full(geometries.get_dimensions(var), -999, dtype=int)
-                # Get array
-                arr[:, :meshout.meshgeomdim.maxnumfacenodes] = \
-                                    meshout.get_values(var, as_array=True)
-                # Set array
-                geometries.set_values(var, arr.ravel())
-            else:
-                # Set array
-                geometries.set_values(var, meshout.get_values(var))
-        
-        ierr = wrapperGridgeom.ggeo_deallocate()
-        assert ierr == 0
     
     def altitude_constant(self, constant, where='face'):
         zvalues = np.ones(getattr(self.meshgeomdim, f'num{where}')) * constant
@@ -257,20 +61,36 @@ class Rectangular(Mesh2D):
         
     def generate_grid(self, x0,
                             y0,
+                            xsize,
+                            ysize,
                             dx,
-                            dy,
-                            ncols,
-                            nrows,
-                            clipgeo=None):
+                            dy):
         """
-        Generate rectangular grid based on the origin (x0, y0) the cell sizes (dx, dy),
-        the number of columns and rows (ncols, nrows) and a rotation in degrees (default=0)
-        A geometry (clipgeo) can be given to clip the grid.
+        Generate rectangular grid based on the origin (x0, y0) and size 
+        (xsize, ysize) with the cell sizes (dx, dy). Last row and column
+        will have size adjusted if dx and dy do not divide perfectly.
         """
         
         # Generate x and y spacing
-        x = np.linspace(x0, x0 + dx * (ncols), ncols+1)
-        y = np.linspace(y0, y0 + dy * (nrows), nrows+1)
+        ncols = int(xsize / dx)
+        nrows = int(ysize / dy)
+        
+        x1 = x0 + xsize
+        y1 = y0 + ysize
+        
+        x = np.linspace(x0, x0 + dx * (ncols), ncols + 1)
+        y = np.linspace(y0, y0 + dy * (nrows), nrows + 1)
+        
+        # Adjust last row and column if overlap
+        if not np.isclose(x[-1], x1):
+            x = np.append(x, x1) 
+        
+        if not np.isclose(y[-1], y1):
+            y = np.append(y, y1)
+        
+        # Record spacing of last row and column
+        c0 = x[-1] - x[-2]
+        c1 = y[-1] - y[-2]
         
         # Get nodes
         xnodes, ynodes = np.meshgrid(x, y)
@@ -278,6 +98,17 @@ class Rectangular(Mesh2D):
         # Get nodes as list
         nodes = {crd: i+1 for i, crd in enumerate(zip(xnodes.ravel(),
                                                       ynodes.ravel()))}
+        
+        # Get nodes as dataframe
+        node_data = defaultdict(list)
+        
+        for (ix, iy), i in nodes.items():
+            node_data["index"].append(i)
+            node_data["x"].append(ix)
+            node_data["y"].append(iy)
+        
+        node_df = pd.DataFrame(node_data)
+        node_df = node_df.set_index("index")
         
         # Create segments
         segments = list(zip(
@@ -291,55 +122,47 @@ class Rectangular(Mesh2D):
         edge_nodes = np.asarray([(nodes[s[0]], nodes[s[1]])
                                                          for s in segments])
         
-        # Rvael the nodes
+        # Get face xy as a dataframe
+        face_x = (x[:-1] + x[1:]) / 2
+        face_y = (y[:-1] + y[1:]) / 2
+        
+        data = defaultdict(list)
+        
+        for i, (ix, iy) in enumerate(product(face_x, face_y)):
+            data["index"].append(i + 1)
+            data["x"].append(ix)
+            data["y"].append(iy)
+        
+        face_df = pd.DataFrame(data)
+        face_df = face_df.set_index("index")
+        
+        # Get the face nodes
+        face_nodes =  np.asarray(
+            [_get_face_nodes(node_df, row.values, dx, dy, x1, y1, c0, c1)
+                                         for _, row in face_df.iterrows()])
+        
+        # Rvael the nodes and faces
         xnodes = xnodes.ravel()
         ynodes = ynodes.ravel()
+        xfaces = face_df["x"].values.ravel()
+        yfaces = face_df["y"].values.ravel()
         
         # Add to mesh
         dimensions = meshgeomdim()
         dimensions.dim = 2
         geometries = meshgeom(dimensions)
         
-        # Clip
-        if clipgeo is not None:
-            xnodes, ynodes, edge_nodes = self.clip_nodes(xnodes,
-                                                         ynodes,
-                                                         edge_nodes,
-                                                         clipgeo)
-        
         # Update dimensions
         dimensions.numnode = len(xnodes)
         dimensions.numedge = len(edge_nodes)
-
-        # Add nodes and links
-        geometries.set_values('nodex', xnodes)
-        geometries.set_values('nodey', ynodes)
-        geometries.set_values('edge_nodes', np.ravel(edge_nodes).tolist())
-        
-        # Determine what the cells are
-        self._find_cells(geometries)
-        
-        # Clip
-        if clipgeo is not None:
-            # Clean nodes, this function deletes nodes based on no longer
-            # existing cells
-            face_nodes = geometries.get_values('face_nodes', as_array=True)
-            cleaned = self.clean_nodes(xnodes, ynodes, edge_nodes, face_nodes)
-            # If cleaning leaves no whole cells, return None
-            if cleaned is None:
-                return None
-            # Else, get the arguments from the returned tuple
-            else:
-                xnodes, ynodes, edge_nodes, face_nodes = cleaned
-        
-        # Update dimensions
-        dimensions.numnode = len(xnodes)
-        dimensions.numedge = len(edge_nodes)
+        dimensions.numface = len(face_nodes)
         dimensions.maxnumfacenodes = 4
         
-        # Add nodes and links
+        # Add nodes, faces and links
         geometries.set_values('nodex', xnodes)
         geometries.set_values('nodey', ynodes)
+        geometries.set_values('facex', xfaces)
+        geometries.set_values('facey', yfaces)
         geometries.set_values('edge_nodes', np.ravel(edge_nodes).tolist())
         geometries.set_values('face_nodes', np.ravel(face_nodes).tolist())
         
@@ -358,20 +181,73 @@ class Rectangular(Mesh2D):
         """
         
         check_argument(polygon, 'polygon', (list, Polygon, MultiPolygon))
-        
         polygons = as_polygon_list(polygon)
-        
-        logger.info(f'Generating grid with cellsize {dx}x{dy} m')
         convex = MultiPolygon(polygons).convex_hull
         
         xsize = convex.bounds[2] - convex.bounds[0]
-        ysize= convex.bounds[3] - convex.bounds[1]
+        ysize = convex.bounds[3] - convex.bounds[1]
         x0, y0 = convex.bounds[0], convex.bounds[1]
         
         self.generate_grid(x0=x0,
                            y0=y0,
+                           xsize=xsize,
+                           ysize=ysize,
                            dx=dx,
-                           dy=dy,
-                           ncols=int(xsize / dx) + 1,
-                           nrows=int(ysize / dy) + 1,
-                           clipgeo=polygon)
+                           dy=dy)
+
+
+def _get_face_nodes(df: pd.DataFrame,
+                    node: npt.NDArray[float],
+                    dx: Num,
+                    dy: Num,
+                    x1: Num,
+                    y1: Num,
+                    c0: float,
+                    c1: float) -> npt.NDArray[int]:
+    
+    shift_x = dx / 2
+    shift_y = dy / 2
+    
+    half_c0 = c0 / 2
+    half_c1 = c1 / 2
+    
+    # Edge cases
+    if node[0] + shift_x > x1:
+        shift_x = half_c0
+    
+    if node[1] + shift_y > y1:
+        shift_y = half_c1
+        
+    search = [(-1 * shift_x, -1 * shift_y),
+              (shift_x, -1 * shift_y),
+              (shift_x, shift_y),
+              (-1 * shift_x, shift_y)]
+    
+    result = np.zeros(4).astype(int)
+    
+    for i, shift in enumerate(search):
+    
+        corner = node + shift
+        corner_node = _get_index(df, corner)
+        
+        if corner_node is None:
+            raise RuntimeError("corner node not found")
+        
+        result[i] = corner_node
+    
+    return result
+
+
+def _get_index(df: pd.DataFrame,
+               node: npt.NDArray[float]) -> int:
+    
+    xcheck = np.isclose(df["x"], node[0])
+    ycheck = np.isclose(df["y"], node[1])
+    result = df[xcheck & ycheck]
+    
+    if result.empty: return None
+    
+    if len(result) > 1:
+        raise RuntimeError("multiple matching indices")
+    
+    return result.index[0]
