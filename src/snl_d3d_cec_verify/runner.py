@@ -51,9 +51,7 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     elif os_name == 'Linux':
         run_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
     else:
-        raise OSError("Operating system not supported")
-    
-    print(run_dflowfm_path)
+        raise OSError(f"Operating system '{os_name}' not supported")
     
     env = dict(os.environ)
     env['OMP_NUM_THREADS'] = f"{omp_num_threads}"

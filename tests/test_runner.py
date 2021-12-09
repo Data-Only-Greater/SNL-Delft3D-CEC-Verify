@@ -91,6 +91,22 @@ def test_run_dflowfm_error(capsys, mocker):
     assert "simulation failure" in str(excinfo)
 
 
+def test_run_dflowfm_unsupported_os(mocker):
+    
+    os_name = "DOS"
+    mocker.patch('snl_d3d_cec_verify.runner.platform.system',
+                 return_value=os_name)
+    
+    d3d_bin_path = "mock_bin"
+    project_path = "mock_project"
+    
+    with pytest.raises(OSError) as excinfo:
+        run_dflowfm(d3d_bin_path,
+                    project_path)
+    
+    assert f"'{os_name}' not supported" in str(excinfo)
+
+
 def test_runner_call(mocker):
     
     mock = mocker.patch('snl_d3d_cec_verify.runner.run_dflowfm')
