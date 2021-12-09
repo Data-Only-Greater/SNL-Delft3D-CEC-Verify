@@ -73,11 +73,17 @@ def test_run_dflowfm_error(capsys, mocker):
     cwd = mock_popen.call_args.kwargs['cwd']
     env = mock_popen.call_args.kwargs['env']
     captured = capsys.readouterr()
+    os_name = platform.system()
     
-    assert dflowfm_path == Path(d3d_bin_path).joinpath("x64",
-                                                       "dflowfm",
-                                                       "scripts",
-                                                       "run_dflowfm.bat")
+    if os_name == 'Windows':
+        expected_dflowfm_path = Path(d3d_bin_path).joinpath("x64",
+                                                            "dflowfm",
+                                                            "scripts",
+                                                            "run_dflowfm.bat")
+    else:
+        expected_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
+    
+    assert dflowfm_path == expected_dflowfm_path
     assert cwd == Path(project_path) / "input"
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
     assert 'stderr' in captured.out
