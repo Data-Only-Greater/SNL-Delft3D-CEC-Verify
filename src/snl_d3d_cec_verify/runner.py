@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import platform
 import subprocess
 from typing import Optional
 from pathlib import Path
@@ -39,10 +40,20 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
                 show_stdout: bool = False):
     
     rundir = Path(project_path) / "input"
-    run_dflowfm_path = Path(d3d_bin_path).joinpath("x64",
-                                                   "dflowfm",
-                                                   "scripts",
-                                                   "run_dflowfm.bat")
+    os_name = platform.system()
+    
+    # TODO: convert to match-case when 3.10 is supported by deps
+    if os_name == 'Windows':
+        run_dflowfm_path = Path(d3d_bin_path).joinpath("x64",
+                                                       "dflowfm",
+                                                       "scripts",
+                                                       "run_dflowfm.bat")
+    elif os_name == 'Linux':
+        run_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
+    else:
+        raise OSError("Operating system not supported")
+    
+    print(run_dflowfm_path)
     
     env = dict(os.environ)
     env['OMP_NUM_THREADS'] = f"{omp_num_threads}"

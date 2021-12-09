@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from pathlib import Path
-
 import pandas as pd
 import pytest
 import geopandas as gpd
 from shapely.geometry import LineString
 
 from snl_d3d_cec_verify.result.edges import map_to_edges_geoframe, Edges
-
-
-@pytest.fixture
-def data_dir():
-    this_file = Path(__file__).resolve()
-    return (this_file.parent / ".." / "test_data").resolve()
 
 
 def test_map_to_edges_geoframe(data_dir):

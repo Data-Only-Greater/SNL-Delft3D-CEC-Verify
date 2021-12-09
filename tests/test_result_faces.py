@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -13,12 +11,6 @@ from snl_d3d_cec_verify.result.faces import (map_to_faces_frame,
                                              faces_frame_to_depth,
                                              Faces,
                                              _check_case_study)
-
-
-@pytest.fixture
-def data_dir():
-    this_file = Path(__file__).resolve()
-    return (this_file.parent / ".." / "test_data").resolve()
 
 
 @pytest.fixture

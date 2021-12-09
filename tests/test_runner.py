@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import platform
 from pathlib import Path
 
 import pytest
@@ -7,40 +8,45 @@ import pytest
 from snl_d3d_cec_verify.runner import run_dflowfm, Runner
 
 
-def test_run_dflowfm(capsys, mocker):
+def test_run_dflowfm(capsys, mocker, tmp_path, data_dir):
     
-    process_mock = mocker.Mock()
-    attrs = {'communicate.return_value': ('output'.encode(), 
-                                          ''.encode())}
-    process_mock.configure_mock(**attrs)
+    from snl_d3d_cec_verify.runner import subprocess
     
-    mock_popen = mocker.patch('snl_d3d_cec_verify.runner.subprocess.Popen',
-                              return_value=process_mock)
+    spy_popen = mocker.spy(subprocess, 'Popen')
+    os_name = platform.system()
     
-    d3d_bin_path = "mock_bin"
-    project_path = "mock_project"
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
+    
+    d = tmp_path / "input"
+    d.mkdir()
     omp_num_threads = 99
     
     run_dflowfm(d3d_bin_path,
-                project_path,
+                tmp_path,
                 omp_num_threads,
                 show_stdout=True)
     
-    
-    dflowfm_path = mock_popen.call_args.args[0][0]
-    cwd = mock_popen.call_args.kwargs['cwd']
-    env = mock_popen.call_args.kwargs['env']
+    dflowfm_path = spy_popen.call_args.args[0][0]
+    cwd = spy_popen.call_args.kwargs['cwd']
+    env = spy_popen.call_args.kwargs['env']
     captured = capsys.readouterr()
-
     
-    assert dflowfm_path == Path(d3d_bin_path).joinpath("x64",
-                                                       "dflowfm",
-                                                       "scripts",
-                                                       "run_dflowfm.bat")
-    assert cwd == Path(project_path) / "input"
+    if os_name == 'Windows':
+        expected_dflowfm_path = Path(d3d_bin_path).joinpath("x64",
+                                                            "dflowfm",
+                                                            "scripts",
+                                                            "run_dflowfm.bat")
+    else:
+        expected_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
+    
+    assert dflowfm_path == expected_dflowfm_path
+    assert cwd == d
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
     assert 'stdout' in captured.out
-    assert 'output' in captured.out
+    assert 'dflowfm' in captured.out
 
 
 def test_run_dflowfm_error(capsys, mocker):

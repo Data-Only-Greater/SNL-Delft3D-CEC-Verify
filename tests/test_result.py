@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,12 +10,6 @@ from snl_d3d_cec_verify.result import (get_x_lim,
                                        Result)
 from snl_d3d_cec_verify.result.edges import Edges
 from snl_d3d_cec_verify.result.faces import Faces
-
-
-@pytest.fixture
-def data_dir():
-    this_file = Path(__file__).resolve()
-    return (this_file.parent / ".." / "test_data").resolve()
 
 
 def test_get_x_lim(data_dir):
