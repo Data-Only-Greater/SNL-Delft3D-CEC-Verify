@@ -14,12 +14,12 @@ def get_d3d_bin_path():
     
     env = dict(os.environ)
     
-    if 'D3D_ROOT' in env:
-        root = Path(env['D3D_ROOT'].replace('"', ''))
+    if 'D3D_BIN' in env:
+        root = Path(env['D3D_BIN'].replace('"', ''))
     else:
-        root = Path("..")
+        root = Path("..") / "src" / "bin"
     
-    return (root / "src" / "bin").resolve()
+    return root.resolve()
 
 template = Template()
 runner = Runner(get_d3d_bin_path())

@@ -48,18 +48,18 @@ installed. To install it, type:
 ```
 
 Currently, a compiled copy of SNL-Delft3D-FM-CEC must be available for the 
-examples to run. It is also assumed that the binaries are installed in the 
-standard location (i.e. in the `src/bin` folder). The location of
-SNL-Delft3D-FM-CEC can then be specified by setting the `D3D_ROOT` environment 
-variable. For example, using PowerShell:
+examples to run. If the binaries are installed in the standard location in the 
+Delft3D source code (i.e. in the `src/bin` folder), simply copy the `basic.py` 
+file (and `reference.docx` file if converting to Word) to the source code's 
+`examples` directory. Alternatively, the location of SNL-Delft3D-FM-CEC 
+binaries can specified by setting the `D3D_BIN` environment variable, instead 
+of copying the example files. To set `D3D_BIN`, for example, using PowerShell:
 
 ```
-(_snld3d) > $env:D3D_ROOT = "\path\to\SNL-Delft3D-FM-CEC"
+(_snld3d) > $env:D3D_BIN = "\path\to\SNL-Delft3D-FM-CEC\src\bin"
 ```
 
-Alternatively, the `basic.py` file (and `reference.docx` file if converting to
-Word) can be copied to the SNL-Delft3D-FM-CEC `examples` directory and run from 
-there. To run the example, move to the directory containing `basic.py` and then 
+To run the example, move to the directory containing `basic.py` and then 
 call Python:
 
 ```
