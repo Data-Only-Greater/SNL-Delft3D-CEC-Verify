@@ -1,4 +1,6 @@
-[![codecov](https://codecov.io/gh/H0R5E/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/H0R5E/SNL-Delft3D-CEC-Verify)
+![unit tests](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/unit_tests.yml/badge.svg)
+![static type checks](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/static_type_checks.yml/badge.svg)
+[![codecov](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify)
 
 # SNL-Delft3D-CEC-Verify
 
