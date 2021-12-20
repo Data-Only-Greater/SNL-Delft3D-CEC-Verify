@@ -1,5 +1,9 @@
+![python](https://img.shields.io/badge/dynamic/yaml?label=python&query=%24.jobs.pytest.strategy.matrix[%27python-version%27][:]&url=https%3A%2F%2Fraw.githubusercontent.com%2FData-Only-Greater%2FSNL-Delft3D-CEC-Verify%2Fmain%2F.github%2Fworkflows%2Funit_tests.yml)
+![platform](https://img.shields.io/badge/dynamic/yaml?label=os&query=%24.jobs.pytest.strategy.matrix.os[:]&url=https%3A%2F%2Fraw.githubusercontent.com%2FData-Only-Greater%2FSNL-Delft3D-CEC-Verify%2Fmain%2F.github%2Fworkflows%2Funit_tests.yml)
+
 ![unit tests](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/unit_tests.yml/badge.svg)
 ![static type checks](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/static_type_checks.yml/badge.svg)
+
 [![codecov](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify)
 
 # SNL-Delft3D-CEC-Verify
