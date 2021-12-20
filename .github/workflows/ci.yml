@@ -34,3 +34,37 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
             fail_ci_if_error: true
+  mypy:
+    name: Static Type Checking
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python-version: ['3.9']
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: 'true'
+      - uses: actions/cache@v2
+        with:
+          path: .mypy_cache
+          key: ${{ runner.os }}-mypy-${{ hashFiles('setup.cfg') }}
+          restore-keys: ${{ runner.os }}-mypy
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: _snld3d
+          environment-file: environment.yml
+          python-version: ${{ matrix.python-version }}
+          auto-activate-base: false
+      - run: |
+          conda info
+      - name: Install package
+        run: |
+          pip install --no-deps -e .
+      - name: Run checks
+        run: |
+          conda install -y mypy
+          mypy src
