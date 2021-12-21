@@ -39,7 +39,6 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
                 omp_num_threads: int = 1,
                 show_stdout: bool = False):
     
-    rundir = Path(project_path) / "input"
     os_name = platform.system()
     
     # TODO: convert to match-case when 3.10 is supported by deps
@@ -52,6 +51,16 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
         run_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
     else:
         raise OSError(f"Operating system '{os_name}' not supported")
+    
+    if not run_dflowfm_path.is_file():
+        raise FileNotFoundError("Delft3D script could not be found at "
+                                f"{run_dflowfm_path}")
+    
+    rundir = Path(project_path) / "input"
+    
+    if not rundir.is_dir():
+        raise FileNotFoundError("Project input folder could not be found at "
+                                f"{rundir}")
     
     env = dict(os.environ)
     env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
