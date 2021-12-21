@@ -16,8 +16,12 @@ def get_d3d_bin_path():
     
     if 'D3D_BIN' in env:
         root = Path(env['D3D_BIN'].replace('"', ''))
+        print('D3D_BIN found')
     else:
         root = Path("..") / "src" / "bin"
+        print('D3D_BIN not found')
+    
+    print(f'Setting bin folder path to {root.resolve()}')
     
     return root.resolve()
 

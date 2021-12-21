@@ -49,7 +49,7 @@ def test_run_dflowfm(capsys, mocker, tmp_path, data_dir):
     assert 'dflowfm' in captured.out
 
 
-def test_run_dflowfm_error(capsys, mocker):
+def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
     
     process_mock = mocker.Mock()
     attrs = {'communicate.return_value': (''.encode(), 
@@ -59,13 +59,20 @@ def test_run_dflowfm_error(capsys, mocker):
     mock_popen = mocker.patch('snl_d3d_cec_verify.runner.subprocess.Popen',
                               return_value=process_mock)
     
-    d3d_bin_path = "mock_bin"
-    project_path = "mock_project"
+    os_name = platform.system()
+    
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
+    
+    d = tmp_path / "input"
+    d.mkdir()
     omp_num_threads = 99
     
     with pytest.raises(RuntimeError) as excinfo:
         run_dflowfm(d3d_bin_path,
-                    project_path,
+                    tmp_path,
                     omp_num_threads,
                     show_stdout=True)
     
@@ -84,7 +91,7 @@ def test_run_dflowfm_error(capsys, mocker):
         expected_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
     
     assert dflowfm_path == expected_dflowfm_path
-    assert cwd == Path(project_path) / "input"
+    assert cwd == d
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
     assert 'stderr' in captured.out
     assert 'error' in captured.out
@@ -105,6 +112,39 @@ def test_run_dflowfm_unsupported_os(mocker):
                     project_path)
     
     assert f"'{os_name}' not supported" in str(excinfo)
+
+
+def test_run_dflowfm_missing_script(tmp_path):
+    
+    d3d_bin_path = "mock_bin"
+    d = tmp_path / "input"
+    d.mkdir()
+    
+    with pytest.raises(FileNotFoundError) as excinfo:
+        run_dflowfm(d3d_bin_path,
+                    tmp_path)
+    
+    assert "script could not be found" in str(excinfo)
+    assert d3d_bin_path in str(excinfo)
+
+
+def test_run_dflowfm_missing_input_folder(tmp_path, data_dir):
+    
+    os_name = platform.system()
+    
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
+    
+    project_path = "mock_project"
+    
+    with pytest.raises(FileNotFoundError) as excinfo:
+        run_dflowfm(d3d_bin_path,
+                    project_path)
+    
+    assert "input folder could not be found" in str(excinfo)
+    assert project_path in str(excinfo)
 
 
 def test_runner_call(mocker):
