@@ -74,3 +74,41 @@ def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     with xr.open_dataset(map_path) as ds:
         time = ds.time.values
     return time
+
+
+from collections.abc import Mapping
+from dataclasses import dataclass
+
+from typing import Sequence
+from ..types import Num
+
+
+@dataclass(frozen=True)
+class Transect(Mapping):
+    z: Num
+    x: Sequence[Num]
+    y: Sequence[Num]
+    values: Optional[Sequence[Num]] = None
+    
+    def __post_init__(self):
+        
+        if len(self.x) != len(self.y):
+            raise ValueError("Length of x and y must match")
+        
+        if self.values is not None and len(self.values) != len(self.x):
+            raise ValueError("Length of values must match x and y")
+    
+    @classmethod
+    def from_csv(path: StrOrPath):
+        path = Path(StrOrPath)
+    
+    def __iter__(self):
+        yield "z"
+        yield "x"
+        yield "y"
+    
+    def __len__(self):
+        return 3
+    
+    def __getitem__(self, item):
+        return getattr(self, item)

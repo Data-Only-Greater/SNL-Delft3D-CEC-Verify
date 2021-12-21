@@ -7,7 +7,6 @@ from typing import (cast,
                     Dict,
                     Optional,
                     Sequence,
-                    Union,
                     TYPE_CHECKING)
 from dataclasses import dataclass, field
 
@@ -26,7 +25,7 @@ if TYPE_CHECKING: # pragma: no cover
 def _extract(method):
     
     def magic(self, t_step: int,
-                    kz: Union[int, Num],
+                    kz: Num,
                     x: Optional[Sequence[Num]] = None,
                     y: Optional[Sequence[Num]] = None) -> xr.Dataset:
         
