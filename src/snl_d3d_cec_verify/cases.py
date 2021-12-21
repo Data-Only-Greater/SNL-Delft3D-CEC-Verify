@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Union
 from collections.abc import Sequence
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 
 from .types import Num
 
@@ -85,3 +85,11 @@ class CaseStudy:
         
         if not mutli_values: return 1
         return len(mutli_values[0])
+
+
+@dataclass(frozen=True)
+class MycekStudy(CaseStudy):
+    """Class for defining cases corresponding to the Mycek studyy"""
+    turb_pos_x: OneOrManyNum = field(default=6, init=False)
+    turb_pos_y: OneOrManyNum = field(default=3, init=False)
+    turb_pos_z: OneOrManyNum = field(default=-1, init=False)
