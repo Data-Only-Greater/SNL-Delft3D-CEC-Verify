@@ -2,17 +2,29 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, TYPE_CHECKING
+import csv
+import itertools
+from typing import (Any,
+                    List,
+                    Optional,
+                    Tuple,
+                    TYPE_CHECKING,
+                    Type,
+                    TypeVar,
+                    Union)
 from pathlib import Path
+from collections import defaultdict
+from collections.abc import KeysView
+from dataclasses import dataclass, InitVar
 
+import numpy as np
 import xarray as xr
 
 from .edges import Edges
 from .faces import Faces
-from ..types import StrOrPath
+from ..types import Num, StrOrPath
 
 if TYPE_CHECKING: # pragma: no cover
-    import numpy as np 
     import numpy.typing as npt
 
 
@@ -76,39 +88,91 @@ def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     return time
 
 
-from collections.abc import Mapping
-from dataclasses import dataclass
-
-from typing import Sequence
-from ..types import Num
+# Types definitions
+T = TypeVar('T', bound='Transect')
+Vector = Tuple[Num, Num, Num]
 
 
-@dataclass(frozen=True)
-class Transect(Mapping):
+@dataclass(eq=False, frozen=True)
+class Transect():
     z: Num
-    x: Sequence[Num]
-    y: Sequence[Num]
-    values: Optional[Sequence[Num]] = None
+    x: npt.NDArray[np.float64]
+    y: npt.NDArray[np.float64]
+    data: Optional[npt.NDArray[np.float64]] = None
+    translation: InitVar[Vector] = (0, 0, 0)
     
-    def __post_init__(self):
+    def __post_init__(self, translation: Vector):
         
         if len(self.x) != len(self.y):
             raise ValueError("Length of x and y must match")
         
-        if self.values is not None and len(self.values) != len(self.x):
-            raise ValueError("Length of values must match x and y")
+        if self.data is not None and len(self.data) != len(self.x):
+            raise ValueError("Length of data must match x and y")
+        
+        z = self.z + translation[2]
+        x = np.array(self.x) + translation[0]
+        y = np.array(self.y) + translation[1]
+        
+        # Overcome limitation of frozen flag
+        object.__setattr__(self, 'z', z)
+        object.__setattr__(self, 'x', x)
+        object.__setattr__(self, 'y', y)
     
     @classmethod
-    def from_csv(path: StrOrPath):
-        path = Path(StrOrPath)
+    def from_csv(cls: Type[T], path: StrOrPath,
+                               translation: Vector = (0, 0, 0)) -> T:
+        
+        path = Path(path)
+        cols = defaultdict(list)
+        keys = ["x", "y", "z", "data"]
+        
+        with open(path) as csvfile:
+            
+            reader = csv.DictReader(csvfile)
+            
+            for row, key in itertools.product(reader, keys):
+                if key in row: cols[key].append(float(row[key]))
+        
+        z = list(set(cols["z"]))
+        data = np.array(cols.pop("data")) if "data" in cols else None
+        
+        if len(z) != 1:
+            raise ValueError("Transect only supports fixed z-value")
+        
+        return cls(z=z[0],
+                   x=np.array(cols["x"]),
+                   y=np.array(cols["y"]),
+                   data=data,
+                   translation=translation)
     
-    def __iter__(self):
-        yield "z"
-        yield "x"
-        yield "y"
+    def keys(self):
+        return KeysView(["z", "x", "y"])
     
-    def __len__(self):
-        return 3
+    def __eq__(self, other: Any) -> bool:
+        
+        if not isinstance(other, Transect):
+            return NotImplemented
+        
+        result = True
+        result &= self.z == other.z
+        result &= np.isclose(self.x, other.x).all()
+        result &= np.isclose(self.y, other.y).all()
+        
+        none_check = sum([1 if x is None else 0 for x in
+                                                  [self.data, other.data]])
+        
+        if none_check == 1:
+            return False
+        elif none_check == 2:
+            data_compare = True
+        else:
+            data_compare = np.isclose(self.data, other.data).all() # type: ignore
+        
+        result &= data_compare
+        
+        return bool(result)
     
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> Union[None,
+                                              Num,
+                                              npt.NDArray[np.float64]]:
         return getattr(self, item)
