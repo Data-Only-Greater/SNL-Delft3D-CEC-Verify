@@ -174,10 +174,18 @@ def test_transect_from_csv_multi_z_error(mocker):
     assert "only supports fixed z-value" in str(excinfo)
 
 
-def test_trasect_unpacking():
+@pytest.fixture
+def transect():
+    return Transect(z=1,
+                    x=[1, 2, 3],
+                    y=[1, 1, 1],
+                    data=[0, 0, 1],
+                    name="mock")
+
+
+def test_trasect_unpacking(transect):
     
-    test = Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], data=[0, 0, 1])
-    result = dict(**test)
+    result = dict(**transect)
     expected = {"z": 1,
                 "x": np.array([1, 2, 3]),
                 "y": np.array([1, 1, 1])}
@@ -186,3 +194,25 @@ def test_trasect_unpacking():
     assert result["z"] == expected["z"]
     assert (result["x"] == expected["x"]).all()
     assert (result["y"] == expected["y"]).all()
+
+
+def test_trasect_to_xarray(transect):
+    
+    result = transect.to_xarray()
+    
+    assert result.name == transect.name
+    assert result.z == transect.z
+    assert (result.x == transect.x).all()
+    assert (result.y == transect.y).all()
+    assert (result.values == transect.data).all()
+
+
+def test_trasect_to_xarray_no_data():
+    
+    transect = Transect(z=1,
+                        x=[1, 2, 3],
+                        y=[1, 1, 1])
+    result = transect.to_xarray()
+    expected = np.zeros(3) * np.nan
+    
+    assert np.allclose(result.values, expected, equal_nan=True)
