@@ -153,24 +153,21 @@ class Transect():
         if not isinstance(other, Transect):
             return NotImplemented
         
-        result = True
-        result &= self.z == other.z
-        result &= np.isclose(self.x, other.x).all()
-        result &= np.isclose(self.y, other.y).all()
+        if not self.z == other.z: return False
+        if not np.isclose(self.x, other.x).all(): return False
+        if not np.isclose(self.y, other.y).all(): return False
         
         none_check = sum([1 if x is None else 0 for x in
                                                   [self.data, other.data]])
         
-        if none_check == 1:
-            return False
-        elif none_check == 2:
-            data_compare = True
-        else:
-            data_compare = np.isclose(self.data, other.data).all() # type: ignore
+        if none_check == 1: return False
         
-        result &= data_compare
+        if none_check == 0:
+            assert self.data is not None
+            assert other.data is not None
+            if not np.isclose(self.data, other.data).all(): return False
         
-        return bool(result)
+        return True
     
     def __getitem__(self, item: str) -> Union[None,
                                               Num,
