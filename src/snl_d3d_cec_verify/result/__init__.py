@@ -102,6 +102,7 @@ class Transect():
     y: npt.NDArray[np.float64]
     data: Optional[npt.NDArray[np.float64]] = None
     name: Optional[str] = None
+    attrs: Optional[dict[str, str]] = None
     translation: InitVar[Vector] = (0, 0, 0)
     
     def __post_init__(self, translation: Vector):
@@ -142,10 +143,13 @@ class Transect():
         if len(z) != 1:
             raise ValueError("Transect only supports fixed z-value")
         
+        attrs = {"path": str(path)}
+        
         return cls(z=z[0],
                    x=np.array(cols["x"]),
                    y=np.array(cols["y"]),
                    data=data,
+                   attrs=attrs,
                    translation=translation)
     
     def keys(self):
@@ -164,7 +168,8 @@ class Transect():
         
         return xr.DataArray(self.data,
                             coords=coords,
-                            name=self.name)
+                            name=self.name,
+                            attrs=self.attrs)
     
     def __eq__(self, other: Any) -> bool:
         

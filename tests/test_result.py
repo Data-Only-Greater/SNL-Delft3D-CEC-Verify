@@ -121,7 +121,7 @@ def test_transect_from_csv(mocker):
                  mocker.mock_open(read_data=csv))
     
     test = Transect.from_csv("mock")
-    expected = Transect(z=0, x=[7, 8, 9], y=[3, 3, 3])
+    expected = Transect(z=0, x=[7, 8, 9], y=[3, 3, 3], attrs={"path": "mock"})
     
     assert test == expected
 
@@ -137,7 +137,7 @@ def test_transect_from_csv_translation(mocker):
                  mocker.mock_open(read_data=csv))
     
     test = Transect.from_csv("mock", translation=(6, 2, -1))
-    expected = Transect(z=0, x=[7, 8, 9], y=[3, 3, 3])
+    expected = Transect(z=0, x=[7, 8, 9], y=[3, 3, 3], attrs={"path": "mock"})
     
     assert test == expected
 
@@ -153,7 +153,11 @@ def test_transect_from_csv_with_data(mocker):
                  mocker.mock_open(read_data=csv))
     
     test = Transect.from_csv("mock")
-    expected = Transect(z=0, x=[7, 8, 9], y=[3, 3, 3], data=[1, 2, 3])
+    expected = Transect(z=0,
+                        x=[7, 8, 9],
+                        y=[3, 3, 3],
+                        data=[1, 2, 3],
+                        attrs={"path": "mock"})
     
     assert test == expected
 
