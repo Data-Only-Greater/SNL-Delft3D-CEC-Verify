@@ -127,6 +127,11 @@ class Transect():
         object.__setattr__(self, 'z', z)
         object.__setattr__(self, 'x', x)
         object.__setattr__(self, 'y', y)
+        
+        if self.data is None: return
+        
+        data = np.array(self.data)
+        object.__setattr__(self, 'data', data)
     
     @classmethod
     def from_csv(cls: Type[T], path: StrOrPath,
@@ -193,9 +198,10 @@ class Transect():
     
     def to_xarray(self) -> xr.DataArray:
         
-        coords: Mapping[Hashable, Any] = {"z": self.z,
-                                          "x": ("dim_0", self.x),
-                                          "y": ("dim_0", self.y)}
+        keys = [f"${x}$" for x in ["z", "x", "y"]]
+        coords: Mapping[Hashable, Any] = {keys[0]: self.z,
+                                          keys[1]: ("dim_0", self.x),
+                                          keys[2]: ("dim_0", self.y)}
         
         if self.data is None:
             return xr.DataArray([np.nan] * len(self.x),
@@ -242,3 +248,53 @@ class Transect():
                                               Num,
                                               npt.NDArray[np.float64]]:
         return getattr(self, item)
+
+
+def get_normalised_dims(da: xr.DataArray, factor: Num) -> xr.DataArray:
+    
+    zstar = da["$z$"].values * factor
+    xstar = da["$x$"].values * factor
+    ystar = da["$y$"].values * factor
+    
+    new_da = da.assign_coords({"$z$": zstar,
+                               "$x$": ("dim_0", xstar),
+                               "$y$": ("dim_0", ystar)})
+    
+    new_da = new_da.rename({"$z$": "$z^*$",
+                            "$x$": "$x^*$",
+                            "$y$": "$y^*$"})
+    
+    return new_da
+
+
+def get_normalised_data(da: xr.DataArray, factor: Num) -> xr.DataArray:
+    
+    datastar = da.values * factor
+    name = str(da.name)
+    
+    if name is not None:
+        
+        name_dollars = name.count("$")
+        
+        if name_dollars > 0 and (name_dollars % 2) == 0:
+            last_dollar = name.rfind("$")
+            name = name[:last_dollar] + "^*" + name[last_dollar:]
+        else:
+            name = name + " *"
+    
+    return xr.DataArray(datastar,
+                        coords=da.coords,
+                        name=name,
+                        attrs=da.attrs)
+
+
+def get_normalised_data_deficit(da: xr.DataArray,
+                                factor: Num,
+                                name: Optional[str] = None) -> xr.DataArray:
+    
+    data = 100 * (1 - da.values / factor)
+    
+    return xr.DataArray(data,
+                        coords=da.coords,
+                        name=name,
+                        attrs=da.attrs)

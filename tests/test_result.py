@@ -8,7 +8,10 @@ from snl_d3d_cec_verify.result import (get_x_lim,
                                        get_y_lim,
                                        get_step_times,
                                        Result,
-                                       Transect)
+                                       Transect,
+                                       get_normalised_dims,
+                                       get_normalised_data,
+                                       get_normalised_data_deficit)
 from snl_d3d_cec_verify.result.edges import Edges
 from snl_d3d_cec_verify.result.faces import Faces
 
@@ -299,15 +302,17 @@ def test_trasect_unpacking(transect):
     assert (result["y"] == expected["y"]).all()
 
 
-def test_trasect_to_xarray(transect):
-    
-    result = transect.to_xarray()
-    
-    assert result.name == transect.name
-    assert result.z == transect.z
-    assert (result.x == transect.x).all()
-    assert (result.y == transect.y).all()
-    assert (result.values == transect.data).all()
+@pytest.fixture
+def dataarray(transect):
+    return transect.to_xarray()
+
+
+def test_trasect_to_xarray(dataarray, transect):
+    assert dataarray.name == transect.name
+    assert dataarray["$z$"] == transect.z
+    assert (dataarray["$x$"] == transect.x).all()
+    assert (dataarray["$y$"] == transect.y).all()
+    assert (dataarray.values == transect.data).all()
 
 
 def test_trasect_to_xarray_no_data():
@@ -319,3 +324,47 @@ def test_trasect_to_xarray_no_data():
     expected = np.zeros(3) * np.nan
     
     assert np.allclose(result.values, expected, equal_nan=True)
+
+
+def test_get_normalised_dims(dataarray):
+    
+    result = get_normalised_dims(dataarray, 0.5)
+    
+    assert set(list(result.coords.keys())) == set(["$z^*$",
+                                                   "$x^*$",
+                                                   "$y^*$"])
+    
+    assert result["$z^*$"] == 0.5
+    assert np.isclose(result["$x^*$"].values, [0.5, 1, 1.5]).all()
+    assert np.isclose(result["$y^*$"].values, [0.5, 0.5, 0.5]).all()
+
+
+def test_get_normalised_data(dataarray):
+    
+    result = get_normalised_data(dataarray, 0.5)
+    
+    assert result.name == "mock *"
+    assert np.isclose(result.values, [0, 0, 0.5]).all()
+
+
+def test_get_normalised_data_latex():
+    
+    transect = Transect(z=1,
+                        x=[1, 2, 3],
+                        y=[1, 1, 1],
+                        data=[0, 0, 1],
+                        name="$x$ mock")
+    dataarray = transect.to_xarray()
+    
+    result = get_normalised_data(dataarray, 0.5)
+    
+    assert result.name == "$x^*$ mock"
+
+
+@pytest.mark.parametrize("name", ["mock_zero", None])
+def test_get_normalised_data_deficit(name, dataarray):
+    
+    result = get_normalised_data_deficit(dataarray, 2, name)
+    
+    assert result.name == name
+    assert np.isclose(result.values, [100, 100, 50]).all()
