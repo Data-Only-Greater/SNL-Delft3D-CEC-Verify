@@ -5,7 +5,9 @@ from __future__ import annotations
 import csv
 import itertools
 from typing import (Any,
+                    Hashable,
                     List,
+                    Mapping,
                     Optional,
                     Tuple,
                     TYPE_CHECKING,
@@ -151,17 +153,17 @@ class Transect():
     
     def to_xarray(self) -> xr.DataArray:
         
-        coords = {"z": self.z,
-                  "x": ("dim_0", self.x),
-                  "y": ("dim_0", self.y)}
+        coords: Mapping[Hashable, Any] = {"z": self.z,
+                                          "x": ("dim_0", self.x),
+                                          "y": ("dim_0", self.y)}
         
         if self.data is None:
             return xr.DataArray([np.nan] * len(self.x),
-                                coords=coords, # type: ignore
+                                coords=coords,
                                 name=self.name)
         
         return xr.DataArray(self.data,
-                            coords=coords, # type: ignore
+                            coords=coords,
                             name=self.name)
     
     def __eq__(self, other: Any) -> bool:
