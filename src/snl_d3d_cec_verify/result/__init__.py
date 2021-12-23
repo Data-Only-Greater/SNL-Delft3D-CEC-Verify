@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import csv
 import itertools
 from typing import (Any,
+                    Dict,
                     Hashable,
                     List,
                     Mapping,
@@ -15,9 +17,9 @@ from typing import (Any,
                     TypeVar,
                     Union)
 from pathlib import Path
-from collections import defaultdict
+from collections import defaultdict, Sequence
 from collections.abc import KeysView
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass, field, InitVar
 
 import numpy as np
 import xarray as xr
@@ -30,6 +32,7 @@ except ImportError: # pragma: no cover
 
 from .edges import Edges
 from .faces import Faces
+from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 
 if TYPE_CHECKING: # pragma: no cover
@@ -94,6 +97,55 @@ def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     with xr.open_dataset(map_path) as ds:
         time = ds.time.values
     return time
+
+
+@dataclass(frozen=True)
+class Validate():
+    transects: Dict[str, Transect] = field(default_factory=dict, init=False)
+    case: InitVar[Optional[CaseStudy]] = None
+    data_dir: InitVar[Optional[StrOrPath]] = None
+    
+    def __post_init__(self, case: Optional[CaseStudy],
+                            data_dir: Optional[StrOrPath]):
+        
+        if data_dir is None:
+            data_dir = mycek_data_path()
+        else:
+            data_dir = Path(data_dir)
+        
+        if not data_dir.is_dir():
+            raise FileNotFoundError("Given data_dir is not a directory")
+        
+        turb_pos_x: Num = 0
+        turb_pos_y: Num = 0
+        turb_pos_z: Num = 0
+        
+        if case is not None:
+            assert not isinstance(case.turb_pos_x, Sequence)
+            assert not isinstance(case.turb_pos_y, Sequence)
+            assert not isinstance(case.turb_pos_z, Sequence)
+            turb_pos_x = case.turb_pos_x
+            turb_pos_y = case.turb_pos_y
+            turb_pos_z = case.turb_pos_z
+        
+        translation = (turb_pos_x, turb_pos_y, turb_pos_z)
+        transects = {}
+        
+        for item in data_dir.iterdir():
+            
+            if not item.is_file(): continue
+            if not item.suffix == '.yaml': continue
+            
+            transect = Transect.from_yaml(item, translation)
+            assert transect.attrs is not None
+            transects[transect.attrs["description"]] = transect
+        
+        object.__setattr__(self, 'transects', transects)
+
+
+def mycek_data_path() -> Path:
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    return Path(this_dir) / "mycek2014"
 
 
 # Types definitions
