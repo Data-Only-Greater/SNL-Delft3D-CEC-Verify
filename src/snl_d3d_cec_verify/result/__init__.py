@@ -99,9 +99,9 @@ def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     return time
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class Validate():
-    transects: Dict[str, Transect] = field(default_factory=dict, init=False)
+    _transects: List[Transect] = field(default_factory=list, init=False)
     case: InitVar[Optional[CaseStudy]] = None
     data_dir: InitVar[Optional[StrOrPath]] = None
     
@@ -129,7 +129,7 @@ class Validate():
             turb_pos_z = case.turb_pos_z
         
         translation = (turb_pos_x, turb_pos_y, turb_pos_z)
-        transects = {}
+        transects = []
         
         for item in data_dir.iterdir():
             
@@ -137,10 +137,34 @@ class Validate():
             if not item.suffix == '.yaml': continue
             
             transect = Transect.from_yaml(item, translation)
-            assert transect.attrs is not None
-            transects[transect.attrs["description"]] = transect
+            transects.append(transect)
         
-        object.__setattr__(self, 'transects', transects)
+        object.__setattr__(self, '_transects', transects)
+    
+    def __getitem__(self, item: int) -> Transect:
+        return self._transects[item]
+    
+    def __len__(self) -> int:
+        return len(self._transects)
+    
+    def __repr__(self):
+        
+        msg = "Validate("
+        indent = len(msg)
+        
+        transect = self._transects[0]
+        msg += f"0: {transect.attrs['description']}"
+        
+        for i, transect in enumerate(self._transects[1:]):
+            
+            index = i + 1
+            
+            msg += "\n" + " " * indent
+            msg += f"{index}: {transect.attrs['description']}"
+        
+        msg += ")"
+        
+        return msg
 
 
 def mycek_data_path() -> Path:
@@ -155,10 +179,10 @@ Vector = Tuple[Num, Num, Num]
 
 @dataclass(eq=False, frozen=True)
 class Transect():
-    z: Num
-    x: npt.NDArray[np.float64]
-    y: npt.NDArray[np.float64]
-    data: Optional[npt.NDArray[np.float64]] = None
+    z: Num = field(repr=False)
+    x: npt.NDArray[np.float64] = field(repr=False)
+    y: npt.NDArray[np.float64] = field(repr=False)
+    data: Optional[npt.NDArray[np.float64]] = field(default=None, repr=False)
     name: Optional[str] = None
     attrs: Optional[dict[str, str]] = None
     translation: InitVar[Vector] = (0, 0, 0)
