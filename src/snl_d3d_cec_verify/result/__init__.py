@@ -22,6 +22,12 @@ from dataclasses import dataclass, InitVar
 import numpy as np
 import xarray as xr
 
+from yaml import load
+try:
+    from yaml import CSafeLoader as Loader
+except ImportError: # pragma: no cover
+    from yaml import SafeLoader as Loader # type: ignore
+
 from .edges import Edges
 from .faces import Faces
 from ..types import Num, StrOrPath
@@ -124,6 +130,8 @@ class Transect():
     
     @classmethod
     def from_csv(cls: Type[T], path: StrOrPath,
+                               name: Optional[str] = None,
+                               attrs: Optional[dict[str, str]] = None,
                                translation: Vector = (0, 0, 0)) -> T:
         
         path = Path(path)
@@ -143,15 +151,43 @@ class Transect():
         if len(z) != 1:
             raise ValueError("Transect only supports fixed z-value")
         
-        attrs = {"path": str(path)}
+        if attrs is None: attrs = {}
+        attrs["path"] = str(path.resolve())
         
-        return cls(z=z[0],
-                   x=np.array(cols["x"]),
-                   y=np.array(cols["y"]),
+        return cls(z[0],
+                   np.array(cols["x"]),
+                   np.array(cols["y"]),
                    data=data,
+                   name=name,
                    attrs=attrs,
                    translation=translation)
     
+    @classmethod
+    def from_yaml(cls: Type[T], path: StrOrPath,
+                                translation: Vector = (0, 0, 0)) -> T:
+        
+        path = Path(path)
+        
+        with open(path) as yamlfile:
+            raw = load(yamlfile, Loader=Loader)
+        
+        data = None
+        name = None
+        attrs = {}
+        
+        if "data" in raw: data = np.array(raw["data"])
+        if "name" in raw: name = raw["name"]
+        if "attrs" in raw: attrs = raw["attrs"]
+        attrs["path"] = str(path.resolve())
+        
+        return cls(raw["z"],
+                   x=np.array(raw["x"]),
+                   y=np.array(raw["y"]),
+                   data=data,
+                   name=name,
+                   attrs=attrs,
+                   translation=translation)
+
     def keys(self):
         return KeysView(["z", "x", "y"])
     
@@ -189,6 +225,16 @@ class Transect():
             assert self.data is not None
             assert other.data is not None
             if not np.isclose(self.data, other.data).all(): return False
+        
+        optionals = ("name", "attrs")
+        
+        for key in optionals:
+            
+            none_check = sum([1 if x is None else 0 for x in (self[key],
+                                                              other[key])])
+            
+            if none_check == 1: return False
+            if none_check == 0 and self[key] != other[key]: return False
         
         return True
     
