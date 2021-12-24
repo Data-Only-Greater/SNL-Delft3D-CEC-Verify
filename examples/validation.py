@@ -13,7 +13,7 @@ from snl_d3d_cec_verify import (MycekStudy,
                                 Runner,
                                 Template,
                                 Validate)
-from snl_d3d_cec_verify.result import (reset_origin,
+from snl_d3d_cec_verify.result import (get_reset_origin,
                                        get_normalised_dims,
                                        get_normalised_data_deficit)
 
@@ -35,8 +35,8 @@ def get_d3d_bin_path():
 
 def get_gamma0(da, case, transect):
     
-    da = reset_origin(da,
-                      (case.turb_pos_x, case.turb_pos_y, case.turb_pos_z))
+    da = get_reset_origin(da,
+                          (case.turb_pos_x, case.turb_pos_y, case.turb_pos_z))
     da = get_normalised_dims(da, transect.attrs["$D$"])
     da = get_normalised_data_deficit(da,
                                      transect.attrs["$U_\\infty$"],

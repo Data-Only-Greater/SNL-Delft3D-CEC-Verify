@@ -1,0 +1,7 @@
+z: 1
+x: [ 1, 2, 3 ]
+y: [ 1, 1, 1 ]
+data: [0, 0, 2]
+attrs:
+    description: mock 2
+

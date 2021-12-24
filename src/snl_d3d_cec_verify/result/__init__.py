@@ -152,15 +152,14 @@ class Validate():
         msg = "Validate("
         indent = len(msg)
         
-        transect = self._transects[0]
-        msg += f"0: {transect.attrs['description']}"
-        
-        for i, transect in enumerate(self._transects[1:]):
+        if self._transects:
             
-            index = i + 1
+            transect = self._transects[0]
+            msg += f"0: {transect.attrs['description']}"
             
-            msg += "\n" + " " * indent
-            msg += f"{index}: {transect.attrs['description']}"
+            for i, transect in enumerate(self._transects[1:]):
+                msg += "\n" + " " * indent
+                msg += f"{i + 1}: {transect.attrs['description']}"
         
         msg += ")"
         
@@ -327,33 +326,35 @@ class Transect():
         return getattr(self, item)
 
 
-def reset_origin(da: xr.DataArray,
-                 origin: Vector) -> xr.DataArray:
+def get_reset_origin(da: xr.DataArray,
+                     origin: Vector) -> xr.DataArray:
     
-    xnew = da["$x$"].values - origin[0]
-    ynew = da["$y$"].values - origin[1]
-    znew = da["$z$"].values - origin[2]
+    axes_coords = _get_axes_coords(list(da.coords.keys()))
+    axes_new = [da[coord].values - val
+                                for coord, val in zip(axes_coords, origin)]
     
-    new_da = da.assign_coords({"$z$": znew,
-                               "$x$": ("dim_0", xnew),
-                               "$y$": ("dim_0", ynew)})
+    new_da = da.assign_coords({axes_coords[2]: axes_new[2],
+                               axes_coords[0]: ("dim_0", axes_new[0]),
+                               axes_coords[1]: ("dim_0", axes_new[1])})
     
     return new_da
 
 
 def get_normalised_dims(da: xr.DataArray, factor: Num) -> xr.DataArray:
     
-    zstar = da["$z$"].values / factor
-    xstar = da["$x$"].values / factor
-    ystar = da["$y$"].values / factor
+    axes_coords = _get_axes_coords(list(da.coords.keys()))
+    axes_star = [da[coord].values / factor for coord in axes_coords]
     
-    new_da = da.assign_coords({"$z$": zstar,
-                               "$x$": ("dim_0", xstar),
-                               "$y$": ("dim_0", ystar)})
+    new_da = da.assign_coords({axes_coords[2]: axes_star[2],
+                               axes_coords[0]: ("dim_0", axes_star[0]),
+                               axes_coords[1]: ("dim_0", axes_star[1])})
     
-    new_da = new_da.rename({"$z$": "$z^*$",
-                            "$x$": "$x^*$",
-                            "$y$": "$y^*$"})
+    star_coord_names = {}
+    
+    for coord in axes_coords:
+        star_coord_names[coord] = _add_star(coord)
+    
+    new_da = new_da.rename(star_coord_names)
     
     return new_da
 
@@ -364,14 +365,7 @@ def get_normalised_data(da: xr.DataArray, factor: Num) -> xr.DataArray:
     name = str(da.name)
     
     if name is not None:
-        
-        name_dollars = name.count("$")
-        
-        if name_dollars > 0 and (name_dollars % 2) == 0:
-            last_dollar = name.rfind("$")
-            name = name[:last_dollar] + "^*" + name[last_dollar:]
-        else:
-            name = name + " *"
+        name = _add_star(name)
     
     return xr.DataArray(datastar,
                         coords=da.coords,
@@ -389,3 +383,32 @@ def get_normalised_data_deficit(da: xr.DataArray,
                         coords=da.coords,
                         name=name,
                         attrs=da.attrs)
+
+
+def _get_axes_coords(coords: List[str]) -> Tuple(str, str, str):
+    
+    axes = ["x", "y", "z"]
+    axes_coords = []
+    
+    for ax in axes:
+        axes_coord = None
+        for coord in coords: 
+            if ax in coord: axes_coord = coord
+        if axes_coord is None:
+            raise KeyError(f"Axis {ax} not found")
+        axes_coords.append(axes_coord)
+    
+    return tuple(axes_coords)
+
+
+def _add_star(name: str) -> str:
+    
+    name_dollars = name.count("$")
+    
+    if name_dollars > 0 and (name_dollars % 2) == 0:
+        last_dollar = name.rfind("$")
+        name = name[:last_dollar] + "^*" + name[last_dollar:]
+    else:
+        name = name + " *"
+    
+    return name

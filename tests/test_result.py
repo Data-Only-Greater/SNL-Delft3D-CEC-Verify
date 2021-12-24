@@ -4,14 +4,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from snl_d3d_cec_verify import MycekStudy
 from snl_d3d_cec_verify.result import (get_x_lim,
                                        get_y_lim,
                                        get_step_times,
                                        Result,
                                        Transect,
+                                       Validate,
+                                       get_reset_origin,
                                        get_normalised_dims,
                                        get_normalised_data,
-                                       get_normalised_data_deficit)
+                                       get_normalised_data_deficit,
+                                       _get_axes_coords)
 from snl_d3d_cec_verify.result.edges import Edges
 from snl_d3d_cec_verify.result.faces import Faces
 
@@ -326,6 +330,61 @@ def test_trasect_to_xarray_no_data():
     assert np.allclose(result.values, expected, equal_nan=True)
 
 
+def test_validate_not_directory(tmp_path):
+    
+    p = tmp_path / "hello.txt"
+    p.write_text("hello")
+    
+    with pytest.raises(FileNotFoundError) as excinfo:
+        Validate(data_dir=p)
+    
+    assert "not a directory" in str(excinfo)
+
+
+def test_validate_empty(tmp_path):
+    test = Validate(data_dir=tmp_path)
+    assert repr(test) == "Validate()"
+
+
+def test_validate_mycek():
+    test = Validate()
+    assert len(test) >= 0
+
+
+@pytest.fixture
+def validate(data_dir):
+    case = MycekStudy()
+    transects_path = data_dir / "transects"
+    return Validate(case, transects_path)
+
+
+def test_validate_repr(validate):
+    assert repr(validate) == ("Validate(0: mock 1\n"
+                              "         1: mock 2)")
+
+
+def test_validate_get_item(validate):
+    
+    transect = validate[0]
+    expected = Transect(z=-1,
+                        x=[7, 8, 9],
+                        y=[4, 4, 4],
+                        data=[0, 0, 1],
+                        attrs={"description": "mock 1",
+                               "path": transect.attrs["path"]})
+    
+    assert transect == expected
+
+
+def test_get_reset_origin(dataarray):
+    
+    result = get_reset_origin(dataarray, (1, 1, 1))
+    
+    assert result["$z$"] == 0
+    assert np.isclose(result["$x$"].values, [0, 1, 2]).all()
+    assert np.isclose(result["$y$"].values, [0, 0, 0]).all()
+
+
 def test_get_normalised_dims(dataarray):
     
     result = get_normalised_dims(dataarray, 0.5)
@@ -368,3 +427,15 @@ def test_get_normalised_data_deficit(name, dataarray):
     
     assert result.name == name
     assert np.isclose(result.values, [100, 100, 50]).all()
+
+
+@pytest.mark.parametrize("coords, missing", [
+                            (["x", "y"], "z"),
+                            (["x", "z"], "y"),
+                            (["y", "z"], "x")])
+def test_get_axes_coords_missing(coords, missing):
+    
+    with pytest.raises(KeyError) as excinfo:
+        _get_axes_coords(coords)
+    
+    assert missing in str(excinfo)
