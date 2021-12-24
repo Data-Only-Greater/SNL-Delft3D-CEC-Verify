@@ -297,7 +297,7 @@ def test_trasect_unpacking(transect):
                 "y": np.array([1, 1, 1])}
     
     assert "data" not in result
-    assert result["z"] == expected["z"]
+    assert result["kz"] == expected["z"]
     assert (result["x"] == expected["x"]).all()
     assert (result["y"] == expected["y"]).all()
 
@@ -334,9 +334,9 @@ def test_get_normalised_dims(dataarray):
                                                    "$x^*$",
                                                    "$y^*$"])
     
-    assert result["$z^*$"] == 0.5
-    assert np.isclose(result["$x^*$"].values, [0.5, 1, 1.5]).all()
-    assert np.isclose(result["$y^*$"].values, [0.5, 0.5, 0.5]).all()
+    assert result["$z^*$"] == 2
+    assert np.isclose(result["$x^*$"].values, [2, 4, 6]).all()
+    assert np.isclose(result["$y^*$"].values, [2, 2, 2]).all()
 
 
 def test_get_normalised_data(dataarray):

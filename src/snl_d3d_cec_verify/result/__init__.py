@@ -17,8 +17,8 @@ from typing import (Any,
                     TypeVar,
                     Union)
 from pathlib import Path
-from collections import defaultdict, Sequence
-from collections.abc import KeysView
+from collections import defaultdict
+from collections.abc import KeysView, Sequence
 from dataclasses import dataclass, field, InitVar
 
 import numpy as np
@@ -270,7 +270,7 @@ class Transect():
                    translation=translation)
 
     def keys(self):
-        return KeysView(["z", "x", "y"])
+        return KeysView(["kz", "x", "y"])
     
     def to_xarray(self) -> xr.DataArray:
         
@@ -323,14 +323,29 @@ class Transect():
     def __getitem__(self, item: str) -> Union[None,
                                               Num,
                                               npt.NDArray[np.float64]]:
+        if item == "kz": item = "z"
         return getattr(self, item)
+
+
+def reset_origin(da: xr.DataArray,
+                 origin: Vector) -> xr.DataArray:
+    
+    xnew = da["$x$"].values - origin[0]
+    ynew = da["$y$"].values - origin[1]
+    znew = da["$z$"].values - origin[2]
+    
+    new_da = da.assign_coords({"$z$": znew,
+                               "$x$": ("dim_0", xnew),
+                               "$y$": ("dim_0", ynew)})
+    
+    return new_da
 
 
 def get_normalised_dims(da: xr.DataArray, factor: Num) -> xr.DataArray:
     
-    zstar = da["$z$"].values * factor
-    xstar = da["$x$"].values * factor
-    ystar = da["$y$"].values * factor
+    zstar = da["$z$"].values / factor
+    xstar = da["$x$"].values / factor
+    ystar = da["$y$"].values / factor
     
     new_da = da.assign_coords({"$z$": zstar,
                                "$x$": ("dim_0", xstar),

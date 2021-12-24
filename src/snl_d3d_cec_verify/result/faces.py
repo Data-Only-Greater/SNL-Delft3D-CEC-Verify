@@ -44,7 +44,8 @@ def _extract(method):
         
         if not do_interp: return ds
         
-        return ds.interp(x=xr.DataArray(x), y=xr.DataArray(y))
+        return ds.interp({"$x$": xr.DataArray(x),
+                          "$y$": xr.DataArray(y)})
         
     return magic
 
@@ -230,6 +231,12 @@ def faces_frame_to_slice(frame: pd.DataFrame,
         ds = ds.assign_coords({"z": z})
     
     ds = ds.assign_coords({"time": sim_time})
+    ds = ds.rename({"z": "$z$",
+                    "x": "$x$",
+                    "y": "$y$",
+                    "u": "$u$",
+                    "v": "$v$",
+                    "w": "$w$"})
     
     return ds
 

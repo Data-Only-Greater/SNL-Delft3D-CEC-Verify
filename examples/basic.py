@@ -45,7 +45,7 @@ for i, case in enumerate(cases):
         # Pick up the results
         result = Result(tmpdirname)
         turb_ds = result.faces.extract_turbine_centre(-1, case)
-        turb_u = turb_ds.u.values.take(0)
+        turb_u = turb_ds["$u$"].values.take(0)
         
         # Record data for table
         data["discharge"].append(case.discharge)
@@ -58,7 +58,7 @@ for i, case in enumerate(cases):
         
         fig, ax = plt.subplots()
         turbz = result.faces.extract_turbine_z(-1, case)
-        turbz["u"].plot(ax=ax, x="x", y="y")
+        turbz["$u$"].plot(ax=ax, x="$x$", y="$y$")
         plot_name = f"discharge_case_{i}.png"
         plot_path = report_dir / plot_name
         plt.savefig(plot_path)

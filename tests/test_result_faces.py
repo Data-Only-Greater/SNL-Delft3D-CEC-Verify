@@ -62,27 +62,27 @@ def test_faces_frame_to_slice_k(faces_frame):
     
     assert isinstance(ds, xr.Dataset)
     
-    assert len(ds.x) == 18
-    assert len(ds.y) == 4
+    assert len(ds["$x$"]) == 18
+    assert len(ds["$y$"]) == 4
     
-    assert np.isclose(ds.x.min(), 0.5)
-    assert np.isclose(ds.x.max(), 17.5)
-    assert np.isclose(ds.y.min(), 1.5)
-    assert np.isclose(ds.y.max(), 4.5)
+    assert np.isclose(ds["$x$"].min(), 0.5)
+    assert np.isclose(ds["$x$"].max(), 17.5)
+    assert np.isclose(ds["$y$"].min(), 1.5)
+    assert np.isclose(ds["$y$"].max(), 4.5)
     
     assert ds.k.values.take(0) == k
     assert ds.time.values.take(0) == ts
     
-    assert ds.z.min() > -1.669
-    assert ds.z.max() < -1.666
+    assert ds["$z$"].min() > -1.669
+    assert ds["$z$"].max() < -1.666
     
     # Same bounds as the frame
-    assert ds.u.min() >= faces_frame["u"].min()
-    assert ds.u.max() <= faces_frame["u"].max()
-    assert ds.v.min() >= faces_frame["v"].min()
-    assert ds.v.max() <= faces_frame["v"].max()
-    assert ds.w.min() >= faces_frame["w"].min()
-    assert ds.w.max() <= faces_frame["w"].max()
+    assert ds["$u$"].min() >= faces_frame["u"].min()
+    assert ds["$u$"].max() <= faces_frame["u"].max()
+    assert ds["$v$"].min() >= faces_frame["v"].min()
+    assert ds["$v$"].max() <= faces_frame["v"].max()
+    assert ds["$w$"].min() >= faces_frame["w"].min()
+    assert ds["$w$"].max() <= faces_frame["w"].max()
 
 
 def test_faces_frame_to_slice_z(faces_frame):
@@ -93,27 +93,27 @@ def test_faces_frame_to_slice_z(faces_frame):
     
     assert isinstance(ds, xr.Dataset)
     
-    assert len(ds.x) == 18
-    assert len(ds.y) == 4
+    assert len(ds["$x$"]) == 18
+    assert len(ds["$y$"]) == 4
     
-    assert np.isclose(ds.x.min(), 0.5)
-    assert np.isclose(ds.x.max(), 17.5)
-    assert np.isclose(ds.y.min(), 1.5)
-    assert np.isclose(ds.y.max(), 4.5)
+    assert np.isclose(ds["$x$"].min(), 0.5)
+    assert np.isclose(ds["$x$"].max(), 17.5)
+    assert np.isclose(ds["$y$"].min(), 1.5)
+    assert np.isclose(ds["$y$"].max(), 4.5)
     
-    assert ds.z.values.take(0) == z
+    assert ds["$z$"].values.take(0) == z
     assert ds.time.values.take(0) == ts
     
     assert ds.k.min() > 1
-    assert ds.z.max() < 1.002
+    assert ds["$z$"].max() < 1.002
     
     # Same bounds as the frame
-    assert ds.u.min() >= faces_frame["u"].min()
-    assert ds.u.max() <= faces_frame["u"].max()
-    assert ds.v.min() >= faces_frame["v"].min()
-    assert ds.v.max() <= faces_frame["v"].max()
-    assert ds.w.min() >= faces_frame["w"].min()
-    assert ds.w.max() <= faces_frame["w"].max()
+    assert ds["$u$"].min() >= faces_frame["u"].min()
+    assert ds["$u$"].max() <= faces_frame["u"].max()
+    assert ds["$v$"].min() >= faces_frame["v"].min()
+    assert ds["$v$"].max() <= faces_frame["v"].max()
+    assert ds["$w$"].min() >= faces_frame["w"].min()
+    assert ds["$w$"].max() <= faces_frame["w"].max()
 
 
 @pytest.mark.parametrize("k, z", [
@@ -211,16 +211,16 @@ def test_faces_extract_k_interp(faces):
     
     assert ds.k.values.take(0) == k
     assert ds.time.values.take(0) == ts
-    assert ds.x.values.take(0) == x
-    assert ds.y.values.take(0) == y
-    assert np.isclose(ds.z.values, -1.66857945)
+    assert ds["$x$"].values.take(0) == x
+    assert ds["$y$"].values.take(0) == y
+    assert np.isclose(ds["$z$"].values, -1.66857945)
     
     # Same bounds as the frame
-    assert (faces._frame["u"].min() <= ds.u.values.take(0) <=
+    assert (faces._frame["u"].min() <= ds["$u$"].values.take(0) <=
                                                     faces._frame["u"].max())
-    assert (faces._frame["v"].min() <= ds.v.values.take(0) <=
+    assert (faces._frame["v"].min() <= ds["$v$"].values.take(0) <=
                                                     faces._frame["v"].max())
-    assert (faces._frame["w"].min() <= ds.w.values.take(0) <=
+    assert (faces._frame["w"].min() <= ds["$w$"].values.take(0) <=
                                                     faces._frame["w"].max())
 
 
@@ -245,18 +245,18 @@ def test_faces_extract_z_interp(faces):
     
     assert isinstance(ds, xr.Dataset)
     
-    assert ds.z.values.take(0) == z
+    assert ds["$z$"].values.take(0) == z
     assert ds.time.values.take(0) == ts
-    assert ds.x.values.take(0) == x
-    assert ds.y.values.take(0) == y
+    assert ds["$x$"].values.take(0) == x
+    assert ds["$y$"].values.take(0) == y
     assert np.isclose(ds.k.values, 1.00171953)
     
     # Same bounds as the frame
-    assert (faces._frame["u"].min() <= ds.u.values.take(0) <=
+    assert (faces._frame["u"].min() <= ds["$u$"].values.take(0) <=
                                                     faces._frame["u"].max())
-    assert (faces._frame["v"].min() <= ds.v.values.take(0) <=
+    assert (faces._frame["v"].min() <= ds["$v$"].values.take(0) <=
                                                     faces._frame["v"].max())
-    assert (faces._frame["w"].min() <= ds.w.values.take(0) <=
+    assert (faces._frame["w"].min() <= ds["$w$"].values.take(0) <=
                                                     faces._frame["w"].max())
 
 
