@@ -385,7 +385,7 @@ def get_normalised_data_deficit(da: xr.DataArray,
                         attrs=da.attrs)
 
 
-def _get_axes_coords(coords: List[str]) -> Tuple(str, str, str):
+def _get_axes_coords(coords: List[str]) -> Tuple[str, str, str]:
     
     axes = ["x", "y", "z"]
     axes_coords = []
