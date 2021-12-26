@@ -33,5 +33,5 @@ jobs:
       - name: Run checks
         run: |
           conda install -y mypy
-          mypy --install-types
+          mypy --install-types --non-interactive
           mypy src
