@@ -398,7 +398,11 @@ def _get_axes_coords(coords: List[str]) -> Tuple[str, str, str]:
             raise KeyError(f"Axis {ax} not found")
         axes_coords.append(axes_coord)
     
-    return tuple(axes_coords)
+    t: Tuple[str, str, str] = (axes_coords[0],
+                               axes_coords[1],
+                               axes_coords[2])
+    
+    return t
 
 
 def _add_star(name: str) -> str:
