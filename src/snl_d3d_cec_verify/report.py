@@ -119,7 +119,9 @@ class Content:
         self.add_text(text, wrapped=False)
     
     def add_image(self, path: StrOrPath,
-                        caption: Optional[str] = None):
+                        caption: Optional[str] = None,
+                        width: Optional[str] = None,
+                        height: Optional[str] = None):
         
         path = Path(path)
         
@@ -129,6 +131,20 @@ class Content:
             text = f"![{caption}]"
         
         text += f"({path})"
+        
+        if width is not None or height is not None:
+            
+            attrs_str = "{ "
+            
+            if width is not None:
+                attrs_str += f"width={width} "
+            
+            if height is not None:
+                attrs_str += f"height={height} "
+            
+            attrs_str += "}"
+            text += attrs_str
+        
         if caption is None: text += "\\"
         
         self.add_text(text, wrapped=False)

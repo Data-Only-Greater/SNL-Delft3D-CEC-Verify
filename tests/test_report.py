@@ -195,6 +195,26 @@ def test_content_add_image_with_caption(content):
     assert image_text == f"![{caption}]({fake_path})"
 
 
+@pytest.mark.parametrize("width, height, expected_attrs", [
+                        ("5in", None, "width=5in"),
+                        (None, "10px", "height=10px"),
+                        ("5in", "10px", "width=5in height=10px")])
+def test_content_add_image_with_dimensions(content,
+                                           width,
+                                           height,
+                                           expected_attrs):
+    
+    fake_path = "some_image.jpg"
+    content.add_image(fake_path, width=width, height=height)
+    
+    assert len(content.body) == 1
+    assert content.body[0][1] is Paragraph
+    
+    image_text = content.body[0][0]
+    assert image_text == (f"![{fake_path}]({fake_path}){{ {expected_attrs} "
+                          "}\\")
+
+
 def test_content_clear(content, text):
     
     title = "Test"
