@@ -2,17 +2,40 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, TYPE_CHECKING
+import os
+import csv
+import itertools
+from typing import (Any,
+                    Dict,
+                    Hashable,
+                    List,
+                    Mapping,
+                    Optional,
+                    Tuple,
+                    TYPE_CHECKING,
+                    Type,
+                    TypeVar,
+                    Union)
 from pathlib import Path
+from collections import defaultdict
+from collections.abc import KeysView, Sequence
+from dataclasses import dataclass, field, InitVar
 
+import numpy as np
 import xarray as xr
+
+from yaml import load
+try:
+    from yaml import CSafeLoader as Loader
+except ImportError: # pragma: no cover
+    from yaml import SafeLoader as Loader # type: ignore
 
 from .edges import Edges
 from .faces import Faces
-from ..types import StrOrPath
+from ..cases import CaseStudy
+from ..types import Num, StrOrPath
 
 if TYPE_CHECKING: # pragma: no cover
-    import numpy as np 
     import numpy.typing as npt
 
 
@@ -74,3 +97,322 @@ def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     with xr.open_dataset(map_path) as ds:
         time = ds.time.values
     return time
+
+
+@dataclass(frozen=True, repr=False)
+class Validate():
+    _transects: List[Transect] = field(default_factory=list, init=False)
+    case: InitVar[Optional[CaseStudy]] = None
+    data_dir: InitVar[Optional[StrOrPath]] = None
+    
+    def __post_init__(self, case: Optional[CaseStudy],
+                            data_dir: Optional[StrOrPath]):
+        
+        if data_dir is None:
+            data_dir = mycek_data_path()
+        else:
+            data_dir = Path(data_dir)
+        
+        if not data_dir.is_dir():
+            raise FileNotFoundError("Given data_dir is not a directory")
+        
+        turb_pos_x: Num = 0
+        turb_pos_y: Num = 0
+        turb_pos_z: Num = 0
+        
+        if case is not None:
+            assert not isinstance(case.turb_pos_x, Sequence)
+            assert not isinstance(case.turb_pos_y, Sequence)
+            assert not isinstance(case.turb_pos_z, Sequence)
+            turb_pos_x = case.turb_pos_x
+            turb_pos_y = case.turb_pos_y
+            turb_pos_z = case.turb_pos_z
+        
+        translation = (turb_pos_x, turb_pos_y, turb_pos_z)
+        transects = []
+        
+        for item in data_dir.iterdir():
+            
+            if not item.is_file(): continue
+            if not item.suffix == '.yaml': continue
+            
+            transect = Transect.from_yaml(item, translation)
+            transects.append(transect)
+        
+        object.__setattr__(self, '_transects', transects)
+    
+    def __getitem__(self, item: int) -> Transect:
+        return self._transects[item]
+    
+    def __len__(self) -> int:
+        return len(self._transects)
+    
+    def __repr__(self):
+        
+        msg = "Validate("
+        indent = len(msg)
+        
+        if self._transects:
+            
+            transect = self._transects[0]
+            msg += f"0: {transect.attrs['description']}"
+            
+            for i, transect in enumerate(self._transects[1:]):
+                msg += "\n" + " " * indent
+                msg += f"{i + 1}: {transect.attrs['description']}"
+        
+        msg += ")"
+        
+        return msg
+
+
+def mycek_data_path() -> Path:
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    return Path(this_dir) / "mycek2014"
+
+
+# Types definitions
+T = TypeVar('T', bound='Transect')
+Vector = Tuple[Num, Num, Num]
+
+
+@dataclass(eq=False, frozen=True)
+class Transect():
+    z: Num = field(repr=False)
+    x: npt.NDArray[np.float64] = field(repr=False)
+    y: npt.NDArray[np.float64] = field(repr=False)
+    data: Optional[npt.NDArray[np.float64]] = field(default=None, repr=False)
+    name: Optional[str] = None
+    attrs: Optional[dict[str, str]] = None
+    translation: InitVar[Vector] = (0, 0, 0)
+    
+    def __post_init__(self, translation: Vector):
+        
+        if len(self.x) != len(self.y):
+            raise ValueError("Length of x and y must match")
+        
+        if self.data is not None and len(self.data) != len(self.x):
+            raise ValueError("Length of data must match x and y")
+        
+        z = self.z + translation[2]
+        x = np.array(self.x) + translation[0]
+        y = np.array(self.y) + translation[1]
+        
+        # Overcome limitation of frozen flag
+        object.__setattr__(self, 'z', z)
+        object.__setattr__(self, 'x', x)
+        object.__setattr__(self, 'y', y)
+        
+        if self.data is None: return
+        
+        data = np.array(self.data)
+        object.__setattr__(self, 'data', data)
+    
+    @classmethod
+    def from_csv(cls: Type[T], path: StrOrPath,
+                               name: Optional[str] = None,
+                               attrs: Optional[dict[str, str]] = None,
+                               translation: Vector = (0, 0, 0)) -> T:
+        
+        path = Path(path).resolve(strict=True)
+        cols = defaultdict(list)
+        keys = ["x", "y", "z", "data"]
+        
+        with open(path) as csvfile:
+            
+            reader = csv.DictReader(csvfile)
+            
+            for row, key in itertools.product(reader, keys):
+                if key in row: cols[key].append(float(row[key]))
+        
+        z = list(set(cols["z"]))
+        data = np.array(cols.pop("data")) if "data" in cols else None
+        
+        if len(z) != 1:
+            raise ValueError("Transect only supports fixed z-value")
+        
+        if attrs is None: attrs = {}
+        attrs["path"] = str(path)
+        
+        return cls(z[0],
+                   np.array(cols["x"]),
+                   np.array(cols["y"]),
+                   data=data,
+                   name=name,
+                   attrs=attrs,
+                   translation=translation)
+    
+    @classmethod
+    def from_yaml(cls: Type[T], path: StrOrPath,
+                                translation: Vector = (0, 0, 0)) -> T:
+        
+        path = Path(path).resolve(strict=True)
+        
+        with open(path) as yamlfile:
+            raw = load(yamlfile, Loader=Loader)
+        
+        data = None
+        name = None
+        attrs = {}
+        
+        if "data" in raw: data = np.array(raw["data"])
+        if "name" in raw: name = raw["name"]
+        if "attrs" in raw: attrs = raw["attrs"]
+        attrs["path"] = str(path)
+        
+        return cls(raw["z"],
+                   x=np.array(raw["x"]),
+                   y=np.array(raw["y"]),
+                   data=data,
+                   name=name,
+                   attrs=attrs,
+                   translation=translation)
+
+    def keys(self):
+        return KeysView(["kz", "x", "y"])
+    
+    def to_xarray(self) -> xr.DataArray:
+        
+        keys = [f"${x}$" for x in ["z", "x", "y"]]
+        coords: Mapping[Hashable, Any] = {keys[0]: self.z,
+                                          keys[1]: ("dim_0", self.x),
+                                          keys[2]: ("dim_0", self.y)}
+        
+        if self.data is None:
+            return xr.DataArray([np.nan] * len(self.x),
+                                coords=coords,
+                                name=self.name)
+        
+        return xr.DataArray(self.data,
+                            coords=coords,
+                            name=self.name,
+                            attrs=self.attrs)
+    
+    def __eq__(self, other: Any) -> bool:
+        
+        if not isinstance(other, Transect):
+            return NotImplemented
+        
+        if not self.z == other.z: return False
+        if not np.isclose(self.x, other.x).all(): return False
+        if not np.isclose(self.y, other.y).all(): return False
+        
+        none_check = sum([1 if x is None else 0 for x in
+                                                  [self.data, other.data]])
+        
+        if none_check == 1: return False
+        
+        if none_check == 0:
+            assert self.data is not None
+            assert other.data is not None
+            if not np.isclose(self.data, other.data).all(): return False
+        
+        optionals = ("name", "attrs")
+        
+        for key in optionals:
+            
+            none_check = sum([1 if x is None else 0 for x in (self[key],
+                                                              other[key])])
+            
+            if none_check == 1: return False
+            if none_check == 0 and self[key] != other[key]: return False
+        
+        return True
+    
+    def __getitem__(self, item: str) -> Union[None,
+                                              Num,
+                                              npt.NDArray[np.float64]]:
+        if item == "kz": item = "z"
+        return getattr(self, item)
+
+
+def get_reset_origin(da: xr.DataArray,
+                     origin: Vector) -> xr.DataArray:
+    
+    axes_coords = _get_axes_coords(list(da.coords.keys()))
+    axes_new = [da[coord].values - val
+                                for coord, val in zip(axes_coords, origin)]
+    
+    new_da = da.assign_coords({axes_coords[2]: axes_new[2],
+                               axes_coords[0]: ("dim_0", axes_new[0]),
+                               axes_coords[1]: ("dim_0", axes_new[1])})
+    
+    return new_da
+
+
+def get_normalised_dims(da: xr.DataArray, factor: Num) -> xr.DataArray:
+    
+    axes_coords = _get_axes_coords(list(da.coords.keys()))
+    axes_star = [da[coord].values / factor for coord in axes_coords]
+    
+    new_da = da.assign_coords({axes_coords[2]: axes_star[2],
+                               axes_coords[0]: ("dim_0", axes_star[0]),
+                               axes_coords[1]: ("dim_0", axes_star[1])})
+    
+    star_coord_names = {}
+    
+    for coord in axes_coords:
+        star_coord_names[coord] = _add_star(coord)
+    
+    new_da = new_da.rename(star_coord_names)
+    
+    return new_da
+
+
+def get_normalised_data(da: xr.DataArray, factor: Num) -> xr.DataArray:
+    
+    datastar = da.values * factor
+    name = str(da.name)
+    
+    if name is not None:
+        name = _add_star(name)
+    
+    return xr.DataArray(datastar,
+                        coords=da.coords,
+                        name=name,
+                        attrs=da.attrs)
+
+
+def get_normalised_data_deficit(da: xr.DataArray,
+                                factor: Num,
+                                name: Optional[str] = None) -> xr.DataArray:
+    
+    data = 100 * (1 - da.values / factor)
+    
+    return xr.DataArray(data,
+                        coords=da.coords,
+                        name=name,
+                        attrs=da.attrs)
+
+
+def _get_axes_coords(coords: List[str]) -> Tuple[str, str, str]:
+    
+    axes = ["x", "y", "z"]
+    axes_coords = []
+    
+    for ax in axes:
+        axes_coord = None
+        for coord in coords: 
+            if ax in coord: axes_coord = coord
+        if axes_coord is None:
+            raise KeyError(f"Axis {ax} not found")
+        axes_coords.append(axes_coord)
+    
+    t: Tuple[str, str, str] = (axes_coords[0],
+                               axes_coords[1],
+                               axes_coords[2])
+    
+    return t
+
+
+def _add_star(name: str) -> str:
+    
+    name_dollars = name.count("$")
+    
+    if name_dollars > 0 and (name_dollars % 2) == 0:
+        last_dollar = name.rfind("$")
+        name = name[:last_dollar] + "^*" + name[last_dollar:]
+    else:
+        name = name + " *"
+    
+    return name

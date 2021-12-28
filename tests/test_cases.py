@@ -2,7 +2,7 @@
 
 import pytest
 
-from snl_d3d_cec_verify.cases import CaseStudy
+from snl_d3d_cec_verify.cases import CaseStudy, MycekStudy
 
 
 @pytest.fixture
@@ -95,3 +95,19 @@ def test_casestudy_get_case_out_of_bounds_sigle(cases, index):
         case.get_case(index)
     
     assert "index out of range" in str(excinfo)
+
+
+@pytest.mark.parametrize("axis", ["x", "y", "z"])
+def test_mycekstudy_turb_pos_error(axis):
+    
+    input_dict = {"dx": (1, 2, 3),
+                  "dy": (2, 3, 4),
+                  f"turb_pos_{axis}": 1}
+    
+    # Won't throw with CaseStudy but does with MycekStudy
+    CaseStudy(**input_dict)
+    
+    with pytest.raises(TypeError) as excinfo:
+        MycekStudy(**input_dict)
+    
+    assert f"turb_pos_{axis}" in str(excinfo)

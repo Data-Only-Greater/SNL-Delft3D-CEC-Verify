@@ -33,4 +33,20 @@ jobs:
       - name: Run checks
         run: |
           conda install -y mypy
-          mypy src
+          mypy --install-types --non-interactive src
+  status:
+    name: Static Type Checks
+    runs-on: ubuntu-latest
+    needs: mypy
+    steps:
+      - run: |
+          curl --request POST \
+          --url https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
+          --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+          --header 'content-type: application/json' \
+          --data '{
+            "context": "Static Type Checks",
+            "state": "success",
+            "description": "Static type checks passed",
+            "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }'
