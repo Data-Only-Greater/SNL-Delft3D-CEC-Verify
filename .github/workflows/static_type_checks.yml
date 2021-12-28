@@ -35,6 +35,7 @@ jobs:
           conda install -y mypy
           mypy --install-types --non-interactive src
   status:
+    name: Static Type Checks
     runs-on: ubuntu-latest
     needs: mypy
     steps:
