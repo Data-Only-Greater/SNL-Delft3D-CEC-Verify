@@ -22,3 +22,4 @@ attrs:
     turbine_position: [6, 2, -1]
     doi: 10.1016/j.renene.2013.12.036
     figure: A12a
+    major_axis: y

@@ -35,17 +35,19 @@ Activate the `_snld3d` environment and then install the package:
 (_snld3d) > pip install --no-deps -e .
 ```
 
-## Example
+## Examples
 
-A short example is provided in the `examples` folder, named `basic.py`. Some
-plots are generated which requires the `matplotlib` library. To install it,
-type:
+### Prerequisites
+
+Examples are provided in the `examples` folder. As plots are generated in the
+examples, the `matplotlib` library is also required. To install it, type:
 
 ```
 (_snld3d) > conda install -y matplotlib
 ```
 
-The example generates a report in [Pandoc][5] markdown format. This report
+
+The examples generate reports in [Pandoc][5] markdown format. These reports 
 can be optionally converted to Word format if the `pypandoc` package is 
 installed. To install it, type:
 
@@ -55,15 +57,27 @@ installed. To install it, type:
 
 Currently, a compiled copy of SNL-Delft3D-FM-CEC must be available for the 
 examples to run. If the binaries are installed in the standard location in the 
-Delft3D source code (i.e. in the `src/bin` folder), simply copy the `basic.py` 
-file (and `reference.docx` file if converting to Word) to the source code's 
-`examples` directory. Alternatively, the location of SNL-Delft3D-FM-CEC 
-binaries can specified by setting the `D3D_BIN` environment variable, instead 
-of copying the example files. To set `D3D_BIN`, for example, using PowerShell:
+Delft3D source code (i.e. in the `src/bin` folder), simply copy the required 
+files for each example to the source code's  `examples` directory. A list of 
+files required to run each example is provided at the top of the subsections 
+below.
+
+Alternatively, the location of SNL-Delft3D-FM-CEC binaries can specified by 
+setting the `D3D_BIN` environment variable, instead of copying the example 
+files. To set `D3D_BIN`, for example, using PowerShell:
 
 ```
 (_snld3d) > $env:D3D_BIN = "\path\to\SNL-Delft3D-FM-CEC\src\bin"
 ```
+
+### Basic Example
+
+Required files:
++   `basic.py`
++   `reference.docx` (for conversion to Word format)
+
+The basic example shows how to define a set of simulations with varying
+parameters, run the simulations and then analyse the results.
 
 To run the example, move to the directory containing `basic.py` and then 
 call Python:
@@ -75,7 +89,29 @@ call Python:
 If successful, the report files (and images) will be placed in a sub-directory
 called `basic_report`.
 
-Currently, the `basic.py` file is the only indicative documentation of how
+### Validation Example
+
+Required files:
++   `validation.py`
++   `validation.bib` (for conversion to Word format)
++   `reference.docx` (for conversion to Word format)
+
+The validation example demonstrates comparison of Delft3D with the experimental
+results of Mycek et al.[[1]](#1)
+
+To run the example, move to the directory containing `validation.py` and then 
+call Python:
+
+```
+(_snld3d) > python validation.py
+```
+
+If successful, the report files (and images) will be placed in a sub-directory
+called `validation_report`.
+
+## Documentation
+
+Currently, the examples are the only indicative documentation of how
 `SNL-Delft3D-CEC-Verify` is used. Improved documentation of the available 
 features will be forthcoming in the near future.
 
@@ -97,7 +133,7 @@ To run the unit tests, type the following from the root directory:
 To run the type tests, type the following from the root directory:
 
 ```
-(_snld3d) > mypy src
+(_snld3d) > mypy --install-types src
 ```
 
 ## Uninstall
@@ -118,6 +154,11 @@ open, by typing:
 ```
 
 ## Acknowledgements
+
+:warning: Data reversed engineered from Mycek et al.[[1]](#1) is stored within 
+this package. If you intend to publish results using this data, make sure to 
+acknowledge its source at the point of use, e.g. _"Experimental data reverse 
+engineered from Mycek et al.[[1]](#1), fig. 11a."_.
 
 Some of the code in this package is derived from the [delft3dfmpy][6] and
 [django][7] projects.

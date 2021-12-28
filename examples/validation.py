@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import os
+import platform
 import tempfile
 from pathlib import Path
+from collections import defaultdict
 
+import numpy as np
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 
 from snl_d3d_cec_verify import (MycekStudy,
@@ -16,6 +20,9 @@ from snl_d3d_cec_verify import (MycekStudy,
 from snl_d3d_cec_verify.result import (get_reset_origin,
                                        get_normalised_dims,
                                        get_normalised_data_deficit)
+
+matplotlib.rcParams.update({'font.size': 8})
+
 
 def get_d3d_bin_path():
     
@@ -33,6 +40,15 @@ def get_d3d_bin_path():
     return root.resolve()
 
 
+def get_u0(da, case, transect):
+    
+    da = get_reset_origin(da,
+                          (case.turb_pos_x, case.turb_pos_y, case.turb_pos_z))
+    da = get_normalised_dims(da, transect.attrs["$D$"])
+    
+    return da
+
+
 def get_gamma0(da, case, transect):
     
     da = get_reset_origin(da,
@@ -44,57 +60,115 @@ def get_gamma0(da, case, transect):
     
     return da
 
+
+def get_rmse(estimated, observed):
+    return np.sqrt(((estimated - observed) ** 2).mean())
+
+
 case = MycekStudy()
 template = Template()
 runner = Runner(get_d3d_bin_path())
 report = Report(79, "%d %B %Y")
 validate = Validate(case)
-centreline_transect = validate[0]
 
 report_dir = Path("validation_report")
 report_dir.mkdir(exist_ok=True)
+data = defaultdict(list)
 
-with tempfile.TemporaryDirectory() as tmpdirname:
-
-    # Create the project and then run it
-    template(case, tmpdirname)
-    runner(tmpdirname)
-
-    # Pick up the results
-    result = Result(tmpdirname)
+for i, transect in enumerate(validate):
     
-    # Compare centreline
-    centreline_sim = result.faces.extract_z(-1, **centreline_transect)
-    centreline_true = centreline_transect.to_xarray()
+    with tempfile.TemporaryDirectory() as tmpdirname:
+    
+        # Create the project and then run it
+        template(case, tmpdirname)
+        runner(tmpdirname)
+    
+        # Pick up the results
+        result = Result(tmpdirname)
+        
+        # Compare centreline
+        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_true = transect.to_xarray()
+    
+    # Add report section with plot
+    report.content.add_heading(transect.attrs['description'],
+                               level=2)
+    
+    # Determine plot x-axis
+    major_axis = f"${transect.attrs['major_axis']}^*$"
+    
+    # Create and save a u0 figure
+    transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
+    transect_true_u0 = get_u0(transect_true, case, transect_true)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
+    transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
+    ax.legend()
+    ax.grid()
+    ax.set_title("")
+    
+    plot_name = f"transect_u0_{i}.png"
+    plot_path = report_dir / plot_name
+    plt.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("$u_0$ comparison (m/s). Experimental data reverse engineered "
+               f"from [@mycek2014, fig. {transect.attrs['figure']}].")
+    report.content.add_image(plot_name, caption, width="4in")
+    
+    # Calculate RMS error and store
+    rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
+    data["Transect"].append(transect.attrs['description'])
+    data["RMSE"].append(rmse)
+    
+    # Create and save a gamma0 figure
+    transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
+                                     case,
+                                     transect_true)
+    transect_true_gamma0 = get_gamma0(transect_true,
+                                      case,
+                                      transect_true)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
+    transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
+    ax.legend()
+    ax.grid()
+    ax.set_title("")
+    
+    plot_name = f"transect_gammm0_{i}.png"
+    plot_path = report_dir / plot_name
+    plt.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
+               "engineered from [@mycek2014, fig. "
+               f"{transect.attrs['figure']}].")
+    report.content.add_image(plot_name, caption, width="4in")
 
-# Add report section with plot
-report.content.add_heading( f"{centreline_transect.attrs['description']}",
-                           level=2)
+# Add table for errors
+df = pd.DataFrame(data)
+caption = "Root-mean-square errors in $u_0$."
+report.content.add_heading("Errors", level=2)
+report.content.add_table(df,
+                         index=False,
+                         caption=caption)
 
-centreline_true_gamma0 = get_gamma0(centreline_true,
-                                    case,
-                                    centreline_true)
-centreline_sim_gamma0 = get_gamma0(centreline_sim["$u$"],
-                                   case,
-                                   centreline_true)
+# Add section for the references
+report.content.add_heading("References", level=2)
 
-fig, ax = plt.subplots()
-centreline_sim_gamma0.plot(ax=ax, x="$x^*$")
-centreline_true_gamma0.plot(ax=ax, x="$x^*$")
-
-plot_name = "centreline.png"
-plot_path = report_dir / plot_name
-plt.savefig(plot_path)
-
-report.content.add_image(plot_name, "$\gamma_0$ comparison")
-
-report.title = "Validation Example"
+# Add report metadata
+os_name = platform.system()
+report.title = f"Validation Example ({os_name})"
 report.date = "today"
 
+# Write the report to file
 with open(report_dir / "report.md", "wt") as f:
     for line in report:
         f.write(line)
 
+# Convert file to docx or print report to stdout
 try:
     
     import pypandoc
@@ -102,7 +176,9 @@ try:
     pypandoc.convert_file(f"{report_dir / 'report.md'}",
                           'docx',
                           outputfile=f"{report_dir / 'report.docx'}",
-                          extra_args=[f'--resource-path={report_dir}',
+                          extra_args=['-C',
+                                      f'--resource-path={report_dir}',
+                                      '--bibliography=validation.bib',
                                       '--reference-doc=reference.docx'])
 
 except ImportError:
