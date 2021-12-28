@@ -145,121 +145,142 @@ def test_transect_eq_attrs(other, expected):
     assert (test == other) is expected
 
 
-def test_transect_from_csv(mocker):
+def test_transect_from_csv(tmp_path, mocker):
     
     csv = ("x,y,z\n"
            "7,3,0\n"
            "8,3,0\n"
            "9,3,0\n")
     
+    d = tmp_path / "mock"
+    d.mkdir()
+    
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv("mock", name="mock")
+    test = Transect.from_csv(d, name="mock")
     expected = Transect(z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         name="mock",
-                        attrs={"path": "mock"})
+                        attrs={"path": str(d.resolve())})
     
     assert test == expected
 
 
-def test_transect_from_csv_attrs(mocker):
+def test_transect_from_csv_attrs(tmp_path, mocker):
     
     csv = ("x,y,z\n"
            "7,3,0\n"
            "8,3,0\n"
            "9,3,0\n")
     
+    d = tmp_path / "mock"
+    d.mkdir()
+    
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv("mock",
+    test = Transect.from_csv(d,
                              name="mock",
                              attrs={"mock": "mock",
-                                    "path": "not mock"})
+                                    "path": "mock"})
     expected = Transect(z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         name="mock",
-                        attrs={"path": "mock",
+                        attrs={"path": str(d.resolve()),
                                "mock": "mock"})
     
     assert test == expected
 
 
-def test_transect_from_csv_translation(mocker):
+def test_transect_from_csv_translation(tmp_path, mocker):
     
     csv = ("x,y,z\n"
            "1,1,1\n"
            "2,1,1\n"
            "3,1,1\n")
     
+    d = tmp_path / "mock"
+    d.mkdir()
+    
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv("mock", translation=(6, 2, -1))
-    expected = Transect(z=0, x=[7, 8, 9], y=[3, 3, 3], attrs={"path": "mock"})
+    test = Transect.from_csv(d, translation=(6, 2, -1))
+    expected = Transect(z=0,
+                        x=[7, 8, 9],
+                        y=[3, 3, 3],
+                        attrs={"path": str(d.resolve())})
     
     assert test == expected
 
 
-def test_transect_from_csv_with_data(mocker):
+def test_transect_from_csv_with_data(tmp_path, mocker):
     
     csv = ("x,y,z,data\n"
            "7,3,0,1\n"
            "8,3,0,2\n"
            "9,3,0,3\n")
     
+    d = tmp_path / "mock"
+    d.mkdir()
+    
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv("mock")
+    test = Transect.from_csv(d)
     expected = Transect(z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         data=[1, 2, 3],
-                        attrs={"path": "mock"})
+                        attrs={"path": str(d.resolve())})
     
     assert test == expected
 
 
-def test_transect_from_csv_multi_z_error(mocker):
+def test_transect_from_csv_multi_z_error(tmp_path, mocker):
     
     csv = ("x,y,z\n"
            "7,3,0\n"
            "8,3,1\n"
            "9,3,1\n")
     
+    d = tmp_path / "mock"
+    d.mkdir()
+    
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
     with pytest.raises(ValueError) as excinfo:
-        Transect.from_csv("mock")
+        Transect.from_csv(d)
     
     assert "only supports fixed z-value" in str(excinfo)
 
 
-def test_transect_from_yaml(mocker):
+def test_transect_from_yaml(tmp_path, mocker):
     
     text = ("z: -1.0\n"
             "x: [7, 8, 9]\n"
             "y: [3, 3, 3]\n")
+     
+    d = tmp_path / "mock"
+    d.mkdir()
     
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=text))
     
-    test = Transect.from_yaml("mock")
+    test = Transect.from_yaml(d)
     expected = Transect(z=-1,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
-                        attrs={"path": "mock"})
+                        attrs={"path": str(d.resolve())})
     
     assert test == expected
 
 
-def test_transect_from_yaml_optional(mocker):
+def test_transect_from_yaml_optional(tmp_path, mocker):
     
     text = ("z: -1.0\n"
             "x: [7, 8, 9]\n"
@@ -270,16 +291,19 @@ def test_transect_from_yaml_optional(mocker):
             "    mock: mock\n"
             "    path: not mock\n")
     
+    d = tmp_path / "mock"
+    d.mkdir()
+    
     mocker.patch('snl_d3d_cec_verify.result.open',
                   mocker.mock_open(read_data=text))
     
-    test = Transect.from_yaml("mock")
+    test = Transect.from_yaml(d)
     expected = Transect(z=-1,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         data=[1, 2, 3],
                         name="$\\gamma_0$",
-                        attrs={"path": "mock",
+                        attrs={"path": str(d.resolve()),
                                "mock": "mock"})
     
     print(test)

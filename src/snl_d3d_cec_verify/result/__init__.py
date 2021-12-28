@@ -214,7 +214,7 @@ class Transect():
                                attrs: Optional[dict[str, str]] = None,
                                translation: Vector = (0, 0, 0)) -> T:
         
-        path = Path(path)
+        path = Path(path).resolve(strict=True)
         cols = defaultdict(list)
         keys = ["x", "y", "z", "data"]
         
@@ -232,7 +232,7 @@ class Transect():
             raise ValueError("Transect only supports fixed z-value")
         
         if attrs is None: attrs = {}
-        attrs["path"] = str(path.resolve())
+        attrs["path"] = str(path)
         
         return cls(z[0],
                    np.array(cols["x"]),
@@ -246,7 +246,7 @@ class Transect():
     def from_yaml(cls: Type[T], path: StrOrPath,
                                 translation: Vector = (0, 0, 0)) -> T:
         
-        path = Path(path)
+        path = Path(path).resolve(strict=True)
         
         with open(path) as yamlfile:
             raw = load(yamlfile, Loader=Loader)
@@ -258,7 +258,7 @@ class Transect():
         if "data" in raw: data = np.array(raw["data"])
         if "name" in raw: name = raw["name"]
         if "attrs" in raw: attrs = raw["attrs"]
-        attrs["path"] = str(path.resolve())
+        attrs["path"] = str(path)
         
         return cls(raw["z"],
                    x=np.array(raw["x"]),
