@@ -282,6 +282,9 @@ def test_transect_from_yaml_optional(mocker):
                         attrs={"path": "mock",
                                "mock": "mock"})
     
+    print(test)
+    print(expected)
+    
     assert test == expected
 
 @pytest.fixture
