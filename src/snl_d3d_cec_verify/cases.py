@@ -7,17 +7,19 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
 
 from .types import Num
+from ._docs import docstringtemplate
 
 # Reused compound types
 OneOrManyNum = Union[Num, Sequence[Num]]
 
 
+@docstringtemplate
 @dataclass(frozen=True)
 class CaseStudy:
     """
     Class for defining cases to test.
 
-    :param dx: grid spacing in x-directions
+    :param dx: grid spacing in x-directions, defaults to {dx}
     :param dy: grid spacing in y-directions
     :param sigma: Number of vertical layers
     :param dt_max: Maximum time step
