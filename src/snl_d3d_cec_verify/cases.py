@@ -14,7 +14,16 @@ OneOrManyNum = Union[Num, Sequence[Num]]
 
 @dataclass(frozen=True)
 class CaseStudy:
-    """Class for defining cases to test."""
+    """
+    Class for defining cases to test.
+
+    :param dx: grid spacing in x-directions
+    :param dy: grid spacing in y-directions
+    :param sigma: Number of vertical layers
+    :param dt_max: Maximum time step
+    :param dt_init: Initial time step
+    """
+    
     dx: OneOrManyNum = 1
     dy: OneOrManyNum = 1
     sigma: OneOrManyNum = 3
