@@ -17,13 +17,37 @@ OneOrManyNum = Union[Num, Sequence[Num]]
 @dataclass(frozen=True)
 class CaseStudy:
     """
-    Class for defining cases to test.
-
-    :param dx: grid spacing in x-directions, defaults to {dx}
-    :param dy: grid spacing in y-directions
-    :param sigma: Number of vertical layers
-    :param dt_max: Maximum time step
-    :param dt_init: Initial time step
+    Class for defining single or multiple case studies to test.
+    
+    When defining multiple values for multiple parameters, the given 
+    sequences must be the same length, e.g.:
+    
+    >>> cases = CaseStudy(dx=[1, 2, 3, 4],
+                          dy=[4, 5, 6, 7])
+    >>> print(cases)
+    CaseStudy(dx=[1, 2, 3, 4], dy=[4, 5, 6, 7], sigma=3, dt_max=1, dt_init=1, \
+turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
+    
+    The above example will generate an object representing 4 cases, which can
+    then be iterated:
+    
+    >>> for case in cases:
+    ...     print(case)
+    CaseStudy(dx=1, dy=4, ...
+    CaseStudy(dx=2, dy=5, ...
+    CaseStudy(dx=3, dy=6, ...
+    CaseStudy(dx=4, dy=7, ...
+    
+    :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
+    :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
+    :param sigma: Number of vertical layers, defaults to {sigma}
+    :param dt_max: Maximum time step, in seconds. Defaults to {dt_max}
+    :param dt_init: Initial time step, in seconds. Defaults to {dt_init}
+    :param turb_pos_x: Turbine x-position, in meters. Defaults to {turb_pos_x}
+    :param turb_pos_y: Turbine y-position, in meters. Defaults to {turb_pos_y}
+    :param turb_pos_z: Turbine z-position, in meters. Defaults to {turb_pos_z}
+    :param discharge: Inlet boundary discharge, in cubic meters per second.
+        Defaults to {discharge}
     """
     
     dx: OneOrManyNum = 1
@@ -100,7 +124,7 @@ class CaseStudy:
 
 @dataclass(frozen=True)
 class MycekStudy(CaseStudy):
-    """Class for defining cases corresponding to the Mycek studyy"""
+    """Class for defining cases corresponding to the Mycek study"""
     turb_pos_x: OneOrManyNum = field(default=6, init=False)
     turb_pos_y: OneOrManyNum = field(default=3, init=False)
     turb_pos_z: OneOrManyNum = field(default=-1, init=False)
