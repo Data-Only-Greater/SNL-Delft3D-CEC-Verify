@@ -40,24 +40,26 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     
     :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
     :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
-    :param sigma: Number of vertical layers, defaults to {sigma}
-    :param dt_max: Maximum time step, in seconds. Defaults to {dt_max}
-    :param dt_init: Initial time step, in seconds. Defaults to {dt_init}
-    :param turb_pos_x: Turbine x-position, in meters. Defaults to {turb_pos_x}
-    :param turb_pos_y: Turbine y-position, in meters. Defaults to {turb_pos_y}
-    :param turb_pos_z: Turbine z-position, in meters. Defaults to {turb_pos_z}
-    :param discharge: Inlet boundary discharge, in cubic meters per second.
+    :param sigma: number of vertical layers, defaults to {sigma}
+    :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
+    :param dt_init: initial time step, in seconds. Defaults to {dt_init}
+    :param turb_pos_x: turbine x-position, in meters. Defaults to {turb_pos_x}
+    :param turb_pos_y: turbine y-position, in meters. Defaults to {turb_pos_y}
+    :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
+    :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
     """
     
-    dx: OneOrManyNum = 1
-    dy: OneOrManyNum = 1
-    sigma: OneOrManyNum = 3
-    dt_max: OneOrManyNum = 1
-    dt_init: OneOrManyNum = 1
-    turb_pos_x: OneOrManyNum = 6
-    turb_pos_y: OneOrManyNum = 3
-    turb_pos_z: OneOrManyNum = -1
+    dx: OneOrManyNum = 1 #: grid spacing in x-directions, in meters
+    dy: OneOrManyNum = 1 #: grid spacing in y-directions, in meters
+    sigma: OneOrManyNum = 3 #: number of vertical layers,
+    dt_max: OneOrManyNum = 1 #: maximum time step, in seconds
+    dt_init: OneOrManyNum = 1 #: initial time step, in seconds
+    turb_pos_x: OneOrManyNum = 6 #: turbine x-position, in meters
+    turb_pos_y: OneOrManyNum = 3 #: turbine y-position, in meters
+    turb_pos_z: OneOrManyNum = -1 #: turbine z-position, in meters
+    
+    #: inlet boundary discharge, in cubic meters per second
     discharge: OneOrManyNum = 6.0574
     
     def __post_init__(self):

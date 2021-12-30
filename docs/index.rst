@@ -9,6 +9,8 @@ Welcome to SNL-Delft3D-CEC-Verify's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   api/modules
 
 
 
@@ -19,4 +21,3 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. autoclass:: snl_d3d_cec_verify.CaseStudy

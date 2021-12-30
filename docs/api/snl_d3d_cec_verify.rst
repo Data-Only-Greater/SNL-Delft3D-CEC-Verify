@@ -1,0 +1,19 @@
+snl\_d3d\_cec\_verify package
+=============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   snl_d3d_cec_verify.gridfm
+   snl_d3d_cec_verify.result
+
+Module contents
+---------------
+
+.. automodule:: snl_d3d_cec_verify
+   :members:
+   :undoc-members:
+   :show-inheritance:
