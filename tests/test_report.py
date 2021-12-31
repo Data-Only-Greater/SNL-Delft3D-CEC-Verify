@@ -5,11 +5,11 @@ import datetime as dt
 import pandas as pd
 import pytest
 
-from snl_d3d_cec_verify.report import (Line,
-                                       WrappedLine,
-                                       Paragraph,
-                                       WrappedParagraph,
-                                       MetaLine,
+from snl_d3d_cec_verify.report import (_Line,
+                                       _WrappedLine,
+                                       _Paragraph,
+                                       _WrappedParagraph,
+                                       _MetaLine,
                                        Content,
                                        Report)
 
@@ -21,7 +21,7 @@ def text():
 
 def test_Line(text):
     
-    test = Line(text, 25)
+    test = _Line(text, 25)
     result = test()
     lines = result.split("\n")
     
@@ -31,7 +31,7 @@ def test_Line(text):
 
 def test_WrappedLine(text):
     
-    test = WrappedLine(text, 25)
+    test = _WrappedLine(text, 25)
     result = test()
     lines = result.split("\n")
     
@@ -41,7 +41,7 @@ def test_WrappedLine(text):
 
 def test_WrappedLine_width_none(text):
     
-    test = WrappedLine(text)
+    test = _WrappedLine(text)
     result = test()
     lines = result.split("\n")
     
@@ -51,7 +51,7 @@ def test_WrappedLine_width_none(text):
 
 def test_Paragraph(text):
     
-    test = Paragraph(text, 25)
+    test = _Paragraph(text, 25)
     result = test()
     lines = result.split("\n")
     
@@ -61,7 +61,7 @@ def test_Paragraph(text):
 
 def test_WrappedParagraph(text):
     
-    test = WrappedParagraph(text, 25)
+    test = _WrappedParagraph(text, 25)
     result = test()
     lines = result.split("\n")
     
@@ -71,7 +71,7 @@ def test_WrappedParagraph(text):
 
 def test_WrappedParagraph_width_none(text):
     
-    test = WrappedParagraph(text)
+    test = _WrappedParagraph(text)
     result = test()
     lines = result.split("\n")
     
@@ -81,7 +81,7 @@ def test_WrappedParagraph_width_none(text):
 
 @pytest.fixture
 def metaline():
-    return MetaLine()
+    return _MetaLine()
 
 
 def test_MetaLine_defined_false(metaline):
@@ -98,7 +98,7 @@ def test_MetaLine_add_line(metaline, text):
     metaline.add_line(text)
     
     assert metaline.defined
-    assert isinstance(metaline.line, Line)
+    assert isinstance(metaline.line, _Line)
     
     metaline.add_line(None)
     assert not metaline.defined
@@ -122,18 +122,18 @@ def test_content_add_text(content, text):
     
     content.add_text(text)
     
-    assert len(content.body) == 1
-    assert content.body[0][0] == text
-    assert content.body[0][1] is WrappedParagraph
+    assert len(content._body) == 1
+    assert content._body[0][0] == text
+    assert content._body[0][1] is _WrappedParagraph
 
 
 def test_content_add_text_no_wrap(content, text):
     
     content.add_text(text, wrapped=False)
     
-    assert len(content.body) == 1
-    assert content.body[0][0] == text
-    assert content.body[0][1] is Paragraph
+    assert len(content._body) == 1
+    assert content._body[0][0] == text
+    assert content._body[0][1] is _Paragraph
 
 
 def test_content_add_heading(content):
@@ -143,10 +143,10 @@ def test_content_add_heading(content):
     
     content.add_heading(title, level=level)
     
-    assert len(content.body) == 1
-    assert content.body[0][1] is Paragraph
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
     
-    text = content.body[0][0]
+    text = content._body[0][0]
     assert text == '#' * level + ' ' + title
 
 
@@ -159,14 +159,14 @@ def test_content_add_table(content):
     caption = "test"
     content.add_table(df, caption=caption)
     
-    assert len(content.body) == 2
-    assert content.body[0][1] is Paragraph
-    assert content.body[1][1] is Paragraph
+    assert len(content._body) == 2
+    assert content._body[0][1] is _Paragraph
+    assert content._body[1][1] is _Paragraph
     
-    table_text = content.body[0][0]
+    table_text = content._body[0][0]
     assert table_text == df.to_markdown(index=True)
     
-    caption_text = content.body[1][0]
+    caption_text = content._body[1][0]
     assert caption_text == "Table:  " + caption
 
 
@@ -175,10 +175,10 @@ def test_content_add_image(content):
     fake_path = "some_image.jpg"
     content.add_image(fake_path)
     
-    assert len(content.body) == 1
-    assert content.body[0][1] is Paragraph
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
     
-    image_text = content.body[0][0]
+    image_text = content._body[0][0]
     assert image_text == f"![{fake_path}]({fake_path})\\"
 
 
@@ -188,10 +188,10 @@ def test_content_add_image_with_caption(content):
     caption = "my caption"
     content.add_image(fake_path, caption)
     
-    assert len(content.body) == 1
-    assert content.body[0][1] is Paragraph
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
     
-    image_text = content.body[0][0]
+    image_text = content._body[0][0]
     assert image_text == f"![{caption}]({fake_path})"
 
 
@@ -207,10 +207,10 @@ def test_content_add_image_with_dimensions(content,
     fake_path = "some_image.jpg"
     content.add_image(fake_path, width=width, height=height)
     
-    assert len(content.body) == 1
-    assert content.body[0][1] is Paragraph
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
     
-    image_text = content.body[0][0]
+    image_text = content._body[0][0]
     assert image_text == (f"![{fake_path}]({fake_path}){{ {expected_attrs} "
                           "}\\")
 
@@ -221,11 +221,11 @@ def test_content_clear(content, text):
     content.add_heading(title)
     content.add_text(text)
     
-    assert len(content.body) == 2
+    assert len(content._body) == 2
     
     content.clear()
     
-    assert len(content.body) == 0
+    assert len(content._body) == 0
 
 
 def test_content_undo(content, text):
@@ -234,11 +234,11 @@ def test_content_undo(content, text):
     content.add_heading(title)
     content.add_text(text)
     
-    assert len(content.body) == 2
+    assert len(content._body) == 2
     
     content.undo()
     
-    assert len(content.body) == 1
+    assert len(content._body) == 1
 
 
 def test_content_call(content, text):

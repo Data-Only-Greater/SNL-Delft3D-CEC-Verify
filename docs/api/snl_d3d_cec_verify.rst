@@ -9,6 +9,7 @@ Subpackages
 
    snl_d3d_cec_verify.copier
    snl_d3d_cec_verify.gridfm
+   snl_d3d_cec_verify.report
    snl_d3d_cec_verify.result
 
 Module contents

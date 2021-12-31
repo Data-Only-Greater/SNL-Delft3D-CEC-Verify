@@ -5,23 +5,22 @@ from __future__ import annotations
 import datetime as dt
 import textwrap
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Type, TYPE_CHECKING
+from typing import List, Optional, Tuple, Type
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from .types import StrOrPath
+import pandas as pd # type: ignore
 
-if TYPE_CHECKING: # pragma: no cover
-    import pandas as pd # type: ignore
+from .types import StrOrPath
 
 
 @dataclass
-class TextDataclassMixin:
+class _TextDataclassMixin:
     text: str
     width: Optional[int] = field(default=None)
 
 
-class BaseLine(ABC, TextDataclassMixin):
+class _BaseLine(ABC, _TextDataclassMixin):
     
     @abstractmethod
     def wrap(self) -> List[str]:
@@ -31,31 +30,31 @@ class BaseLine(ABC, TextDataclassMixin):
         return "\n".join(self.wrap())
 
 
-class BaseParagraph(BaseLine):
+class _BaseParagraph(_BaseLine):
     
     def __call__(self):
-        line = super(BaseParagraph, self).__call__()
+        line = super(_BaseParagraph, self).__call__()
         return line + "\n"
 
 
-class Line(BaseLine):
+class _Line(_BaseLine):
     def wrap(self) -> List[str]:
         return [self.text]
 
 
-class Paragraph(BaseParagraph):
+class _Paragraph(_BaseParagraph):
     def wrap(self) -> List[str]:
         return [self.text]
 
 
-class WrappedLine(BaseLine):
+class _WrappedLine(_BaseLine):
     def wrap(self) -> List[str]:
         if self.width is None:
             return [self.text]
         return textwrap.wrap(self.text, self.width)
 
 
-class WrappedParagraph(BaseParagraph):
+class _WrappedParagraph(_BaseParagraph):
     def wrap(self) -> List[str]:
         if self.width is None:
             return [self.text]
@@ -63,8 +62,8 @@ class WrappedParagraph(BaseParagraph):
 
 
 @dataclass
-class MetaLine:
-    line: Optional[Line] = field(default=None, init=False)
+class _MetaLine:
+    line: Optional[_Line] = field(default=None, init=False)
     
     @property
     def defined(self):
@@ -74,7 +73,7 @@ class MetaLine:
         if text is None:
             self.line = None
         else:
-            self.line = Line(text)
+            self.line = _Line(text)
     
     def __call__(self):
         
@@ -87,21 +86,15 @@ class MetaLine:
 @dataclass
 class Content:
     width: Optional[int] = field(default=None)
-    body: List[Tuple[str, Type[BaseParagraph]]] = field(default_factory=list,
-                                                        init=False)
-    
-    def clear(self):
-        self.body = []
-    
-    def undo(self):
-        self.body.pop()
+    _body: List[Tuple[str, Type[_BaseParagraph]]] = field(default_factory=list,
+                                                          init=False)
     
     def add_text(self, text: str, wrapped: bool = True):
         
         if wrapped:
-            self.body.append((text, WrappedParagraph))
+            self._body.append((text, _WrappedParagraph))
         else:
-            self.body.append((text, Paragraph))
+            self._body.append((text, _Paragraph))
     
     def add_heading(self, text: str, level: int = 1):
         start = '#' * level + ' '
@@ -149,11 +142,17 @@ class Content:
         
         self.add_text(text, wrapped=False)
     
+    def clear(self):
+        self._body = []
+    
+    def undo(self):
+        self._body.pop()
+    
     def __call__(self) -> List[str]:
         
         parts = []
         
-        for text, Para in self.body:
+        for text, Para in self._body:
             part = Para(text, self.width)
             parts.append(part())
         
@@ -161,17 +160,56 @@ class Content:
 
 
 class Report:
+    """Class for creating a report in Pandoc markdown format
+    
+    The final report can be viewed by printing the Report object, for example:
+    
+    >>> report = Report(70, "%d %B %Y")
+    >>> report.title = "Test"
+    >>> report.authors = ["Me", "You"]
+    >>> report.date = "1916-04-24"
+    >>> report.content.add_text("Lorem ipsum dolor sit amet, consectetur "
+    ...                         "adipiscing elit. Maecenas vitae "
+    ...                         "scelerisque magna.")
+    >>> print(report)
+    1: % Test
+    2: % Me; You
+    3: % 24 April 1916
+    4:
+    5: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas
+    6: scelerisque magna.
+    7:
+    
+    Note that line numbers are also printed. The report can also be saved to
+    file, by iterating through each line:
+    
+    >>> with open("report.md", "wt") as f:
+    ...     for line in report:
+    ...         f.write(line)
+    
+    :param width: maximum paragraph width, in characters
+    :param date_format: format for document date as passed to 
+        :py:meth:`datetime.date.strftime()`
+    """
     
     def __init__(self, width: Optional[int] = None,
                        date_format: Optional[str] = None):
         self._width = width
         self._date_format = date_format
-        self._meta: List[MetaLine] = [MetaLine() for _ in range(3)]
+        self._meta: List[_MetaLine] = [_MetaLine() for _ in range(3)]
         self._date: Optional[dt.date] = None
+        
+        #: Container for the main body of the document. See the 
+        #: :class:`.Content` documentation for usage.
         self.content: Content = Content(width)
     
     @property
     def width(self):
+        """The maximum paragraph width, in characters. Set to None for no
+        limit.
+        
+        :type: Optional[int]
+        """
         return self._width
     
     @width.setter
@@ -181,16 +219,25 @@ class Report:
     
     @property
     def date_format(self):
+        """format for document date as passed to 
+        :py:meth:`datetime.date.strftime()`. Set to None to use ISO 8601 format
+        
+        :type: Optional[str]
+        """
         return self._date_format
     
     @date_format.setter
-    def date_format(self, text: str):
+    def date_format(self, text: Optional[str]):
         self._date_format = text
         if self._date is None: return
         self.date = str(self._date)
     
     @property
     def title(self):
+        """Title for the document. Set to None to remove.
+        
+        :type: Optional[str]
+        """
         return self._get_meta_text(0)
     
     @title.setter
@@ -202,6 +249,10 @@ class Report:
     
     @property
     def authors(self):
+        """The authors of the document, as a list. Set to None to remove.
+        
+        :type: Optional[List[str]]
+        """
         return self._get_meta_text(1)
     
     @authors.setter
@@ -213,6 +264,12 @@ class Report:
     
     @property
     def date(self):
+        """The date of the document. Can be set using ISO 8601 format or can
+        be given as "today" to use the current date. Set to None to remove.
+        
+        :type: Optional[str]
+        
+        """
         return self._get_meta_text(2)
     
     @date.setter

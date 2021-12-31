@@ -32,11 +32,15 @@ release = '0.2.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx_autodoc_typehints'
+    'sphinx_autodoc_typehints',
+    'sphinx.ext.intersphinx'
 ]
 
 # Autodoc configuration
 autodoc_member_order = 'bysource'
+
+# Intersphinx configuration
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
