@@ -42,19 +42,19 @@ def copy(src_path: StrOrPath,
         
         to_copy.mkdir(parents=True)
     
-    relative_paths = get_posix_relative_paths(src_path)
+    relative_paths = _get_posix_relative_paths(src_path)
     env = Environment(loader=FileSystemLoader(str(src_path)),
                       keep_trailing_newline=True)
     if data is None: data = {}
     
     for rel_path in relative_paths:
         try:
-            template_copy(env, dst_path, rel_path, data)
+            _template_copy(env, dst_path, rel_path, data)
         except (UnicodeDecodeError, TemplateNotFound):
-            basic_copy(src_path, dst_path, rel_path)
+            _basic_copy(src_path, dst_path, rel_path)
 
 
-def get_posix_relative_paths(root: StrOrPath) -> List[str]:
+def _get_posix_relative_paths(root: StrOrPath) -> List[str]:
     
     all_paths = []
     
@@ -76,7 +76,7 @@ def get_posix_relative_paths(root: StrOrPath) -> List[str]:
     return all_paths
 
 
-def template_copy(env: Environment,
+def _template_copy(env: Environment,
                   dst_path: StrOrPath,
                   rel_path: str,
                   data: AnyByStrDict):
@@ -89,7 +89,7 @@ def template_copy(env: Environment,
         f.write(rendered)
 
 
-def basic_copy(src_path: StrOrPath,
+def _basic_copy(src_path: StrOrPath,
                dst_path: StrOrPath,
                rel_path: str):
     

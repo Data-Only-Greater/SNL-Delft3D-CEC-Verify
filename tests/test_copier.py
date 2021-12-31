@@ -6,9 +6,9 @@ from filecmp import cmp
 import pytest
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
-from snl_d3d_cec_verify.copier import (get_posix_relative_paths,
-                                       template_copy,
-                                       basic_copy,
+from snl_d3d_cec_verify.copier import (_get_posix_relative_paths,
+                                       _template_copy,
+                                       _basic_copy,
                                        copy)
 
 
@@ -27,7 +27,7 @@ def test_get_posix_relative_paths(tmp_path):
     p.write_text(content)
     
     # Run the test
-    test = get_posix_relative_paths(tmp_path)
+    test = _get_posix_relative_paths(tmp_path)
     assert test == ['hello.txt', 'sub', 'sub/subhello.txt']
 
 
@@ -58,7 +58,7 @@ def test_template_copy(tmp_path):
     data = {"x": expected_text}
     
     # Run the test
-    template_copy(env, dst_path, "sub/hello.txt", data)
+    _template_copy(env, dst_path, "sub/hello.txt", data)
     expected_p = dst_path / "sub" / "hello.txt"
     
     assert expected_p.exists()
@@ -85,7 +85,7 @@ def test_template_copy_unicode_decode_error(tmp_path):
     
     # Run the test
     with pytest.raises(UnicodeDecodeError) as excinfo:
-        template_copy(env, dst_path, "hello.bin", {})
+        _template_copy(env, dst_path, "hello.bin", {})
     
     assert ("invalid start byte" in str(excinfo) or
             "invalid continuation byte" in str(excinfo))
@@ -109,7 +109,7 @@ def test_template_copy_template_not_found(tmp_path):
     
     # Run the test
     with pytest.raises(TemplateNotFound) as excinfo:
-        template_copy(env, dst_path, "sub", {})
+        _template_copy(env, dst_path, "sub", {})
     
     assert "sub" in str(excinfo)
 
@@ -130,7 +130,7 @@ def test_basic_copy_dir(tmp_path):
     sub_d.mkdir()
     
     # Run the test
-    basic_copy(src_path, dst_path, "sub/sub")
+    _basic_copy(src_path, dst_path, "sub/sub")
     expected_d = dst_path / "sub" / "sub"
     
     assert expected_d.exists()
@@ -156,7 +156,7 @@ def test_basic_copy_file(tmp_path):
     sub_d.mkdir()
     
     # Run the test
-    basic_copy(src_path, dst_path, "sub/hello.bin")
+    _basic_copy(src_path, dst_path, "sub/hello.bin")
     expected_p = dst_path / "sub" / "hello.bin"
     
     assert expected_p.exists()

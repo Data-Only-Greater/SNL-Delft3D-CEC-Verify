@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   snl_d3d_cec_verify.copier
    snl_d3d_cec_verify.gridfm
    snl_d3d_cec_verify.result
 

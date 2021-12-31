@@ -2,6 +2,7 @@
 
 from inspect import signature
 
+
 def docstringtemplate(f):
     """Treat the docstring as a template, with access to globals and
     defaults"""

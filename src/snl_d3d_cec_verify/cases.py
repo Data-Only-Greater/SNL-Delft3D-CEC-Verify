@@ -86,13 +86,20 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     @classmethod
     @property
     def fields(cls) -> List[str]:
+        """Returns field names"""
         return [x.name for x in fields(cls)]
     
     @property
     def values(self) -> List[OneOrManyNum]:
+        """Returns field values"""
         return [getattr(self, f) for f in self.fields]
     
+    @docstringtemplate
     def get_case(self, index: int = 0) -> CaseStudy:
+        """Return a unit case study, from the given index
+        
+        :param index: Index of study, defaults to {index}
+        """
         
         # All single valued variables, so only 0 and -1 index available
         if len(self) == 1:
@@ -124,9 +131,21 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
         return len(mutli_values[0])
 
 
+@docstringtemplate
 @dataclass(frozen=True)
 class MycekStudy(CaseStudy):
-    """Class for defining cases corresponding to the Mycek study"""
+    """Class for defining cases corresponding to the Mycek study. Subclass 
+    of :class:`.CaseStudy` with the turbine position fixed.
+    
+    :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
+    :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
+    :param sigma: number of vertical layers, defaults to {sigma}
+    :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
+    :param dt_init: initial time step, in seconds. Defaults to {dt_init}
+    :param discharge: inlet boundary discharge, in cubic meters per second.
+        Defaults to {discharge}
+    """
+   
     turb_pos_x: OneOrManyNum = field(default=6, init=False)
     turb_pos_y: OneOrManyNum = field(default=3, init=False)
     turb_pos_z: OneOrManyNum = field(default=-1, init=False)
