@@ -41,8 +41,10 @@ autodoc_member_order = 'bysource'
 
 # Intersphinx configuration
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'geopandas': ('https://geopandas.org/en/stable/', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'pandas': ('http://pandas.pydata.org/pandas-docs/dev', None)}
+                       'pandas': ('http://pandas.pydata.org/pandas-docs/dev', None),
+                       'shapely': ('https://shapely.readthedocs.io/en/stable', None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

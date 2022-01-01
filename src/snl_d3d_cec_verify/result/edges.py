@@ -19,6 +19,19 @@ from ..types import StrOrPath
 
 @dataclass
 class Edges(TimeStepResolver):
+    """Class for extracting results on the edges of the simulation grid. Use in
+    conjunction with the :class:`.Result` class.
+    
+    >>> result = Result("../test_data")
+    >>> result.edges.extract_k(-1, 1)
+                                            geometry            u1   n0   n1
+    0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
+    ...
+    
+    :param map_path: path to the :code:`FlowFM_map.nc` file
+    :param n_steps: number of time steps in the simulation
+    """
+    
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,
                                               repr=False)
@@ -30,6 +43,37 @@ class Edges(TimeStepResolver):
                         k: int,
                         goem: Optional[BaseGeometry] = None
                                                     ) -> gpd.GeoDataFrame:
+        """Extract data from the grid edges for a given time step and sigma
+        level (:code:`k`). Available data is:
+        
+        * :code:`u1`: velocity (m/s)
+        * :code:`n0`: edge normal x-coordinate
+        * :code:`n1`: edge normal y-coordinate
+        
+        Results are returned as a :class:`geopandas.GeoDataFrame`, either 
+        for all of the edges or for the result of the intersection with 
+        :code:`geom` if set. For example:
+        
+        >>> from shapely.geometry import LineString
+        >>> line = LineString([(6, 2), (10, 2)])
+        >>> result.edges.extract_k(-1, 1, line)
+                   geometry            u1
+        0   POINT (6.00000 2.00000) -6.794595e-18
+        1   POINT (7.00000 2.00000)  7.732358e-01
+        2   POINT (8.00000 2.00000)  7.753754e-01
+        3   POINT (9.00000 2.00000)  7.737631e-01
+        4  POINT (10.00000 2.00000)  7.750168e-01
+        
+        :param t_step: Time step
+        :param k: sigma level
+        :param goem: Optional shapely geometry, where data is extracted on
+            the intersection with the grid edges using the 
+            :meth:`object.intersection` method.
+        :return: Returns a :class:`geopandas.GeoDataFrame` with 
+            :class:`LineString` geometries for each edge or the result of the
+            intersection with :code:`geom` if set.
+        
+        """
         
         t_step = self._resolve_t_step(t_step)
         

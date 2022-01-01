@@ -46,7 +46,18 @@ __all__ = ["TimeStepResolver",
 
 
 class Result:
-    """Class for capturing the results of executed case studies
+    """Class for capturing the results of executed case studies. Contains
+    metadata from the simulation. Data generated on the grid edges and 
+    faces are accessible from the :attr:`edges` and :attr:`faces` attributes.
+    
+    >>> result = Result("../test_data")
+    >>> result.x_lim
+    (0.0, 18.0)
+    
+    >>> result.edges.extract_k(-1, 1)
+                                            geometry            u1   n0   n1
+    0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
+    ...
     
     :param project_path: path to the Delft3D project directory
     :param relative_map_parts: list of components representing the relative
@@ -76,6 +87,10 @@ class Result:
         """Domain limits in the x-direction
         
         :type: Tuple[float, float]
+        
+        >>> result.x_lim
+        (0.0, 18.0)
+        
         """
         return self._x_lim
     
@@ -84,6 +99,10 @@ class Result:
         """Domain limits in the y-direction
         
         :type: Tuple[float, float]
+        
+        >>> result.y_lim
+        (1.0, 5.0)
+        
         """
         return self._y_lim
     
@@ -92,6 +111,11 @@ class Result:
         """Time steps of the Delft3D simulation
         
         :type: numpy.typing.NDArray[numpy.datetime64]
+        
+        >>> result.y_lim
+        array(['2001-01-01T00:00:00.000000000', '2001-01-01T01:00:00.000000000'],
+        dtype='datetime64[ns]')
+        
         """
         return self._times
     
