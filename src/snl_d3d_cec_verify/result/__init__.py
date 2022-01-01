@@ -6,13 +6,11 @@ import os
 import csv
 import itertools
 from typing import (Any,
-                    Dict,
                     Hashable,
                     List,
                     Mapping,
                     Optional,
                     Tuple,
-                    TYPE_CHECKING,
                     Type,
                     TypeVar,
                     Union)
@@ -23,6 +21,7 @@ from dataclasses import dataclass, field, InitVar
 
 import numpy as np
 import xarray as xr
+import numpy.typing as npt
 
 from yaml import load
 try:
@@ -30,16 +29,31 @@ try:
 except ImportError: # pragma: no cover
     from yaml import SafeLoader as Loader # type: ignore
 
+from .base import TimeStepResolver
 from .edges import Edges
 from .faces import Faces
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 
-if TYPE_CHECKING: # pragma: no cover
-    import numpy.typing as npt
+__all__ = ["TimeStepResolver",
+           "Edges",
+           "Faces",
+           "Transect",
+           "get_reset_origin",
+           "get_normalised_dims",
+           "get_normalised_data",
+           "get_normalised_data_deficit"]
 
 
 class Result:
+    """Class for capturing the results of executed case studies
+    
+    :param project_path: path to the Delft3D project directory
+    :param relative_map_parts: list of components representing the relative
+        path to the FlowFM_map.nc file, from the project directory. Defaults
+        to ["output", "FlowFM_map.nc"]
+    
+    """
     
     def __init__(self, project_path: StrOrPath,
                        relative_map_parts: Optional[List[str]] = None):
@@ -48,9 +62,9 @@ class Result:
             relative_map_parts = ["output", "FlowFM_map.nc"]
         
         self._map_path = Path(project_path).joinpath(*relative_map_parts)
-        self._x_lim = get_x_lim(self._map_path)
-        self._y_lim = get_y_lim(self._map_path)
-        self._times: npt.NDArray[np.datetime64] = get_step_times(
+        self._x_lim = _get_x_lim(self._map_path)
+        self._y_lim = _get_y_lim(self._map_path)
+        self._times: npt.NDArray[np.datetime64] = _get_step_times(
                                                                 self._map_path)
         self._edges: Edges = Edges(self._map_path, len(self._times))
         self._faces: Faces = Faces(self._map_path,
@@ -59,10 +73,18 @@ class Result:
     
     @property
     def x_lim(self):
+        """Domain limits in the x-direction
+        
+        :type: Tuple[float, float]
+        """
         return self._x_lim
     
     @property
     def y_lim(self):
+        """Domain limits in the y-direction
+        
+        :type: Tuple[float, float]
+        """
         return self._y_lim
     
     @property
@@ -81,19 +103,19 @@ class Result:
         return f"Result(map_path={repr(self._map_path)})"
 
 
-def get_x_lim(map_path: StrOrPath) -> Tuple[float, float]:
+def _get_x_lim(map_path: StrOrPath) -> Tuple[float, float]:
     with xr.open_dataset(map_path) as ds:
         x = ds.mesh2d_node_x.values
     return (x.min(), x.max())
 
 
-def get_y_lim(map_path: StrOrPath) -> Tuple[float, float]:
+def _get_y_lim(map_path: StrOrPath) -> Tuple[float, float]:
     with xr.open_dataset(map_path) as ds:
         y = ds.mesh2d_node_y.values
     return (y.min(), y.max())
 
 
-def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
+def _get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     with xr.open_dataset(map_path) as ds:
         time = ds.time.values
     return time
@@ -109,7 +131,7 @@ class Validate():
                             data_dir: Optional[StrOrPath]):
         
         if data_dir is None:
-            data_dir = mycek_data_path()
+            data_dir = _mycek_data_path()
         else:
             data_dir = Path(data_dir)
         
@@ -166,7 +188,7 @@ class Validate():
         return msg
 
 
-def mycek_data_path() -> Path:
+def _mycek_data_path() -> Path:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     return Path(this_dir) / "mycek2014"
 

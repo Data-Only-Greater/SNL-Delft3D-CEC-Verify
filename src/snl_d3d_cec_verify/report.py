@@ -14,6 +14,8 @@ import pandas as pd # type: ignore
 from .types import StrOrPath
 from ._docs import docstringtemplate
 
+__all__ = ["Content"]
+
 
 @dataclass
 class _TextDataclassMixin:

@@ -6,8 +6,8 @@ import collections
 from typing import (cast,
                     Dict,
                     Optional,
-                    Sequence,
-                    TYPE_CHECKING)
+                    Sequence)
+from functools import wraps
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -15,15 +15,14 @@ import pandas as pd # type: ignore
 import xarray as xr
 
 from .base import TimeStepResolver
+from ..cases import CaseStudy
 from ..types import Num, StrOrPath
-
-if TYPE_CHECKING: # pragma: no cover
-    from ..cases import CaseStudy
 
 
 # TODO: I'd like to type check this, but I can't get it to work.
 def _extract(method):
     
+    @wraps(method)
     def magic(self, t_step: int,
                     kz: Num,
                     x: Optional[Sequence[Num]] = None,
@@ -35,7 +34,7 @@ def _extract(method):
         if do_interp == 1:
             raise RuntimeError("x and y must both be set")
         
-        t_step = self.resolve_t_step(t_step)
+        t_step = self._resolve_t_step(t_step)
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
@@ -110,33 +109,33 @@ class Faces(TimeStepResolver):
     @_extract
     def extract_z(self, t_step: int,
                         z: Num) -> xr.Dataset:
-        return faces_frame_to_slice(self._frame,
+        return _faces_frame_to_slice(self._frame,
                                     self._t_steps[t_step],
                                     z=z)
     
     @_extract
     def extract_k(self, t_step: int,
                         k: int) -> xr.Dataset:
-        return faces_frame_to_slice(self._frame,
+        return _faces_frame_to_slice(self._frame,
                                     self._t_steps[t_step],
                                     k=k)
     
     def extract_depth(self, t_step: int) -> xr.DataArray:
         
-        t_step = self.resolve_t_step(t_step)
+        t_step = self._resolve_t_step(t_step)
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
         
-        return faces_frame_to_depth(self._frame,
+        return _faces_frame_to_depth(self._frame,
                                     self._t_steps[t_step])
     
     def _load_t_step(self, t_step: int):
         
-        t_step = self.resolve_t_step(t_step)
+        t_step = self._resolve_t_step(t_step)
         if t_step in self._t_steps: return
         
-        frame = map_to_faces_frame(self.map_path, t_step)
+        frame = _map_to_faces_frame(self.map_path, t_step)
         
         if self._frame is None:
             self._frame = frame
@@ -153,7 +152,7 @@ def _check_case_study(case: CaseStudy):
         raise ValueError("case study must have length one")
 
 
-def map_to_faces_frame(map_path: StrOrPath,
+def _map_to_faces_frame(map_path: StrOrPath,
                        t_step: int = None) -> pd.DataFrame:
     
     data = collections.defaultdict(list)
@@ -189,7 +188,7 @@ def map_to_faces_frame(map_path: StrOrPath,
     return pd.DataFrame(data)
 
 
-def faces_frame_to_slice(frame: pd.DataFrame,
+def _faces_frame_to_slice(frame: pd.DataFrame,
                          sim_time: pd.Timestamp,
                          k: Optional[int] = None,
                          z: Optional[Num] = None) -> xr.Dataset:
@@ -241,7 +240,7 @@ def faces_frame_to_slice(frame: pd.DataFrame,
     return ds
 
 
-def faces_frame_to_depth(frame: pd.DataFrame,
+def _faces_frame_to_depth(frame: pd.DataFrame,
                          sim_time: pd.Timestamp) -> xr.DataArray:
     
     frame = frame.set_index(['x', 'y', 'k', 'time'])

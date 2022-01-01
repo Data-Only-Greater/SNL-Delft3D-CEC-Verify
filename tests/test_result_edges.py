@@ -5,13 +5,13 @@ import pytest
 import geopandas as gpd
 from shapely.geometry import LineString
 
-from snl_d3d_cec_verify.result.edges import map_to_edges_geoframe, Edges
+from snl_d3d_cec_verify.result.edges import _map_to_edges_geoframe, Edges
 
 
 def test_map_to_edges_geoframe(data_dir):
     
     map_path = data_dir / "output" / "FlowFM_map.nc"
-    gdf = map_to_edges_geoframe(map_path, -1)
+    gdf = _map_to_edges_geoframe(map_path, -1)
     
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 498
@@ -35,7 +35,7 @@ def edges(data_dir):
 def test_edges_load_t_step_first(edges):
     
     t_step = -1
-    expected_t_step = edges.resolve_t_step(t_step)
+    expected_t_step = edges._resolve_t_step(t_step)
     edges._load_t_step(t_step)
     
     assert len(edges._frame) == 498

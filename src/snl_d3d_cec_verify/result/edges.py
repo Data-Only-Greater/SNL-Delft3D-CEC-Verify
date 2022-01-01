@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -11,12 +11,10 @@ import pandas as pd # type: ignore
 import geopandas as gpd # type: ignore
 import xarray as xr
 from shapely.geometry import LineString # type: ignore
+from shapely.geometry.base import BaseGeometry # type: ignore
 
 from .base import TimeStepResolver
 from ..types import StrOrPath
-
-if TYPE_CHECKING: # pragma: no cover
-    from shapely.geometry.base import BaseGeometry # type: ignore
 
 
 @dataclass
@@ -33,7 +31,7 @@ class Edges(TimeStepResolver):
                         goem: Optional[BaseGeometry] = None
                                                     ) -> gpd.GeoDataFrame:
         
-        t_step = self.resolve_t_step(t_step)
+        t_step = self._resolve_t_step(t_step)
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
@@ -62,10 +60,10 @@ class Edges(TimeStepResolver):
     
     def _load_t_step(self, t_step: int):
         
-        t_step = self.resolve_t_step(t_step)
+        t_step = self._resolve_t_step(t_step)
         if t_step in self._t_steps: return
         
-        frame = map_to_edges_geoframe(self.map_path, t_step)
+        frame = _map_to_edges_geoframe(self.map_path, t_step)
         
         if self._frame is None:
             self._frame = frame
@@ -73,10 +71,11 @@ class Edges(TimeStepResolver):
             self._frame = self._frame.append(frame,
                                              ignore_index=True,
                                              sort=False)
+        
         self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
 
 
-def map_to_edges_geoframe(map_path: StrOrPath,
+def _map_to_edges_geoframe(map_path: StrOrPath,
                           t_step: int = None) -> gpd.GeoDataFrame:
     
     data = collections.defaultdict(list)

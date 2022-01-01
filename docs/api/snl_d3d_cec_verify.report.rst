@@ -5,4 +5,3 @@ snl\_d3d\_cec\_verify.report package
    :members:
    :undoc-members:
    :show-inheritance:
-   :exclude-members: Report
