@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 import pandas as pd # type: ignore
 
 from .types import StrOrPath
+from ._docs import docstringtemplate
 
 
 @dataclass
@@ -85,24 +86,96 @@ class _MetaLine:
 
 @dataclass
 class Content:
+    """Class for storting document content in Pandoc markdown format. Use in
+    conjunction with the :class:`.Report` class.
+    
+    Content is stored in order, for example:
+    
+    >>> report = Report()
+    >>> report.content.add_text("one")
+    >>> report.content.add_text("two")
+    >>> print(report)
+    1: one
+    2:
+    3: two
+    4:
+    
+    Note that an empty line is placed between each part of the content.
+    
+    :param width: maximum paragraph width, in characters
+    """
+    
+    #: maximum paragraph width, in characters
     width: Optional[int] = field(default=None)
     _body: List[Tuple[str, Type[_BaseParagraph]]] = field(default_factory=list,
                                                           init=False)
     
+    @docstringtemplate
     def add_text(self, text: str, wrapped: bool = True):
+        """Add a paragraph of text to the document.
+        
+        >>> report = Report()
+        >>> report.content.add_text("one")
+        >>> print(report)
+        1: one
+        2:
+        
+        :param text: Paragraph text
+        :param wrapped: Wrap the text based on the value of the :attr:`width`
+            parameter, defaults to {wrapped}.
+        
+        """
         
         if wrapped:
             self._body.append((text, _WrappedParagraph))
         else:
             self._body.append((text, _Paragraph))
     
+    @docstringtemplate
     def add_heading(self, text: str, level: int = 1):
+        """Add a heading to the document.
+        
+        >>> report = Report()
+        >>> report.content.add_heading("One")
+        >>> print(report)
+        1: # One
+        2:
+        
+        :param text: Heading text
+        :param level: Heading level, defaults to {level}.
+        
+        """
+        
         start = '#' * level + ' '
         self.add_text(start + text, wrapped=False)
     
+    @docstringtemplate
     def add_table(self, dataframe: pd.DataFrame,
                         index: bool = True,
                         caption: Optional[str] = None):
+        """Add a table to the document, converted from a 
+        :class:`pandas:pandas.DataFrame`.
+        
+        >>> report = Report()
+        >>> a = {{"a": [1, 2],
+        ...      "b": [3, 4]}}
+        >>> df = pd.DataFrame(a)
+        >>> report.content.add_table(df, index=False, caption="A table")
+        >>> print(report)
+        1: |   a |   b |
+        2: |----:|----:|
+        3: |   1 |   3 |
+        4: |   2 |   4 |
+        5:
+        6: Table:  A table
+        7:
+        
+        :param dataframe: DataFrame containing the table headings and data 
+        :param index: include the DataFrame index in the table, defaults to
+            {index}
+        :param caption: add a caption for the table
+
+        """
         
         self.add_text(dataframe.to_markdown(index=index), wrapped=False)
         
@@ -115,6 +188,23 @@ class Content:
                         caption: Optional[str] = None,
                         width: Optional[str] = None,
                         height: Optional[str] = None):
+        """Add image to document, passed as path to a compatible image file.
+        
+        >>> report = Report()
+        >>> report.content.add_image("high_art.png",
+        ...                          caption="Probably an NFT",
+        ...                          width="6in",
+        ...                          height="4in")
+        >>> print(report)
+        1: ![Probably an NFT](high_art.png){ width=6in height=4in }
+        2:
+        
+        :param path: path to the image file
+        :param caption: caption for the image
+        :param width: image width in document, including units
+        :param height: image height in document, including units
+
+        """
         
         path = Path(path)
         
@@ -143,9 +233,32 @@ class Content:
         self.add_text(text, wrapped=False)
     
     def clear(self):
+        """Remove all content from the document
+        
+        >>> report = Report()
+        >>> report.content.add_text("one")
+        >>> report.content.add_text("two")
+        >>> report.content.clear()
+        >>> print(report)
+        
+        
+        """
+        
         self._body = []
     
     def undo(self):
+        """Undo the last content addition
+        
+        >>> report = Report()
+        >>> report.content.add_text("one")
+        >>> report.content.add_text("two")
+        >>> report.content.undo()
+        >>> print(report)
+        1: one
+        2:
+        
+        """
+        
         self._body.pop()
     
     def __call__(self) -> List[str]:
