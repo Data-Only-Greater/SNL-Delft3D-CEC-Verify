@@ -50,8 +50,8 @@ class Result:
     
     :param project_path: path to the Delft3D project directory
     :param relative_map_parts: list of components representing the relative
-        path to the FlowFM_map.nc file, from the project directory. Defaults
-        to ["output", "FlowFM_map.nc"]
+        path to the :code:`FlowFM_map.nc` file, from the project directory. 
+        Defaults to :code:`["output", "FlowFM_map.nc"]`
     
     """
     
@@ -89,14 +89,29 @@ class Result:
     
     @property
     def times(self):
+        """Time steps of the Delft3D simulation
+        
+        :type: numpy.typing.NDArray[numpy.datetime64]
+        """
         return self._times
     
     @property
     def edges(self):
+        """Results on the grid edges. See the :class:`.Edges` documentation
+        for usage
+        
+        :type: Edges
+        """
+        
         return self._edges
     
     @property
     def faces(self):
+        """Results on the grid faces. See the :class:`.Faces` documentation
+        for usage
+        
+        :type: Faces
+        """
         return self._faces
     
     def __repr__(self):
