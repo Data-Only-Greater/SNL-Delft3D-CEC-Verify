@@ -48,6 +48,10 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    
+    :raises ValueError: if variables with multiple values have different
+        lengths
+    
     """
     
     dx: OneOrManyNum = 1 #: grid spacing in x-directions, in meters
@@ -144,6 +148,10 @@ class MycekStudy(CaseStudy):
     :param dt_init: initial time step, in seconds. Defaults to {dt_init}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    
+    :raises ValueError: if variables with multiple values have different
+        lengths
+    
     """
    
     turb_pos_x: OneOrManyNum = field(default=6, init=False)

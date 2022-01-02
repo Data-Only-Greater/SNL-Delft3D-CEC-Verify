@@ -120,7 +120,7 @@ class Faces(TimeStepResolver):
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
         
-        :param t_step: Time step
+        :param t_step: Time step index
         :param case: Case study from which to get turbine position
         :param offset_x: Shift x-coordinate of extraction point, in metres.
             Defaults to {offset_x}
@@ -128,6 +128,12 @@ class Faces(TimeStepResolver):
             Defaults to {offset_y}
         :param offset_z: Shift z-coordinate of extraction point, in metres.
             Defaults to {offset_z}
+        
+        :raises IndexError: if the time-step index (``t_step``) is out of
+            range
+        :raises ValueError: if the length of the :class:`.CaseStudy` object is
+            greater than one
+        
         :rtype: xarray.Dataset
         
         """
@@ -182,7 +188,7 @@ class Faces(TimeStepResolver):
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
         
-        :param t_step: Time step
+        :param t_step: Time step index
         :param case: Case study from which to get turbine position
         :param x_step: Sample step, in metres. Defaults to {x_step}
         :param offset_x: Shift x-coordinate of extraction point, in metres.
@@ -191,6 +197,12 @@ class Faces(TimeStepResolver):
             Defaults to {offset_y}
         :param offset_z: Shift z-coordinate of extraction point, in metres.
             Defaults to {offset_z}
+        
+        :raises IndexError: if the time-step index (``t_step``) is out of
+            range
+        :raises ValueError: if the length of the :class:`.CaseStudy` object is
+            greater than one
+        
         :rtype: xarray.Dataset
         
         """
@@ -239,10 +251,16 @@ class Faces(TimeStepResolver):
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
-        :param t_step: Time step
+        :param t_step: Time step index
         :param case: Case study from which to get turbine position
         :param offset_z: Shift z-coordinate of extraction point, in metres.
             Defaults to {offset_z}
+        
+        :raises IndexError: if the time-step index (``t_step``) is out of
+            range
+        :raises ValueError: if the length of the :class:`.CaseStudy` object is
+            greater than one
+        
         :rtype: xarray.Dataset
         
         """
@@ -300,12 +318,17 @@ class Faces(TimeStepResolver):
             $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
         
-        :param t_step: Time step
+        :param t_step: Time step index
         :param z: z-level at which to extract data
         :param x: x-coordinates on which to interpolate data
         :type x: Optional[Sequence[Union[int, float]]]
         :param y: y-coordinates on which to interpolate data
         :type y: Optional[Sequence[Union[int, float]]]
+        
+        :raises IndexError: if the time-step index (``t_step``) is out of
+            range
+        :raises RuntimeError: if only ``x`` or ``y`` is set
+        
         :rtype: xarray.Dataset
         
         """
@@ -320,7 +343,7 @@ class Faces(TimeStepResolver):
         """Extract data on the plane at the given sigma-level (k). Available
         data is:
         
-        * :code:`z`: the z-level
+        * :code:`z`: the z-level, in metres
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
@@ -363,12 +386,17 @@ class Faces(TimeStepResolver):
             $v$      ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
             $w$      ($x$, $y$) float64 -0.01473 -0.01473 -0.01473 ... 0.001343 0.001343
         
-        :param t_step: Time step
+        :param t_step: Time step index
         :param k: k-level (sigma) at which to extract data
         :param x: x-coordinates on which to interpolate data
         :type x: Optional[Sequence[Union[int, float]]]
         :param y: y-coordinates on which to interpolate data
         :type y: Optional[Sequence[Union[int, float]]]
+        
+        :raises IndexError: if the time-step index (``t_step``) is out of
+            range
+        :raises RuntimeError: if only ``x`` or ``y`` is set
+        
         :rtype: xarray.Dataset
         
         """
@@ -378,7 +406,7 @@ class Faces(TimeStepResolver):
                                      k=k)
     
     def extract_depth(self, t_step: int) -> xr.DataArray:
-        """Extract the depth of the domain.
+        """Extract the depth, in meters, at each of the face centres.
         
         Results are returned as a :class:`xarray.DataArray`. For example:
         
@@ -407,7 +435,11 @@ class Faces(TimeStepResolver):
           * y        (y) float64 1.5 2.5 3.5 4.5
             time     datetime64[ns] 2001-01-01T01:00:00
         
-        :param t_step: Time step
+        :param t_step: Time step index
+        
+        :raises IndexError: if the time-step index (``t_step``) is out of
+            range
+        
         :rtype: xarray.DataArray
         
         """

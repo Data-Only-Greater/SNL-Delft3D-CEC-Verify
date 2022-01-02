@@ -64,11 +64,15 @@ class Edges(TimeStepResolver):
         3   POINT (9.00000 2.00000)  7.737631e-01
         4  POINT (10.00000 2.00000)  7.750168e-01
         
-        :param t_step: Time step
+        :param t_step: Time step index
         :param k: sigma level
         :param goem: Optional shapely geometry, where data is extracted on
             the intersection with the grid edges using the 
             :meth:`object.intersection` method.
+        
+        :raises IndexError: if the time-step index (``t_step``) is
+            out of range
+        
         :return: Returns a :class:`geopandas.GeoDataFrame` with 
             :class:`LineString` geometries for each edge or the result of the
             intersection with :code:`geom` if set.
