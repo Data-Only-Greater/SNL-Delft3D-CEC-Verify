@@ -84,7 +84,7 @@ class Result:
     
     @property
     def x_lim(self):
-        """Domain limits in the x-direction
+        """Domain limits in the x-direction, in metres
         
         :type: Tuple[float, float]
         
@@ -96,7 +96,7 @@ class Result:
     
     @property
     def y_lim(self):
-        """Domain limits in the y-direction
+        """Domain limits in the y-direction, in metres
         
         :type: Tuple[float, float]
         

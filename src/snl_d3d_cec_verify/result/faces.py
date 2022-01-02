@@ -51,7 +51,31 @@ def _extract(method):
 
 @dataclass
 class Faces(TimeStepResolver):
-    xmax: Num
+    """Class for extracting results on the faces of the simulation grid. Use in
+    conjunction with the :class:`.Result` class.
+    
+    >>> result = Result("../test_data")
+    >>> result.faces.extract_z(-1, -1)
+    <xarray.Dataset>
+    Dimensions:  ($x$: 18, $y$: 4)
+    Coordinates:
+      * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+      * $y$      ($y$) float64 1.5 2.5 3.5 4.5
+        $z$      int32 -1
+        time     datetime64[ns] 2001-01-01T01:00:00
+    Data variables:
+        k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
+        $u$      ($x$, $y$) float64 0.781 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
+        $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
+        $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
+        
+    :param map_path: path to the :code:`FlowFM_map.nc` file
+    :param n_steps: number of time steps in the simulation
+    :param xmax: Maximum of x-direction range, in metres
+    
+    """
+    
+    xmax: Num #: Maximum of x-direction range, in metres
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,
                                               repr=False)
@@ -64,6 +88,43 @@ class Faces(TimeStepResolver):
                                      offset_x: Num = 0,
                                      offset_y: Num = 0,
                                      offset_z: Num = 0) -> xr.Dataset:
+        """Extract data at the turbine centre, as defined in the given
+        :class:`.CaseStudy` object. Available data is:
+        
+        * :code:`k`: sigma layer
+        * :code:`u`: velocity in the x-direction, in metres per second
+        * :code:`v`: velocity in the x-direction, in metres per second
+        * :code:`w`: velocity in the x-direction, in metres per second
+        
+        Results are returned as a :class:`xarray.Dataset`. For example:
+        
+        >>> case = MycekStudy()
+        >>> result.faces.extract_turbine_centre(-1, case)
+        <xarray.Dataset>
+        Dimensions:  (dim_0: 1)
+        Coordinates:
+            $z$      int32 -1
+            time     datetime64[ns] 2001-01-01T01:00:00
+            $x$      (dim_0) int32 6
+            $y$      (dim_0) int32 3
+        Dimensions without coordinates: dim_0
+        Data variables:
+            k        (dim_0) float64 1.001
+            $u$      (dim_0) float64 0.7748
+            $v$      (dim_0) float64 -2.942e-17
+            $w$      (dim_0) float64 0.0002786
+        
+        The position extracted can also be shifted using the ``offset_x``,
+        ``offset_y`` and ``offset_z`` parameters.
+        
+        :param t_step: Time step
+        :param case: Case study from which to get turbine position
+        :param offset_x: Shift x-coordinate of extraction point, in metres
+        :param offset_y: Shift y-coordinate of extraction point, in metres
+        :param offset_z: Shift z-coordinate of extraction point, in metres
+        :rtype: xarray.Dataset
+        
+        """
         
         _check_case_study(case)
         

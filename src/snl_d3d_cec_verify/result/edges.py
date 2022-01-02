@@ -46,7 +46,7 @@ class Edges(TimeStepResolver):
         """Extract data from the grid edges for a given time step and sigma
         level (:code:`k`). Available data is:
         
-        * :code:`u1`: velocity (m/s)
+        * :code:`u1`: velocity, in metres per second
         * :code:`n0`: edge normal x-coordinate
         * :code:`n1`: edge normal y-coordinate
         
