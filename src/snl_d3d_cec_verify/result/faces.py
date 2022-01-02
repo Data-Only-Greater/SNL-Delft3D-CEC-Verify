@@ -17,6 +17,8 @@ import xarray as xr
 from .base import TimeStepResolver
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
+from .._docs import docstringtemplate
+
 
 
 # TODO: I'd like to type check this, but I can't get it to work.
@@ -83,6 +85,7 @@ class Faces(TimeStepResolver):
                                            init=False,
                                            repr=False)
     
+    @docstringtemplate
     def extract_turbine_centre(self, t_step: int,
                                      case: CaseStudy,
                                      offset_x: Num = 0,
@@ -119,9 +122,12 @@ class Faces(TimeStepResolver):
         
         :param t_step: Time step
         :param case: Case study from which to get turbine position
-        :param offset_x: Shift x-coordinate of extraction point, in metres
-        :param offset_y: Shift y-coordinate of extraction point, in metres
-        :param offset_z: Shift z-coordinate of extraction point, in metres
+        :param offset_x: Shift x-coordinate of extraction point, in metres.
+            Defaults to {offset_x}
+        :param offset_y: Shift y-coordinate of extraction point, in metres.
+            Defaults to {offset_y}
+        :param offset_z: Shift z-coordinate of extraction point, in metres.
+            Defaults to {offset_z}
         :rtype: xarray.Dataset
         
         """
@@ -138,12 +144,56 @@ class Faces(TimeStepResolver):
                               [turb_pos_x + offset_x],
                               [turb_pos_y + offset_y])
     
+    @docstringtemplate
     def extract_turbine_centreline(self, t_step: int,
                                          case: CaseStudy,
                                          x_step: Num = 0.5,
                                          offset_x: Num = 0,
                                          offset_y: Num = 0,
                                          offset_z: Num = 0) -> xr.Dataset:
+        """Extract data along the turbine centreline, from the turbine
+        position defined in the given :class:`.CaseStudy` object. Available 
+        data is:
+        
+        * :code:`k`: sigma layer
+        * :code:`u`: velocity in the x-direction, in metres per second
+        * :code:`v`: velocity in the x-direction, in metres per second
+        * :code:`w`: velocity in the x-direction, in metres per second
+        
+        Results are returned as a :class:`xarray.Dataset`. Use the ``x_step``
+        argument to control the frequency of samples. For example:
+        
+        >>> case = MycekStudy()
+        >>> result.faces.extract_turbine_centreline(-1, case, x_step=1)
+        <xarray.Dataset>
+        Dimensions:  (dim_0: 13)
+        Coordinates:
+            $z$      int32 -1
+            time     datetime64[ns] 2001-01-01T01:00:00
+            $x$      (dim_0) float64 6.0 7.0 8.0 9.0 10.0 ... 14.0 15.0 16.0 17.0 18.0
+            $y$      (dim_0) int32 3 3 3 3 3 3 3 3 3 3 3 3 3
+        Dimensions without coordinates: dim_0
+        Data variables:
+            k        (dim_0) float64 1.001 1.001 1.001 1.001 1.001 ... 1.0 1.0 1.0 nan
+            $u$      (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
+            $v$      (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
+            $w$      (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
+        
+        The position extracted can also be shifted using the ``offset_x``,
+        ``offset_y`` and ``offset_z`` parameters.
+        
+        :param t_step: Time step
+        :param case: Case study from which to get turbine position
+        :param x_step: Sample step, in metres. Defaults to {x_step}
+        :param offset_x: Shift x-coordinate of extraction point, in metres.
+            Defaults to {offset_x}
+        :param offset_y: Shift y-coordinate of extraction point, in metres.
+            Defaults to {offset_y}
+        :param offset_z: Shift z-coordinate of extraction point, in metres.
+            Defaults to {offset_z}
+        :rtype: xarray.Dataset
+        
+        """
         
         _check_case_study(case)
         
@@ -161,6 +211,41 @@ class Faces(TimeStepResolver):
     def extract_turbine_z(self, t_step: int,
                                 case: CaseStudy,
                                 offset_z: Num = 0) -> xr.Dataset:
+        """Extract data from the z-plane interseting the turbine centre, as
+        defined in the given :class:`.CaseStudy` object, at the face centres.
+        Available data is:
+        
+        * :code:`k`: sigma layer
+        * :code:`u`: velocity in the x-direction, in metres per second
+        * :code:`v`: velocity in the x-direction, in metres per second
+        * :code:`w`: velocity in the x-direction, in metres per second
+        
+        Results are returned as a :class:`xarray.Dataset`.For example:
+        
+        >>> case = MycekStudy()
+        >>> result.faces.extract_turbine_z(-1, case)
+        <xarray.Dataset>
+        Dimensions:  ($x$: 18, $y$: 4)
+        Coordinates:
+          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
+            $z$      int32 -1
+            time     datetime64[ns] 2001-01-01T01:00:00
+        Data variables:
+            k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
+            $u$      ($x$, $y$) float64 0.781 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
+            $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
+            $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
+        
+        The z-plane can be shifted using the ``offset_z`` parameter.
+        
+        :param t_step: Time step
+        :param case: Case study from which to get turbine position
+        :param offset_z: Shift z-coordinate of extraction point, in metres.
+            Defaults to {offset_z}
+        :rtype: xarray.Dataset
+        
+        """
         
         _check_case_study(case)
         turb_pos_z = cast(Num, case.turb_pos_z)
@@ -170,18 +255,162 @@ class Faces(TimeStepResolver):
     @_extract
     def extract_z(self, t_step: int,
                         z: Num) -> xr.Dataset:
+        """Extract data on the plane at the given z-level. Available data is:
+        
+        * :code:`k`: sigma layer
+        * :code:`u`: velocity in the x-direction, in metres per second
+        * :code:`v`: velocity in the x-direction, in metres per second
+        * :code:`w`: velocity in the x-direction, in metres per second
+        
+        Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
+        ``y`` parameters are defined, then the results are interpolated onto
+        the given coordinates. For example:
+        
+        >>> x = [6, 7, 8, 9, 10]
+        >>> y = [2, 2, 2, 2, 2]
+        >>> result.faces.extract_z(-1, -1, x, y)
+        <xarray.Dataset>
+        Dimensions:  (dim_0: 5)
+        Coordinates:
+            $z$      int32 -1
+            time     datetime64[ns] 2001-01-01T01:00:00
+            $x$      (dim_0) int32 6 7 8 9 10
+            $y$      (dim_0) int32 2 2 2 2 2
+        Dimensions without coordinates: dim_0
+        Data variables:
+            k        (dim_0) float64 1.001 1.001 1.001 1.001 1.001
+            $u$      (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
+            $v$      (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
+            $w$      (dim_0) float64 0.0002786 -0.0004764 0.0003097 -0.0002754 0.0003252
+        
+        If ``x`` and ``y`` are not given, then the results are returned at the
+        face centres.
+        
+        >>> result.faces.extract_z(-1, -1)
+        <xarray.Dataset>
+        Dimensions:  ($x$: 18, $y$: 4)
+        Coordinates:
+          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
+            $z$      int32 -1
+            time     datetime64[ns] 2001-01-01T01:00:00
+        Data variables:
+            k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
+            $u$      ($x$, $y$) float64 0.781 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
+            $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
+            $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
+        
+        :param t_step: Time step
+        :param z: z-level at which to extract data
+        :param x: x-coordinates on which to interpolate data
+        :type x: Optional[Sequence[Union[int, float]]]
+        :param y: y-coordinates on which to interpolate data
+        :type y: Optional[Sequence[Union[int, float]]]
+        :rtype: xarray.Dataset
+        
+        """
+        
         return _faces_frame_to_slice(self._frame,
-                                    self._t_steps[t_step],
-                                    z=z)
+                                     self._t_steps[t_step],
+                                     z=z)
     
     @_extract
     def extract_k(self, t_step: int,
                         k: int) -> xr.Dataset:
+        """Extract data on the plane at the given sigma-level (k). Available
+        data is:
+        
+        * :code:`z`: the z-level
+        * :code:`u`: velocity in the x-direction, in metres per second
+        * :code:`v`: velocity in the x-direction, in metres per second
+        * :code:`w`: velocity in the x-direction, in metres per second
+        
+        Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
+        ``y`` parameters are defined, then the results are interpolated onto
+        the given coordinates. For example:
+        
+        >>> x = [6, 7, 8, 9, 10]
+        >>> y = [2, 2, 2, 2, 2]
+        >>> result.faces.extract_k(-1, 1, x, y)
+        <xarray.Dataset>
+        Dimensions:  (dim_0: 5)
+        Coordinates:
+            k        int32 1
+            time     datetime64[ns] 2001-01-01T01:00:00
+            $x$      (dim_0) int32 6 7 8 9 10
+            $y$      (dim_0) int32 2 2 2 2 2
+        Dimensions without coordinates: dim_0
+        Data variables:
+            $z$      (dim_0) float64 -1.001 -1.001 -1.001 -1.001 -1.001
+            $u$      (dim_0) float64 0.7747 0.7746 0.7744 0.7745 0.7745
+            $v$      (dim_0) float64 -3.88e-18 4.267e-17 5.452e-17 5.002e-17 8.013e-17
+            $w$      (dim_0) float64 0.0002791 -0.0004769 0.0003101 -0.0002756 0.0003256
+        
+        If ``x`` and ``y`` are not given, then the results are returned at the
+        face centres.
+        
+        >>> result.faces.extract_k(-1, 1)
+        <xarray.Dataset>
+        Dimensions:  ($x$: 18, $y$: 4)
+        Coordinates:
+          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
+            k        int32 1
+            time     datetime64[ns] 2001-01-01T01:00:00
+        Data variables:
+            $z$      ($x$, $y$) float64 -1.001 -1.001 -1.001 -1.001 ... -1.0 -1.0 -1.0
+            $u$      ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
+            $v$      ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
+            $w$      ($x$, $y$) float64 -0.01473 -0.01473 -0.01473 ... 0.001343 0.001343
+        
+        :param t_step: Time step
+        :param k: k-level (sigma) at which to extract data
+        :param x: x-coordinates on which to interpolate data
+        :type x: Optional[Sequence[Union[int, float]]]
+        :param y: y-coordinates on which to interpolate data
+        :type y: Optional[Sequence[Union[int, float]]]
+        :rtype: xarray.Dataset
+        
+        """
+        
         return _faces_frame_to_slice(self._frame,
-                                    self._t_steps[t_step],
-                                    k=k)
+                                     self._t_steps[t_step],
+                                     k=k)
     
     def extract_depth(self, t_step: int) -> xr.DataArray:
+        """Extract the depth of the domain.
+        
+        Results are returned as a :class:`xarray.DataArray`. For example:
+        
+        >>> result.faces.extract_depth(-1)
+        <xarray.DataArray 'depth' (x: 18, y: 4)>
+        array([[2.00234445, 2.00234445, 2.00234445, 2.00234445],
+               [2.00224624, 2.00224624, 2.00224624, 2.00224624],
+               [2.00212823, 2.00212823, 2.00212823, 2.00212823],
+               [2.00201275, 2.00201275, 2.00201275, 2.00201275],
+               [2.00188605, 2.00188605, 2.00188605, 2.00188605],
+               [2.00176218, 2.00176218, 2.00176218, 2.00176218],
+               [2.00163089, 2.00163089, 2.00163089, 2.00163089],
+               [2.00150178, 2.00150178, 2.00150178, 2.00150178],
+               [2.0013675 , 2.0013675 , 2.0013675 , 2.0013675 ],
+               [2.00123502, 2.00123502, 2.00123502, 2.00123502],
+               [2.00109849, 2.00109849, 2.00109849, 2.00109849],
+               [2.00096352, 2.00096352, 2.00096352, 2.00096352],
+               [2.0008259 , 2.0008259 , 2.0008259 , 2.0008259 ],
+               [2.00068962, 2.00068962, 2.00068962, 2.00068962],
+               [2.0005524 , 2.0005524 , 2.0005524 , 2.0005524 ],
+               [2.00041653, 2.00041653, 2.00041653, 2.00041653],
+               [2.00027887, 2.00027887, 2.00027887, 2.00027887],
+               [2.00014281, 2.00014281, 2.00014281, 2.00014281]])
+        Coordinates:
+          * x        (x) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * y        (y) float64 1.5 2.5 3.5 4.5
+            time     datetime64[ns] 2001-01-01T01:00:00
+        
+        :param t_step: Time step
+        :rtype: xarray.DataArray
+        
+        """
         
         t_step = self._resolve_t_step(t_step)
         
@@ -189,7 +418,7 @@ class Faces(TimeStepResolver):
             self._load_t_step(t_step)
         
         return _faces_frame_to_depth(self._frame,
-                                    self._t_steps[t_step])
+                                     self._t_steps[t_step])
     
     def _load_t_step(self, t_step: int):
         
@@ -250,9 +479,9 @@ def _map_to_faces_frame(map_path: StrOrPath,
 
 
 def _faces_frame_to_slice(frame: pd.DataFrame,
-                         sim_time: pd.Timestamp,
-                         k: Optional[int] = None,
-                         z: Optional[Num] = None) -> xr.Dataset:
+                          sim_time: pd.Timestamp,
+                          k: Optional[int] = None,
+                          z: Optional[Num] = None) -> xr.Dataset:
     
     if (k is None and z is None) or (k is not None and z is not None):
         raise RuntimeError("either k or z must be given")
