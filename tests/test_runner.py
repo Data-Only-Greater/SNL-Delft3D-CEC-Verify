@@ -20,8 +20,6 @@ def test_run_dflowfm(capsys, mocker, tmp_path, data_dir):
     else:
         d3d_bin_path = data_dir / "linux"
     
-    d = tmp_path / "input"
-    d.mkdir()
     omp_num_threads = 99
     
     run_dflowfm(d3d_bin_path,
@@ -43,7 +41,7 @@ def test_run_dflowfm(capsys, mocker, tmp_path, data_dir):
         expected_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
     
     assert dflowfm_path == expected_dflowfm_path
-    assert cwd == d
+    assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
     assert 'stdout' in captured.out
     assert 'dflowfm' in captured.out
@@ -66,8 +64,6 @@ def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
     else:
         d3d_bin_path = data_dir / "linux"
     
-    d = tmp_path / "input"
-    d.mkdir()
     omp_num_threads = 99
     
     with pytest.raises(RuntimeError) as excinfo:
@@ -91,7 +87,7 @@ def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
         expected_dflowfm_path = Path(d3d_bin_path) / "run_dflowfm.sh"
     
     assert dflowfm_path == expected_dflowfm_path
-    assert cwd == d
+    assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
     assert 'stderr' in captured.out
     assert 'error' in captured.out
@@ -117,8 +113,6 @@ def test_run_dflowfm_unsupported_os(mocker):
 def test_run_dflowfm_missing_script(tmp_path):
     
     d3d_bin_path = "mock_bin"
-    d = tmp_path / "input"
-    d.mkdir()
     
     with pytest.raises(FileNotFoundError) as excinfo:
         run_dflowfm(d3d_bin_path,
@@ -143,7 +137,7 @@ def test_run_dflowfm_missing_input_folder(tmp_path, data_dir):
         run_dflowfm(d3d_bin_path,
                     project_path)
     
-    assert "input folder could not be found" in str(excinfo)
+    assert "Model folder could not be found" in str(excinfo)
     assert project_path in str(excinfo)
 
 
@@ -157,6 +151,6 @@ def test_runner_call(mocker):
     runner(project_path)
     
     mock.assert_called_with(d3d_bin_path,
-                            project_path,
+                            Path(project_path) / "input",
                             runner.omp_num_threads,
                             runner.show_stdout)
