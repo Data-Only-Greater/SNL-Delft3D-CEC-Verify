@@ -11,6 +11,7 @@ from .cases import CaseStudy
 from .copier import copy
 from .gridfm import write_gridfm_rectangle
 from .types import Num, StrOrPath
+from ._docs import docstringtemplate
 
 
 def package_fm_template_path():
@@ -18,8 +19,30 @@ def package_fm_template_path():
     return Path(this_dir) / "templates" / "fm"
 
 
+@docstringtemplate
 @dataclass
 class Template:
+    """Class for creating Delft3D projects from templates
+    
+    Utilises the :func:`.copier.copy` to fill the template and
+    :func:`.gridfm.write_gridfm_rectangle` function to create the flexible
+    mesh grid.
+    
+    Call a Template object with a length one :class:`.CaseStudy` object and
+    a path to create a Delft3D project at the given path. For example:
+    
+    >>> 
+    
+    :param template_path: path to the Delft3D project template, defaults to
+        Path(./templates/fm)
+    :param exist_ok: if True, allow an existing path to be overwritten,
+        defaults to {exist_ok}
+    :param no_template: variables to ignore in the given
+        :class:`.CaseStudy` objects when filling templates, defaults to
+        ["dx", "dy"]
+    
+    """
+    
     template_path: StrOrPath = field(default_factory=package_fm_template_path)
     exist_ok: bool = False
     no_template: List[str] = field(default_factory=lambda: ["dx", "dy"])

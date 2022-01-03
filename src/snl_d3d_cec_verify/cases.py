@@ -17,9 +17,9 @@ OneOrManyNum = Union[Num, Sequence[Num]]
 @dataclass(frozen=True)
 class CaseStudy:
     """
-    Class for defining single or multiple case studies to test.
+    Class for defining variables for single or multiple case studies.
     
-    When defining multiple values for multiple parameters, the given 
+    When defining multiple values for multiple variables, the given 
     sequences must be the same length, e.g.:
     
     >>> cases = CaseStudy(dx=[1, 2, 3, 4],

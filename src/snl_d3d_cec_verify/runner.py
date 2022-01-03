@@ -17,7 +17,7 @@ __all__ = ["run_dflowfm"]
 
 @dataclass
 class Runner:
-    """A wrapper around the :func:`.run_dflowfm` function to use the same
+    """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
     settings accross many Delft3D projects.
     
     Call the Runner object with the project path to execute the Delft3D model
@@ -37,8 +37,8 @@ class Runner:
     :param show_stdout: show Delft3D logging to stdout in console, defaults
         to {show_stdout}
     :param relative_input_parts: list of components representing the
-        relative path to folder containing the delft3D model files, from
-        the project folder. Set to None to given path directly. Defaults to 
+        relative path to folder containing the delft3D model files, from the
+        project folder. Set to None to use given path directly. Defaults to
         :code:`["input"]`
     
     .. automethod:: __call__
