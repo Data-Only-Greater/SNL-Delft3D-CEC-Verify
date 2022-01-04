@@ -9,12 +9,45 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from .types import AnyByStrDict, StrOrPath
+from ._docs import docstringtemplate
 
 
+@docstringtemplate
 def copy(src_path: StrOrPath,
          dst_path: StrOrPath,
          data: Optional[AnyByStrDict] = None,
          exist_ok: bool = False):
+    """Recursively copy and populate a source folder containing templated or 
+    non-templated files to the given destination folder
+    
+    >>> import tempfile
+    >>> from pathlib import Path
+    >>> with tempfile.TemporaryDirectory() as tmpdirname:
+    ...     template = Path(tmpdirname) / "input"
+    ...     template.mkdir()
+    ...     p = template / "hello.txt"
+    ...     p.write_text("{{{{ x }}}}\\n")
+    ...     result = Path(tmpdirname) / "output"
+    ...     copy(template, result, {{"x": "Hello!"}})
+    ...     print((result / "hello.txt").read_text())
+    Hello!
+    
+    
+    :param src_path: path to the folder containing the source files
+    :param dst_path: path to the destination folder
+    :param data: dictionary containing the data used to populate the template
+        files. The keys are the variable names used in the template with the
+        values being the replacement values.
+    :param exist_ok:  if True, allow an existing path to be overwritten,
+        defaults to {exist_ok}
+    
+    :raises ValueError: if the given :class:`.CaseStudy` object is not length
+        one or if :attr:`~template_path` does not exist
+    :raises FileExistsError: if the project path exists, but :attr:`~exist_ok`
+        is False
+    :raises RuntimeError: if trying to remove a non-basic file or folder
+    
+    """
     
     # Check that the template path exists
     if not Path(src_path).exists():
