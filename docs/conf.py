@@ -42,6 +42,7 @@ autodoc_member_order = 'bysource'
 # Intersphinx configuration
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'geopandas': ('https://geopandas.org/en/stable/', None),
+                       'jinja': ('https://jinja.palletsprojects.com/en/latest/', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'pandas': ('http://pandas.pydata.org/pandas-docs/dev', None),
                        'shapely': ('https://shapely.readthedocs.io/en/stable', None),

@@ -18,7 +18,10 @@ def copy(src_path: StrOrPath,
          data: Optional[AnyByStrDict] = None,
          exist_ok: bool = False):
     """Recursively copy and populate a source folder containing templated or 
-    non-templated files to the given destination folder
+    non-templated files to the given destination folder.
+    
+    Templates are rendered using the :meth:`jinja2.Template.render` method.
+    For example:
     
     >>> import tempfile
     >>> from pathlib import Path

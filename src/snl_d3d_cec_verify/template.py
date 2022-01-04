@@ -24,12 +24,12 @@ def package_fm_template_path():
 class Template:
     """Class for creating Delft3D projects from templates
     
-    Utilises the :func:`.copier.copy` to fill the template and
+    Utilises the :func:`.copier.copy` function to fill the template and the
     :func:`.gridfm.write_gridfm_rectangle` function to create the flexible
     mesh grid.
     
     Call a Template object with a length one :class:`.CaseStudy` object and
-    a path to create a Delft3D project at the given path. For example:
+    a path at which to create a Delft3D project. For example:
     
     >>> import pprint
     >>> import tempfile
