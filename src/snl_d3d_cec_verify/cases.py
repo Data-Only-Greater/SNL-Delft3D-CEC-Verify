@@ -23,7 +23,7 @@ class CaseStudy:
     sequences must be the same length, e.g.:
     
     >>> cases = CaseStudy(dx=[1, 2, 3, 4],
-                          dy=[4, 5, 6, 7])
+    ...                   dy=[4, 5, 6, 7])
     >>> print(cases)
     CaseStudy(dx=[1, 2, 3, 4], dy=[4, 5, 6, 7], sigma=3, dt_max=1, dt_init=1, \
 turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
