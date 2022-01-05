@@ -88,7 +88,7 @@ class _MetaLine:
 
 @dataclass
 class Content:
-    """Class for storting document content in Pandoc markdown format. Use in
+    """Class for storing document content in Pandoc markdown format. Use in
     conjunction with the :class:`.Report` class.
     
     Content is stored in order, for example:

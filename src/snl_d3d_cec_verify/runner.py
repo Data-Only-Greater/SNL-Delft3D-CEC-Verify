@@ -18,7 +18,7 @@ __all__ = ["run_dflowfm"]
 @dataclass
 class Runner:
     """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
-    settings accross many Delft3D projects.
+    settings across many Delft3D projects.
     
     Call the Runner object with the project path to execute the Delft3D model
     
