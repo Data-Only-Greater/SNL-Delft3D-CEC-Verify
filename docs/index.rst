@@ -8,9 +8,8 @@ Welcome to SNL-Delft3D-CEC-Verify's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
    
-   api/modules
+   api/snl_d3d_cec_verify
 
 
 

@@ -1,5 +1,5 @@
-snl\_d3d\_cec\_verify package
-=============================
+API
+===
 
 Subpackages
 -----------
@@ -13,8 +13,8 @@ Subpackages
    snl_d3d_cec_verify.result
    snl_d3d_cec_verify.runner
 
-Module contents
----------------
+snl\_d3d\_cec\_verify package
+-----------------------------
 
 .. automodule:: snl_d3d_cec_verify
    :members:
