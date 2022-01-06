@@ -10,9 +10,14 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-import os
 import sys
-sys.path.insert(0, os.path.abspath('../src/snl_d3d_cec_verify'))
+from pathlib import Path
+
+def src_dir():
+    this_file = Path(__file__).resolve()
+    return (this_file.parent / ".." / "src" / "snl_d3d_cec_verify").resolve()
+
+sys.path.insert(0, src_dir())
 
 
 # -- Project information -----------------------------------------------------
