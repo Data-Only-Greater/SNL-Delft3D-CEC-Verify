@@ -52,18 +52,19 @@ jobs:
       - name: Install package
         run: |
           pip install --no-deps -e .
+      - name: Create build directory
+        run: echo "BUILD_DIR=$(mktemp -d -t pages-XXXXXXXXXX)" >> $GITHUB_ENV
       - name: Build docs
         run: |
           conda install sphinx sphinx-autodoc-typehints
           pip install insipid-sphinx-theme
-          echo "TMP_DIR=$(mktemp -d -t pages-XXXXXXXXXX)" >> $GITHUB_ENV
-          sphinx-build -b html -W --keep-going ./docs ${{ env.TMP_DIR }}
+          sphinx-build -b html -W --keep-going ./docs ${{ env.BUILD_DIR }}
       - name: Deploy
         #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ env.TMP_DIR }}
+          publish_dir: ${{ env.BUILD_DIR }}
   status:
     name: Documentation
     runs-on: ubuntu-latest
