@@ -119,7 +119,7 @@ def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
     assert "simulation failure" in str(excinfo)
 
 
-def test_run_dflowfm_missing_input_folder(tmp_path, mocker):
+def test_run_dflowfm_missing_input_folder(mocker):
     
     mocker.patch("snl_d3d_cec_verify.runner._get_dflowfm_entry_point")
     d3d_bin_path = "mock_bin"
