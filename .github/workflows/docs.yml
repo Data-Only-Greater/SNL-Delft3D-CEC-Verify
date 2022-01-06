@@ -56,14 +56,14 @@ jobs:
         run: |
           conda install sphinx sphinx-autodoc-typehints
           pip install insipid-sphinx-theme
-          tmp_dir=$(mktemp -d -t pages-XXXXXXXXXX)
-          sphinx-build -b html ./docs $tmp_dir
+          echo "TMP_DIR=$(mktemp -d -t pages-XXXXXXXXXX)" >> $GITHUB_ENV
+          sphinx-build -b html -W --keep-going ./docs ${{ env.TMP_DIR }}
       - name: Deploy
         #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: $tmp_dir
+          publish_dir: ${{ env.TMP_DIR }}
   status:
     name: Documentation
     runs-on: ubuntu-latest
