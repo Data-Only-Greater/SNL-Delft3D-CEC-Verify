@@ -33,6 +33,9 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     needs: doctest
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -41,7 +44,7 @@ jobs:
         with:
           activate-environment: _snld3d
           environment-file: environment.yml
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.9'
           auto-activate-base: false
       - run: |
           conda info
