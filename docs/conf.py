@@ -33,7 +33,8 @@ release = '0.2.0'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.githubpages'
 ]
 
 # Autodoc configuration
