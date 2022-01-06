@@ -38,16 +38,16 @@ class Template:
     >>> with tempfile.TemporaryDirectory() as tmpdirname:
     ...     template(CaseStudy(), tmpdirname)
     ...     inputdir = Path(tmpdirname) / "input"
-    ...     pprint.pprint([x.name for x in inputdir.iterdir()])
-    ['curves.trb',
-     'Discharge.bc',
+    ...     pprint.pprint(sorted([x.name for x in inputdir.iterdir()]))
+    ['Discharge.bc',
      'FlowFM.mdu',
      'FlowFM_bnd.ext',
      'FlowFM_net.nc',
      'Inlet.pli',
      'Outlet.pli',
-     'turbines.ini',
-     'WaterLevel.bc']
+     'WaterLevel.bc',
+     'curves.trb',
+     'turbines.ini']
     
     
     :param template_path: path to the Delft3D project template, defaults to

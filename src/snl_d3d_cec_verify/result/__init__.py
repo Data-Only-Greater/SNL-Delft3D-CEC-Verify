@@ -186,7 +186,7 @@ class Validate():
     array([0.40064647, 0.40064647, 0.39288889, 0.38189899, 0.39806061,
            0.44460606, 0.49309091, 0.54610101, 0.56614141, 0.60622222])
     Coordinates:
-        $z$      int32 0
+        $z$      ... 0
         $x$      (dim_0) float64 0.84 1.4 2.1 2.8 3.5 4.2 4.9 5.6 6.3 7.0
         $y$      (dim_0) float64 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     ...
@@ -202,7 +202,7 @@ class Validate():
     array([0.40064647, 0.40064647, 0.39288889, 0.38189899, 0.39806061,
            0.44460606, 0.49309091, 0.54610101, 0.56614141, 0.60622222])
     Coordinates:
-        $z$      int32 -1
+        $z$      ... -1
         $x$      (dim_0) float64 6.84 7.4 8.1 8.8 9.5 10.2 10.9 11.6 12.3 13.0
         $y$      (dim_0) float64 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0
     ...
@@ -300,13 +300,13 @@ class Transect():
     Data is stored for each x and y pair, in order. For example:
     
     >>> x = Transect(-1, [1, 2, 3, 4], [2, 2, 2, 2], [5, 4, 3, 2])
-    >>> x.to_xarray()
+    >>> x.to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray (dim_0: 4)>
     array([5, 4, 3, 2])
     Coordinates:
-        $z$      int32 -1
-        $x$      (dim_0) int32 1 2 3 4
-        $y$      (dim_0) int32 2 2 2 2
+        $z$      ... -1
+        $x$      (dim_0) ... 1 2 3 4
+        $y$      (dim_0) ... 2 2 2 2
     Dimensions without coordinates: dim_0
     
     :class:`.Transect` objects can also be unpacked, like a dictionary, to 
@@ -315,14 +315,14 @@ class Transect():
     >>> from snl_d3d_cec_verify import Result
     >>> data_dir = getfixture('data_dir')
     >>> result = Result(data_dir)
-    >>> result.faces.extract_z(-1, **x)
+    >>> result.faces.extract_z(-1, **x) #doctest: +ELLIPSIS
     <xarray.Dataset>
     Dimensions:  (dim_0: 4)
     Coordinates:
-        $z$      int32 -1
+        $z$      ... -1
         time     datetime64[ns] 2001-01-01T01:00:00
-        $x$      (dim_0) int32 1 2 3 4
-        $y$      (dim_0) int32 2 2 2 2
+        $x$      (dim_0) ... 1 2 3 4
+        $y$      (dim_0) ... 2 2 2 2
     Dimensions without coordinates: dim_0
     Data variables:
         k        (dim_0) float64 1.002 1.002 1.002 1.001

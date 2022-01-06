@@ -58,13 +58,13 @@ class Faces(TimeStepResolver):
     >>> from snl_d3d_cec_verify import Result
     >>> data_dir = getfixture('data_dir')
     >>> result = Result(data_dir)
-    >>> result.faces.extract_z(-1, -1)
+    >>> result.faces.extract_z(-1, -1) #doctest: +ELLIPSIS
     <xarray.Dataset>
     Dimensions:  ($x$: 18, $y$: 4)
     Coordinates:
       * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
       * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-        $z$      int32 -1
+        $z$      ... -1
         time     datetime64[ns] 2001-01-01T01:00:00
     Data variables:
         k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
@@ -106,14 +106,14 @@ class Faces(TimeStepResolver):
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> case = MycekStudy()
-        >>> result.faces.extract_turbine_centre(-1, case)
+        >>> result.faces.extract_turbine_centre(-1, case) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  (dim_0: 1)
         Coordinates:
-            $z$      int32 -1
+            $z$      ... -1
             time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) int32 6
-            $y$      (dim_0) int32 3
+            $x$      (dim_0) ... 6
+            $y$      (dim_0) ... 3
         Dimensions without coordinates: dim_0
         Data variables:
             k        (dim_0) float64 1.001
@@ -177,14 +177,14 @@ class Faces(TimeStepResolver):
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> case = MycekStudy()
-        >>> result.faces.extract_turbine_centreline(-1, case, x_step=1)
+        >>> result.faces.extract_turbine_centreline(-1, case, x_step=1) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  (dim_0: 13)
         Coordinates:
-            $z$      int32 -1
+            $z$      ... -1
             time     datetime64[ns] 2001-01-01T01:00:00
             $x$      (dim_0) float64 6.0 7.0 8.0 9.0 10.0 ... 14.0 15.0 16.0 17.0 18.0
-            $y$      (dim_0) int32 3 3 3 3 3 3 3 3 3 3 3 3 3
+            $y$      (dim_0) ... 3 3 3 3 3 3 3 3 3 3 3 3 3
         Dimensions without coordinates: dim_0
         Data variables:
             k        (dim_0) float64 1.001 1.001 1.001 1.001 1.001 ... 1.0 1.0 1.0 nan
@@ -245,13 +245,13 @@ class Faces(TimeStepResolver):
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> case = MycekStudy()
-        >>> result.faces.extract_turbine_z(-1, case)
+        >>> result.faces.extract_turbine_z(-1, case) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  ($x$: 18, $y$: 4)
         Coordinates:
           * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
           * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-            $z$      int32 -1
+            $z$      ... -1
             time     datetime64[ns] 2001-01-01T01:00:00
         Data variables:
             k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
@@ -299,14 +299,14 @@ class Faces(TimeStepResolver):
         >>> result = Result(data_dir)
         >>> x = [6, 7, 8, 9, 10]
         >>> y = [2, 2, 2, 2, 2]
-        >>> result.faces.extract_z(-1, -1, x, y)
+        >>> result.faces.extract_z(-1, -1, x, y) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  (dim_0: 5)
         Coordinates:
-            $z$      int32 -1
+            $z$      ... -1
             time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) int32 6 7 8 9 10
-            $y$      (dim_0) int32 2 2 2 2 2
+            $x$      (dim_0) ... 6 7 8 9 10
+            $y$      (dim_0) ... 2 2 2 2 2
         Dimensions without coordinates: dim_0
         Data variables:
             k        (dim_0) float64 1.001 1.001 1.001 1.001 1.001
@@ -317,13 +317,13 @@ class Faces(TimeStepResolver):
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
         
-        >>> result.faces.extract_z(-1, -1)
+        >>> result.faces.extract_z(-1, -1) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  ($x$: 18, $y$: 4)
         Coordinates:
           * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
           * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-            $z$      int32 -1
+            $z$      ... -1
             time     datetime64[ns] 2001-01-01T01:00:00
         Data variables:
             k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
@@ -370,14 +370,14 @@ class Faces(TimeStepResolver):
         >>> result = Result(data_dir)
         >>> x = [6, 7, 8, 9, 10]
         >>> y = [2, 2, 2, 2, 2]
-        >>> result.faces.extract_k(-1, 1, x, y)
+        >>> result.faces.extract_k(-1, 1, x, y) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  (dim_0: 5)
         Coordinates:
-            k        int32 1
+            k        ... 1
             time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) int32 6 7 8 9 10
-            $y$      (dim_0) int32 2 2 2 2 2
+            $x$      (dim_0) ... 6 7 8 9 10
+            $y$      (dim_0) ... 2 2 2 2 2
         Dimensions without coordinates: dim_0
         Data variables:
             $z$      (dim_0) float64 -1.001 -1.001 -1.001 -1.001 -1.001
@@ -388,13 +388,13 @@ class Faces(TimeStepResolver):
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
         
-        >>> result.faces.extract_k(-1, 1)
+        >>> result.faces.extract_k(-1, 1) #doctest: +ELLIPSIS
         <xarray.Dataset>
         Dimensions:  ($x$: 18, $y$: 4)
         Coordinates:
           * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
           * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-            k        int32 1
+            k        ... 1
             time     datetime64[ns] 2001-01-01T01:00:00
         Data variables:
             $z$      ($x$, $y$) float64 -1.001 -1.001 -1.001 -1.001 ... -1.0 -1.0 -1.0
