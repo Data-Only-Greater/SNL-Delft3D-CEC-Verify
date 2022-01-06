@@ -52,16 +52,18 @@ jobs:
       - name: Install package
         run: |
           pip install --no-deps -e .
-      - name: Build and Commit
-        uses: sphinx-notes/pages@v2
-        with:
-          requirements_path: './docs/requirements.txt'
-      - name: Push changes
+      - name: Build docs
+        run: |
+          conda install sphinx sphinx-autodoc-typehints
+          pip install insipid-sphinx-theme
+          tmp_dir=$(mktemp -d -t pages-XXXXXXXXXX)
+          sphinx-build -b html ./docs $tmp_dir
+      - name: Deploy
         #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: ad-m/github-push-action@master
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
+          publish_dir: $tmp_dir
   status:
     name: Documentation
     runs-on: ubuntu-latest
