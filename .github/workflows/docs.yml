@@ -39,7 +39,7 @@ jobs:
           lfs: 'true'
       - uses: ammaraskar/sphinx-action@master
         with:
-          docs-folder: "docs/"
+          docs-folder: 'docs/'
       - name: Commit documentation changes
         run: |
           git clone ${{ github.server_url }}/${{ github.repository }}.git --branch gh-pages --single-branch gh-pages
