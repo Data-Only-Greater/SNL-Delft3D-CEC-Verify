@@ -38,8 +38,8 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     CaseStudy(dx=3, dy=6, ...
     CaseStudy(dx=4, dy=7, ...
     
-    :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
-    :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
+    :param dx: grid spacing in x-direction, in meters. Defaults to {dx}
+    :param dy: grid spacing in y-direction, in meters. Defaults to {dy}
     :param sigma: number of vertical layers, defaults to {sigma}
     :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
     :param dt_init: initial time step, in seconds. Defaults to {dt_init}
@@ -54,9 +54,9 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     
     """
     
-    dx: OneOrManyNum = 1 #: grid spacing in x-directions, in meters
-    dy: OneOrManyNum = 1 #: grid spacing in y-directions, in meters
-    sigma: OneOrManyNum = 3 #: number of vertical layers,
+    dx: OneOrManyNum = 1 #: grid spacing in x-direction, in meters
+    dy: OneOrManyNum = 1 #: grid spacing in y-direction, in meters
+    sigma: OneOrManyNum = 3 #: number of vertical layers
     dt_max: OneOrManyNum = 1 #: maximum time step, in seconds
     dt_init: OneOrManyNum = 1 #: initial time step, in seconds
     turb_pos_x: OneOrManyNum = 6 #: turbine x-position, in meters

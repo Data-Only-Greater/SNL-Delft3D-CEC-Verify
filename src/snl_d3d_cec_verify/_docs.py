@@ -13,8 +13,11 @@ def docstringtemplate(func):
         f = func.__func__
         spec = signature(f)
     
-    defaults = {key: param.default if not param.default == param.empty
-                        else None for key, param in spec.parameters.items()}
+    defaults = {key: f"``{param.default}``"
+                    if not param.default == param.empty
+                        else None
+                            for key, param in spec.parameters.items()}
+    
     f.__doc__ = f.__doc__ and f.__doc__.format(**defaults)
     
     return func

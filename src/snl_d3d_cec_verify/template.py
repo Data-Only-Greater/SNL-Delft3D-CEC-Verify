@@ -51,12 +51,12 @@ class Template:
     
     
     :param template_path: path to the Delft3D project template, defaults to
-        Path(./templates/fm)
+        ``Path("./templates/fm")``
     :param exist_ok: if True, allow an existing path to be overwritten,
         defaults to {exist_ok}
     :param no_template: variables to ignore in the given
         :class:`.CaseStudy` objects when filling templates, defaults to
-        ["dx", "dy"]
+        ``["dx", "dy"]``
     
     .. automethod:: __call__
     

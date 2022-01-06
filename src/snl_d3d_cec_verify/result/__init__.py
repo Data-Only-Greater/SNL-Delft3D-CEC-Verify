@@ -210,7 +210,7 @@ class Validate():
     :param case: Case study from which to get turbine position
     :param data_dir: path to folder containing YAML files representing 
         transects. Each file must have the ``attrs.description`` key set.
-        Defaults to ``./mycek2014``
+        Defaults to ``Path("./mycek2014")``
     
     :raises FileNotFoundError: if ``data_dir`` is not a directory
     
