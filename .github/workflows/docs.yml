@@ -35,8 +35,8 @@ jobs:
     needs: doctest
     steps:
       - uses: actions/checkout@v2
-          with:
-            lfs: 'true'
+        with:
+          lfs: 'true'
       - uses: ammaraskar/sphinx-action@master
         with:
           docs-folder: "docs/"
