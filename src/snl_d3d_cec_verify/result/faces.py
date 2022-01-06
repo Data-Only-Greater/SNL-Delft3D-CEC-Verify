@@ -20,7 +20,6 @@ from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
 
 
-
 # TODO: I'd like to type check this, but I can't get it to work.
 def _extract(method):
     
@@ -56,7 +55,9 @@ class Faces(TimeStepResolver):
     """Class for extracting results on the faces of the simulation grid. Use in
     conjunction with the :class:`.Result` class.
     
-    >>> result = Result("../test_data")
+    >>> from snl_d3d_cec_verify import Result
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
     >>> result.faces.extract_z(-1, -1)
     <xarray.Dataset>
     Dimensions:  ($x$: 18, $y$: 4)
@@ -101,6 +102,9 @@ class Faces(TimeStepResolver):
         
         Results are returned as a :class:`xarray.Dataset`. For example:
         
+        >>> from snl_d3d_cec_verify import MycekStudy, Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> case = MycekStudy()
         >>> result.faces.extract_turbine_centre(-1, case)
         <xarray.Dataset>
@@ -169,6 +173,9 @@ class Faces(TimeStepResolver):
         Results are returned as a :class:`xarray.Dataset`. Use the ``x_step``
         argument to control the frequency of samples. For example:
         
+        >>> from snl_d3d_cec_verify import MycekStudy, Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> case = MycekStudy()
         >>> result.faces.extract_turbine_centreline(-1, case, x_step=1)
         <xarray.Dataset>
@@ -234,6 +241,9 @@ class Faces(TimeStepResolver):
         
         Results are returned as a :class:`xarray.Dataset`.For example:
         
+        >>> from snl_d3d_cec_verify import MycekStudy, Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> case = MycekStudy()
         >>> result.faces.extract_turbine_z(-1, case)
         <xarray.Dataset>
@@ -284,6 +294,9 @@ class Faces(TimeStepResolver):
         ``y`` parameters are defined, then the results are interpolated onto
         the given coordinates. For example:
         
+        >>> from snl_d3d_cec_verify import Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> x = [6, 7, 8, 9, 10]
         >>> y = [2, 2, 2, 2, 2]
         >>> result.faces.extract_z(-1, -1, x, y)
@@ -352,6 +365,9 @@ class Faces(TimeStepResolver):
         ``y`` parameters are defined, then the results are interpolated onto
         the given coordinates. For example:
         
+        >>> from snl_d3d_cec_verify import Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> x = [6, 7, 8, 9, 10]
         >>> y = [2, 2, 2, 2, 2]
         >>> result.faces.extract_k(-1, 1, x, y)
@@ -410,6 +426,9 @@ class Faces(TimeStepResolver):
         
         Results are returned as a :class:`xarray.DataArray`. For example:
         
+        >>> from snl_d3d_cec_verify import Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> result.faces.extract_depth(-1)
         <xarray.DataArray 'depth' (x: 18, y: 4)>
         array([[2.00234445, 2.00234445, 2.00234445, 2.00234445],

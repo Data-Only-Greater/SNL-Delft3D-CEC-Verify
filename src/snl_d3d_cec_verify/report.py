@@ -292,15 +292,16 @@ class Report:
     3: % 24 April 1916
     4:
     5: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas
-    6: scelerisque magna.
+    6: vitae scelerisque magna.
     7:
     
     Note that line numbers are also printed. The report can also be saved to
     file, by iterating through each line:
     
-    >>> with open("report.md", "wt") as f:
+    >>> with open("report.md", "wt") as f: # doctest: +SKIP
     ...     for line in report:
-    ...         f.write(line)
+    ...         f.write(line) 
+    
     
     :param width: maximum paragraph width, in characters
     :param date_format: format for document date as passed to 

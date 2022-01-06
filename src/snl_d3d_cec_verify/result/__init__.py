@@ -52,11 +52,12 @@ class Result:
     metadata from the simulation. Data generated on the grid edges and 
     faces are accessible from the :attr:`edges` and :attr:`faces` attributes.
     
-    >>> result = Result("../test_data")
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
     >>> result.x_lim
     (0.0, 18.0)
     
-    >>> result.edges.extract_k(-1, 1)
+    >>> result.edges.extract_k(-1, 1) #doctest: +ELLIPSIS
                                             geometry            u1   n0   n1
     0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
     ...
@@ -90,6 +91,8 @@ class Result:
         
         :type: Tuple[float, float]
         
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> result.x_lim
         (0.0, 18.0)
         
@@ -102,6 +105,8 @@ class Result:
         
         :type: Tuple[float, float]
         
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> result.y_lim
         (1.0, 5.0)
         
@@ -114,7 +119,9 @@ class Result:
         
         :type: numpy.typing.NDArray[numpy.datetime64]
         
-        >>> result.y_lim
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
+        >>> result.times
         array(['2001-01-01T00:00:00.000000000', '2001-01-01T01:00:00.000000000'],
         dtype='datetime64[ns]')
         
@@ -174,7 +181,7 @@ class Validate():
     Validate(0: Centreline velocity
              1: Axial velocity at $x^*=5$)
     
-    >>> validate[0].to_xarray()
+    >>> validate[0].to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray '$u_0$' (dim_0: 10)>
     array([0.40064647, 0.40064647, 0.39288889, 0.38189899, 0.39806061,
            0.44460606, 0.49309091, 0.54610101, 0.56614141, 0.60622222])
@@ -184,13 +191,13 @@ class Validate():
         $y$      (dim_0) float64 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     ...
     
-    
     Use a :class:`.CaseStudy` object to translate the origin of the transects
     to the turbine position.
     
+    >>> from snl_d3d_cec_verify import MycekStudy
     >>> case = MycekStudy()
     >>> validate = Validate(case)
-    >>> validate[0].to_xarray()
+    >>> validate[0].to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray '$u_0$' (dim_0: 10)>
     array([0.40064647, 0.40064647, 0.39288889, 0.38189899, 0.39806061,
            0.44460606, 0.49309091, 0.54610101, 0.56614141, 0.60622222])
@@ -199,7 +206,6 @@ class Validate():
         $x$      (dim_0) float64 6.84 7.4 8.1 8.8 9.5 10.2 10.9 11.6 12.3 13.0
         $y$      (dim_0) float64 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0
     ...
-    
     
     :param case: Case study from which to get turbine position
     :param data_dir: path to folder containing YAML files representing 
@@ -306,7 +312,9 @@ class Transect():
     :class:`.Transect` objects can also be unpacked, like a dictionary, to 
     extract matching data from the :meth:`.Faces.extract_z` method:
     
-    >>> result = Result("../test_data")
+    >>> from snl_d3d_cec_verify import Result
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
     >>> result.faces.extract_z(-1, **x)
     <xarray.Dataset>
     Dimensions:  (dim_0: 4)

@@ -23,9 +23,8 @@ class Runner:
     Call the Runner object with the project path to execute the Delft3D model
     
     >>> runner = Runner("path/to/Delft3D/src/bin",
-                        omp_num_threads=8)
-    >>> runner("path/to/project")
-    ...
+    ...                  omp_num_threads=8)
+    >>> runner("path/to/project") # doctest: +SKIP
     
     
     Currently only available for Windows and Linux.

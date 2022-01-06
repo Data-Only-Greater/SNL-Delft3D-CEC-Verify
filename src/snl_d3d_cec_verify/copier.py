@@ -29,12 +29,11 @@ def copy(src_path: StrOrPath,
     ...     template = Path(tmpdirname) / "input"
     ...     template.mkdir()
     ...     p = template / "hello.txt"
-    ...     p.write_text("{{{{ x }}}}\\n")
+    ...     _ = p.write_text("{{{{ x }}}}\\n")
     ...     result = Path(tmpdirname) / "output"
     ...     copy(template, result, {{"x": "Hello!"}})
     ...     print((result / "hello.txt").read_text())
     Hello!
-    
     
     :param src_path: path to the folder containing the source files
     :param dst_path: path to the destination folder

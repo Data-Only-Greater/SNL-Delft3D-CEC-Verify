@@ -31,7 +31,7 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     The above example will generate an object representing 4 cases, which can
     then be iterated:
     
-    >>> for case in cases:
+    >>> for case in cases: #doctest: +ELLIPSIS
     ...     print(case)
     CaseStudy(dx=1, dy=4, ...
     CaseStudy(dx=2, dy=5, ...

@@ -22,8 +22,10 @@ class Edges(TimeStepResolver):
     """Class for extracting results on the edges of the simulation grid. Use in
     conjunction with the :class:`.Result` class.
     
-    >>> result = Result("../test_data")
-    >>> result.edges.extract_k(-1, 1)
+    >>> from snl_d3d_cec_verify import Result
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
+    >>> result.edges.extract_k(-1, 1) #doctest: +ELLIPSIS
                                             geometry            u1   n0   n1
     0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
     ...
@@ -55,6 +57,9 @@ class Edges(TimeStepResolver):
         :code:`geom` if set. For example:
         
         >>> from shapely.geometry import LineString
+        >>> from snl_d3d_cec_verify import Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
         >>> line = LineString([(6, 2), (10, 2)])
         >>> result.edges.extract_k(-1, 1, line)
                    geometry            u1
