@@ -78,6 +78,8 @@ class Template:
         """Create a new Delft3D project from the given :class:`.CaseStudy`
         object, at the given path.
         
+        Note that boolean values are converted to integers.
+        
         :param case: :class:`.CaseStudy` object from which to build the
             project
         :param project_path: new project destination path
@@ -88,7 +90,7 @@ class Template:
             length one or if :attr:`~template_path` does not exist
         :raises FileExistsError: if the project path exists, but
             :attr:`~exist_ok` is False
-
+        
         """
         
         if len(case) != 1:
@@ -101,6 +103,10 @@ class Template:
         data = {field: value
                     for field, value in zip(case.fields, case.values)
                                             if field not in self.no_template}
+        
+        # Convert booleans to ints
+        data = {field: int(value) if type(value) is bool else value
+                                        for field, value in data.items()}
         
         template_path = Path(self.template_path)
         project_path = Path(project_path)

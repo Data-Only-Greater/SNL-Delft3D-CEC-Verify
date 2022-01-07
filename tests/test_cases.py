@@ -21,7 +21,8 @@ def test_casestudy_fields():
                                 'turb_pos_x',
                                 'turb_pos_y',
                                 'turb_pos_z',
-                                'discharge']
+                                'discharge',
+                                'horizontal_momentum_filter']
 
 
 def test_casestudy_unequal_inputs():
@@ -45,7 +46,8 @@ def test_casestudy_values(cases):
                             6,
                             3,
                             -1,
-                            6.0574]
+                            6.0574,
+                            True]
 
 
 @pytest.mark.parametrize("index", [0, 1, 2, 3])

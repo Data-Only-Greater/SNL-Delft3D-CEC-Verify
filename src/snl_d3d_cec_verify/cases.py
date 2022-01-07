@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Union
+from typing import Any, List, Union
 from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
 
@@ -24,9 +24,8 @@ class CaseStudy:
     
     >>> cases = CaseStudy(dx=[1, 2, 3, 4],
     ...                   dy=[4, 5, 6, 7])
-    >>> print(cases)
-    CaseStudy(dx=[1, 2, 3, 4], dy=[4, 5, 6, 7], sigma=3, dt_max=1, dt_init=1, \
-turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
+    >>> print(cases) #doctest: +ELLIPSIS
+    CaseStudy(dx=[1, 2, 3, 4], dy=[4, 5, 6, 7], sigma=3, ...
     
     The above example will generate an object representing 4 cases, which can
     then be iterated:
@@ -48,6 +47,8 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    :param horizontal_momentum_filter: use high-order horizontal momentum 
+        filter. Defaults to {horizontal_momentum_filter}
     
     :raises ValueError: if variables with multiple values have different
         lengths
@@ -65,6 +66,9 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
     
     #: inlet boundary discharge, in cubic meters per second
     discharge: OneOrManyNum = 6.0574
+    
+    #: use high-order horizontal momentum filter
+    horizontal_momentum_filter: bool = True
     
     def __post_init__(self):
         
@@ -94,7 +98,7 @@ turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
         return [x.name for x in fields(cls)]
     
     @property
-    def values(self) -> List[OneOrManyNum]:
+    def values(self) -> List[Any]:
         """Returns field values"""
         return [getattr(self, f) for f in self.fields]
     
@@ -148,6 +152,8 @@ class MycekStudy(CaseStudy):
     :param dt_init: initial time step, in seconds. Defaults to {dt_init}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    :param horizontal_momentum_filter: use high-order horizontal momentum 
+        filter. Defaults to {horizontal_momentum_filter}
     
     :raises ValueError: if variables with multiple values have different
         lengths

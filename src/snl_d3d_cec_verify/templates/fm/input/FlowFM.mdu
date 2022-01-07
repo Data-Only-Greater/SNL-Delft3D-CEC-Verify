@@ -75,6 +75,7 @@ AntiCreep                         = 0               # Include anti-creep calcula
 Maxwaterleveldiff                 = 0               # Upper bound on water level changes (<=0: no bounds)
 Maxvelocitydiff                   = 0               # Upper bound on velocity changes (<=0: no bounds)
 Epshu                             = 0.0001          # Threshold water depth for wet and dry cells
+HorizontalMomentumFilter          = {{ '{:<15}'.format(horizontal_momentum_filter) }} # Use high-order horizontal momentum filter  (1: yes, 0: no)
 
 [physics]
 UnifFrictCoef                     = 0.023           # Uniform friction coefficient (0: no friction)
