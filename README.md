@@ -3,6 +3,7 @@
 
 [![unit tests](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/unit_tests.yml)
 [![static type checks](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/static_type_checks.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/static_type_checks.yml)
+[![documentation](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/docs.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/docs.yml)
 
 [![codecov](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify)
 
@@ -113,9 +114,11 @@ called `validation_report`.
 
 ## Documentation
 
-Currently, the examples are the only indicative documentation of how
-`SNL-Delft3D-CEC-Verify` is used. Improved documentation of the available 
-features will be forthcoming in the near future.
+API documentation, which describes the classes and functions used in the 
+examples, can be found [here][9].
+
+Documentation updates will be ongoing. Instructions for building the 
+documentation locally are available [here](docs/README.md).
 
 ## Testing
 
@@ -179,3 +182,4 @@ Renewable Energy, 66, 729–746.
 [6]: https://github.com/openearth/delft3dfmpy
 [7]: https://github.com/django/django
 [8]: https://git-lfs.github.com/
+[9]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/api/snl_d3d_cec_verify.html
