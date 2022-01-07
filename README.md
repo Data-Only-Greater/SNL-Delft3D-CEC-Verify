@@ -122,8 +122,8 @@ documentation locally are available [here](docs/README.md).
 
 ## Testing
 
-To run unit and type testing on the package, first install the required
-dependencies:
+To run unit, type testing and doctests on the package, first install the 
+required dependencies:
 
 ```
 (_snld3d) > conda install -y mypy pytest pytest-mock
@@ -139,6 +139,12 @@ To run the type tests, type the following from the root directory:
 
 ```
 (_snld3d) > mypy --install-types src
+```
+
+To run doctests, type the following from the root directory:
+
+```
+(_snld3d) > pytest --doctest-modules src
 ```
 
 ## Uninstall
