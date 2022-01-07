@@ -42,6 +42,7 @@ def test_template_call(mocker):
                                                  Path(project_path)])
     assert set(expected_fields) <= set(mock_copy_kwargs["data"])
     assert mock_copy_kwargs["exist_ok"] is exist_ok
+    assert mock_copy_kwargs["data"]["horizontal_momentum_filter"] == 1
     
     mock_write_gridfm_rectangle.assert_called_with(expected_net_path,
                                                    case.dx,
