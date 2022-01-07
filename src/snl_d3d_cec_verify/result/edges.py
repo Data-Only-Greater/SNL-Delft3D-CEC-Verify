@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -11,16 +11,29 @@ import pandas as pd # type: ignore
 import geopandas as gpd # type: ignore
 import xarray as xr
 from shapely.geometry import LineString # type: ignore
+from shapely.geometry.base import BaseGeometry # type: ignore
 
 from .base import TimeStepResolver
 from ..types import StrOrPath
 
-if TYPE_CHECKING: # pragma: no cover
-    from shapely.geometry.base import BaseGeometry # type: ignore
-
 
 @dataclass
 class Edges(TimeStepResolver):
+    """Class for extracting results on the edges of the simulation grid. Use in
+    conjunction with the :class:`.Result` class.
+    
+    >>> from snl_d3d_cec_verify import Result
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
+    >>> result.edges.extract_k(-1, 1) #doctest: +ELLIPSIS
+                                            geometry            u1   n0   n1
+    0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
+    ...
+    
+    :param map_path: path to the :code:`FlowFM_map.nc` file
+    :param n_steps: number of time steps in the simulation
+    """
+    
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,
                                               repr=False)
@@ -32,8 +45,46 @@ class Edges(TimeStepResolver):
                         k: int,
                         goem: Optional[BaseGeometry] = None
                                                     ) -> gpd.GeoDataFrame:
+        """Extract data from the grid edges for a given time step and sigma
+        level (:code:`k`). Available data is:
         
-        t_step = self.resolve_t_step(t_step)
+        * :code:`u1`: velocity, in metres per second
+        * :code:`n0`: edge normal x-coordinate
+        * :code:`n1`: edge normal y-coordinate
+        
+        Results are returned as a :class:`geopandas.GeoDataFrame`, either 
+        for all of the edges or for the result of the intersection with 
+        :code:`geom` if set. For example:
+        
+        >>> from shapely.geometry import LineString
+        >>> from snl_d3d_cec_verify import Result
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
+        >>> line = LineString([(6, 2), (10, 2)])
+        >>> result.edges.extract_k(-1, 1, line)
+                   geometry            u1
+        0   POINT (6.00000 2.00000) -6.794595e-18
+        1   POINT (7.00000 2.00000)  7.732358e-01
+        2   POINT (8.00000 2.00000)  7.753754e-01
+        3   POINT (9.00000 2.00000)  7.737631e-01
+        4  POINT (10.00000 2.00000)  7.750168e-01
+        
+        :param t_step: Time step index
+        :param k: sigma level
+        :param goem: Optional shapely geometry, where data is extracted on
+            the intersection with the grid edges using the 
+            :meth:`object.intersection` method.
+        
+        :raises IndexError: if the time-step index (``t_step``) is
+            out of range
+        
+        :return: Returns a :class:`geopandas.GeoDataFrame` with 
+            :class:`LineString` geometries for each edge or the result of the
+            intersection with :code:`geom` if set.
+        
+        """
+        
+        t_step = self._resolve_t_step(t_step)
         
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
@@ -62,10 +113,10 @@ class Edges(TimeStepResolver):
     
     def _load_t_step(self, t_step: int):
         
-        t_step = self.resolve_t_step(t_step)
+        t_step = self._resolve_t_step(t_step)
         if t_step in self._t_steps: return
         
-        frame = map_to_edges_geoframe(self.map_path, t_step)
+        frame = _map_to_edges_geoframe(self.map_path, t_step)
         
         if self._frame is None:
             self._frame = frame
@@ -73,10 +124,11 @@ class Edges(TimeStepResolver):
             self._frame = self._frame.append(frame,
                                              ignore_index=True,
                                              sort=False)
+        
         self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
 
 
-def map_to_edges_geoframe(map_path: StrOrPath,
+def _map_to_edges_geoframe(map_path: StrOrPath,
                           t_step: int = None) -> gpd.GeoDataFrame:
     
     data = collections.defaultdict(list)

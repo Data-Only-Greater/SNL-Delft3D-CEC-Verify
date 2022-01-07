@@ -14,7 +14,7 @@ from snl_d3d_cec_verify.result.base import TimeStepResolver
                                 ( 2, 2)])
 def test_TimeStepResolver_resolve_t_step(index, expected):
     test = TimeStepResolver("mock", 3)
-    assert test.resolve_t_step(index) == expected
+    assert test._resolve_t_step(index) == expected
 
 
 @pytest.mark.parametrize("index", [-4, 3])
@@ -23,6 +23,6 @@ def test_TimeStepResolver_resolve_t_step_raises(index):
     test = TimeStepResolver("mock", 3)
     
     with pytest.raises(IndexError) as excinfo:
-        test.resolve_t_step(index)
+        test._resolve_t_step(index)
     
     assert "out of range" in str(excinfo)

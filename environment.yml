@@ -1,7 +1,11 @@
 name: _snld3d
+channels:
+  - conda-forge
+  - defaults
 dependencies:
-  - python=3.9
+  - python>=3.9.9,<3.10
   - pip
+  - brotlipy
   - geopandas-base
   - jinja2
   - netCDF4

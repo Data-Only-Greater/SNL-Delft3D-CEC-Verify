@@ -6,9 +6,9 @@ import xarray as xr
 import pytest
 
 from snl_d3d_cec_verify.cases import CaseStudy
-from snl_d3d_cec_verify.result.faces import (map_to_faces_frame,
-                                             faces_frame_to_slice,
-                                             faces_frame_to_depth,
+from snl_d3d_cec_verify.result.faces import (_map_to_faces_frame,
+                                             _faces_frame_to_slice,
+                                             _faces_frame_to_depth,
                                              Faces,
                                              _check_case_study)
 
@@ -16,7 +16,7 @@ from snl_d3d_cec_verify.result.faces import (map_to_faces_frame,
 @pytest.fixture
 def faces_frame(data_dir):
     map_path = data_dir / "output" / "FlowFM_map.nc"
-    return map_to_faces_frame(map_path, -1)
+    return _map_to_faces_frame(map_path, -1)
 
 
 def test_map_to_faces_frame(faces_frame):
@@ -58,7 +58,7 @@ def test_faces_frame_to_slice_k(faces_frame):
     
     ts = pd.Timestamp("2001-01-01 01:00:00")
     k = 0
-    ds = faces_frame_to_slice(faces_frame, ts, k=k)
+    ds = _faces_frame_to_slice(faces_frame, ts, k=k)
     
     assert isinstance(ds, xr.Dataset)
     
@@ -89,7 +89,7 @@ def test_faces_frame_to_slice_z(faces_frame):
     
     ts = pd.Timestamp("2001-01-01 01:00:00")
     z = -1
-    ds = faces_frame_to_slice(faces_frame, ts, z=z)
+    ds = _faces_frame_to_slice(faces_frame, ts, z=z)
     
     assert isinstance(ds, xr.Dataset)
     
@@ -122,7 +122,7 @@ def test_faces_frame_to_slice_z(faces_frame):
 def test_faces_frame_to_slice_k_z_error(k, z):
     
     with pytest.raises(RuntimeError) as excinfo:
-        faces_frame_to_slice("mock", "mock", k=k, z=z)
+        _faces_frame_to_slice("mock", "mock", k=k, z=z)
     
     assert "either k or z must be given" in str(excinfo)
 
@@ -130,7 +130,7 @@ def test_faces_frame_to_slice_k_z_error(k, z):
 def test_faces_frame_to_depth(faces_frame):
     
     ts = pd.Timestamp("2001-01-01 01:00:00")
-    da = faces_frame_to_depth(faces_frame, ts)
+    da = _faces_frame_to_depth(faces_frame, ts)
     
     assert isinstance(da, xr.DataArray)
     
@@ -152,7 +152,7 @@ def faces(data_dir):
 def test_faces_load_t_step_first(faces):
     
     t_step = -1
-    expected_t_step = faces.resolve_t_step(t_step)
+    expected_t_step = faces._resolve_t_step(t_step)
     faces._load_t_step(t_step)
     
     assert len(faces._frame) == 216
@@ -183,13 +183,15 @@ def test_faces_load_t_step_no_repeat(faces):
 
 
 def test_faces_extract_depth(mocker, faces):
-    mock = mocker.patch('snl_d3d_cec_verify.result.faces.faces_frame_to_depth')
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces.'
+                        '_faces_frame_to_depth')
     faces.extract_depth(-1)
     mock.assert_called()
 
 
 def test_faces_extract_k(mocker, faces):
-    mock = mocker.patch('snl_d3d_cec_verify.result.faces.faces_frame_to_slice')
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces.'
+                        '_faces_frame_to_slice')
     faces.extract_k(-1, 0)
     mock.assert_called()
     assert 'k' in mock.call_args.kwargs
@@ -204,7 +206,7 @@ def test_faces_extract_k_interp(faces):
     y = 3
     
     ds = faces.extract_k(t_step, k, x, y)
-    t_step = faces.resolve_t_step(t_step)
+    t_step = faces._resolve_t_step(t_step)
     ts = faces._t_steps[t_step]
     
     assert isinstance(ds, xr.Dataset)
@@ -225,7 +227,8 @@ def test_faces_extract_k_interp(faces):
 
 
 def test_faces_extract_z(mocker, faces):
-    mock = mocker.patch('snl_d3d_cec_verify.result.faces.faces_frame_to_slice')
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces.'
+                        '_faces_frame_to_slice')
     faces.extract_z(-1, -1)
     mock.assert_called()
     assert 'z' in mock.call_args.kwargs
@@ -240,7 +243,7 @@ def test_faces_extract_z_interp(faces):
     y = 3
     
     ds = faces.extract_z(t_step, z, x, y)
-    t_step = faces.resolve_t_step(t_step)
+    t_step = faces._resolve_t_step(t_step)
     ts = faces._t_steps[t_step]
     
     assert isinstance(ds, xr.Dataset)

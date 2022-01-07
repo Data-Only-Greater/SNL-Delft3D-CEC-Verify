@@ -9,3 +9,4 @@ build-backend = "setuptools.build_meta"
 filterwarnings = [
     "ignore::DeprecationWarning:pywintypes",
 ]
+doctest_optionflags = "NORMALIZE_WHITESPACE"

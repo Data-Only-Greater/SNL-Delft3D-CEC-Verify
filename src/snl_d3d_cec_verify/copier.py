@@ -9,12 +9,47 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from .types import AnyByStrDict, StrOrPath
+from ._docs import docstringtemplate
 
 
+@docstringtemplate
 def copy(src_path: StrOrPath,
          dst_path: StrOrPath,
          data: Optional[AnyByStrDict] = None,
          exist_ok: bool = False):
+    """Recursively copy and populate a source folder containing templated or 
+    non-templated files to the given destination folder.
+    
+    Templates are rendered using the :meth:`jinja2.Template.render` method.
+    For example:
+    
+    >>> import tempfile
+    >>> from pathlib import Path
+    >>> with tempfile.TemporaryDirectory() as tmpdirname:
+    ...     template = Path(tmpdirname) / "input"
+    ...     template.mkdir()
+    ...     p = template / "hello.txt"
+    ...     _ = p.write_text("{{{{ x }}}}\\n")
+    ...     result = Path(tmpdirname) / "output"
+    ...     copy(template, result, {{"x": "Hello!"}})
+    ...     print((result / "hello.txt").read_text())
+    Hello!
+    
+    :param src_path: path to the folder containing the source files
+    :param dst_path: path to the destination folder
+    :param data: dictionary containing the data used to populate the template
+        files. The keys are the variable names used in the template with the
+        values being the replacement values.
+    :param exist_ok:  if True, allow an existing path to be overwritten,
+        defaults to {exist_ok}
+    
+    :raises ValueError: if the given :class:`.CaseStudy` object is not length
+        one or if :attr:`~template_path` does not exist
+    :raises FileExistsError: if the project path exists, but :attr:`~exist_ok`
+        is False
+    :raises RuntimeError: if trying to remove a non-basic file or folder
+    
+    """
     
     # Check that the template path exists
     if not Path(src_path).exists():
@@ -42,19 +77,19 @@ def copy(src_path: StrOrPath,
         
         to_copy.mkdir(parents=True)
     
-    relative_paths = get_posix_relative_paths(src_path)
+    relative_paths = _get_posix_relative_paths(src_path)
     env = Environment(loader=FileSystemLoader(str(src_path)),
                       keep_trailing_newline=True)
     if data is None: data = {}
     
     for rel_path in relative_paths:
         try:
-            template_copy(env, dst_path, rel_path, data)
+            _template_copy(env, dst_path, rel_path, data)
         except (UnicodeDecodeError, TemplateNotFound):
-            basic_copy(src_path, dst_path, rel_path)
+            _basic_copy(src_path, dst_path, rel_path)
 
 
-def get_posix_relative_paths(root: StrOrPath) -> List[str]:
+def _get_posix_relative_paths(root: StrOrPath) -> List[str]:
     
     all_paths = []
     
@@ -76,7 +111,7 @@ def get_posix_relative_paths(root: StrOrPath) -> List[str]:
     return all_paths
 
 
-def template_copy(env: Environment,
+def _template_copy(env: Environment,
                   dst_path: StrOrPath,
                   rel_path: str,
                   data: AnyByStrDict):
@@ -89,7 +124,7 @@ def template_copy(env: Environment,
         f.write(rendered)
 
 
-def basic_copy(src_path: StrOrPath,
+def _basic_copy(src_path: StrOrPath,
                dst_path: StrOrPath,
                rel_path: str):
     

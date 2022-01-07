@@ -28,10 +28,12 @@ package root. Now create a conda environment using the following command:
 (base) > conda env create --file environment.yml
 ```
 
-Activate the `_snld3d` environment and then install the package:
+Activate the `_snld3d` environment, setup the channels, and then install the 
+SNL-Delft3D-CEC-Verify package:
 
 ```
 (base) > conda activate _snld3d
+(_snld3d) > conda config --env --add channels conda-forge
 (_snld3d) > pip install --no-deps -e .
 ```
 

@@ -7,22 +7,63 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
 
 from .types import Num
+from ._docs import docstringtemplate
 
 # Reused compound types
 OneOrManyNum = Union[Num, Sequence[Num]]
 
 
+@docstringtemplate
 @dataclass(frozen=True)
 class CaseStudy:
-    """Class for defining cases to test."""
-    dx: OneOrManyNum = 1
-    dy: OneOrManyNum = 1
-    sigma: OneOrManyNum = 3
-    dt_max: OneOrManyNum = 1
-    dt_init: OneOrManyNum = 1
-    turb_pos_x: OneOrManyNum = 6
-    turb_pos_y: OneOrManyNum = 3
-    turb_pos_z: OneOrManyNum = -1
+    """
+    Class for defining variables for single or multiple case studies.
+    
+    When defining multiple values for multiple variables, the given 
+    sequences must be the same length, e.g.:
+    
+    >>> cases = CaseStudy(dx=[1, 2, 3, 4],
+    ...                   dy=[4, 5, 6, 7])
+    >>> print(cases)
+    CaseStudy(dx=[1, 2, 3, 4], dy=[4, 5, 6, 7], sigma=3, dt_max=1, dt_init=1, \
+turb_pos_x=6, turb_pos_y=3, turb_pos_z=-1, discharge=6.0574)
+    
+    The above example will generate an object representing 4 cases, which can
+    then be iterated:
+    
+    >>> for case in cases: #doctest: +ELLIPSIS
+    ...     print(case)
+    CaseStudy(dx=1, dy=4, ...
+    CaseStudy(dx=2, dy=5, ...
+    CaseStudy(dx=3, dy=6, ...
+    CaseStudy(dx=4, dy=7, ...
+    
+    :param dx: grid spacing in x-direction, in meters. Defaults to {dx}
+    :param dy: grid spacing in y-direction, in meters. Defaults to {dy}
+    :param sigma: number of vertical layers, defaults to {sigma}
+    :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
+    :param dt_init: initial time step, in seconds. Defaults to {dt_init}
+    :param turb_pos_x: turbine x-position, in meters. Defaults to {turb_pos_x}
+    :param turb_pos_y: turbine y-position, in meters. Defaults to {turb_pos_y}
+    :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
+    :param discharge: inlet boundary discharge, in cubic meters per second.
+        Defaults to {discharge}
+    
+    :raises ValueError: if variables with multiple values have different
+        lengths
+    
+    """
+    
+    dx: OneOrManyNum = 1 #: grid spacing in x-direction, in meters
+    dy: OneOrManyNum = 1 #: grid spacing in y-direction, in meters
+    sigma: OneOrManyNum = 3 #: number of vertical layers
+    dt_max: OneOrManyNum = 1 #: maximum time step, in seconds
+    dt_init: OneOrManyNum = 1 #: initial time step, in seconds
+    turb_pos_x: OneOrManyNum = 6 #: turbine x-position, in meters
+    turb_pos_y: OneOrManyNum = 3 #: turbine y-position, in meters
+    turb_pos_z: OneOrManyNum = -1 #: turbine z-position, in meters
+    
+    #: inlet boundary discharge, in cubic meters per second
     discharge: OneOrManyNum = 6.0574
     
     def __post_init__(self):
@@ -49,13 +90,20 @@ class CaseStudy:
     @classmethod
     @property
     def fields(cls) -> List[str]:
+        """Returns field names"""
         return [x.name for x in fields(cls)]
     
     @property
     def values(self) -> List[OneOrManyNum]:
+        """Returns field values"""
         return [getattr(self, f) for f in self.fields]
     
+    @docstringtemplate
     def get_case(self, index: int = 0) -> CaseStudy:
+        """Return a unit case study, from the given index
+        
+        :param index: Index of study, defaults to {index}
+        """
         
         # All single valued variables, so only 0 and -1 index available
         if len(self) == 1:
@@ -87,9 +135,25 @@ class CaseStudy:
         return len(mutli_values[0])
 
 
+@docstringtemplate
 @dataclass(frozen=True)
 class MycekStudy(CaseStudy):
-    """Class for defining cases corresponding to the Mycek studyy"""
+    """Class for defining cases corresponding to the Mycek study. Subclass 
+    of :class:`.CaseStudy` with the turbine position fixed.
+    
+    :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
+    :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
+    :param sigma: number of vertical layers, defaults to {sigma}
+    :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
+    :param dt_init: initial time step, in seconds. Defaults to {dt_init}
+    :param discharge: inlet boundary discharge, in cubic meters per second.
+        Defaults to {discharge}
+    
+    :raises ValueError: if variables with multiple values have different
+        lengths
+    
+    """
+   
     turb_pos_x: OneOrManyNum = field(default=6, init=False)
     turb_pos_y: OneOrManyNum = field(default=3, init=False)
     turb_pos_z: OneOrManyNum = field(default=-1, init=False)

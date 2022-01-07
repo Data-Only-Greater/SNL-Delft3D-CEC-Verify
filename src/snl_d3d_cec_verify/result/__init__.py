@@ -6,13 +6,11 @@ import os
 import csv
 import itertools
 from typing import (Any,
-                    Dict,
                     Hashable,
                     List,
                     Mapping,
                     Optional,
                     Tuple,
-                    TYPE_CHECKING,
                     Type,
                     TypeVar,
                     Union)
@@ -23,6 +21,7 @@ from dataclasses import dataclass, field, InitVar
 
 import numpy as np
 import xarray as xr
+import numpy.typing as npt
 
 from yaml import load
 try:
@@ -30,16 +29,45 @@ try:
 except ImportError: # pragma: no cover
     from yaml import SafeLoader as Loader # type: ignore
 
+from .base import TimeStepResolver
 from .edges import Edges
 from .faces import Faces
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
+from .._docs import docstringtemplate
 
-if TYPE_CHECKING: # pragma: no cover
-    import numpy.typing as npt
+
+__all__ = ["TimeStepResolver",
+           "Edges",
+           "Faces",
+           "Transect",
+           "get_reset_origin",
+           "get_normalised_dims",
+           "get_normalised_data",
+           "get_normalised_data_deficit"]
 
 
 class Result:
+    """Class for capturing the results of executed case studies. Contains
+    metadata from the simulation. Data generated on the grid edges and 
+    faces are accessible from the :attr:`edges` and :attr:`faces` attributes.
+    
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
+    >>> result.x_lim
+    (0.0, 18.0)
+    
+    >>> result.edges.extract_k(-1, 1) #doctest: +ELLIPSIS
+                                            geometry            u1   n0   n1
+    0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
+    ...
+    
+    :param project_path: path to the Delft3D project directory
+    :param relative_map_parts: list of components representing the relative
+        path to the :code:`FlowFM_map.nc` file, from the project directory. 
+        Defaults to :code:`["output", "FlowFM_map.nc"]`
+    
+    """
     
     def __init__(self, project_path: StrOrPath,
                        relative_map_parts: Optional[List[str]] = None):
@@ -48,9 +76,9 @@ class Result:
             relative_map_parts = ["output", "FlowFM_map.nc"]
         
         self._map_path = Path(project_path).joinpath(*relative_map_parts)
-        self._x_lim = get_x_lim(self._map_path)
-        self._y_lim = get_y_lim(self._map_path)
-        self._times: npt.NDArray[np.datetime64] = get_step_times(
+        self._x_lim = _get_x_lim(self._map_path)
+        self._y_lim = _get_y_lim(self._map_path)
+        self._times: npt.NDArray[np.datetime64] = _get_step_times(
                                                                 self._map_path)
         self._edges: Edges = Edges(self._map_path, len(self._times))
         self._faces: Faces = Faces(self._map_path,
@@ -59,41 +87,83 @@ class Result:
     
     @property
     def x_lim(self):
+        """Domain limits in the x-direction, in metres
+        
+        :type: Tuple[float, float]
+        
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
+        >>> result.x_lim
+        (0.0, 18.0)
+        
+        """
         return self._x_lim
     
     @property
     def y_lim(self):
+        """Domain limits in the y-direction, in metres
+        
+        :type: Tuple[float, float]
+        
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
+        >>> result.y_lim
+        (1.0, 5.0)
+        
+        """
         return self._y_lim
     
     @property
     def times(self):
+        """Time steps of the Delft3D simulation
+        
+        :type: numpy.typing.NDArray[numpy.datetime64]
+        
+        >>> data_dir = getfixture('data_dir')
+        >>> result = Result(data_dir)
+        >>> result.times
+        array(['2001-01-01T00:00:00.000000000', '2001-01-01T01:00:00.000000000'],
+        dtype='datetime64[ns]')
+        
+        """
         return self._times
     
     @property
     def edges(self):
+        """Results on the grid edges. See the :class:`.Edges` documentation
+        for usage
+        
+        :type: Edges
+        """
+        
         return self._edges
     
     @property
     def faces(self):
+        """Results on the grid faces. See the :class:`.Faces` documentation
+        for usage
+        
+        :type: Faces
+        """
         return self._faces
     
     def __repr__(self):
         return f"Result(map_path={repr(self._map_path)})"
 
 
-def get_x_lim(map_path: StrOrPath) -> Tuple[float, float]:
+def _get_x_lim(map_path: StrOrPath) -> Tuple[float, float]:
     with xr.open_dataset(map_path) as ds:
         x = ds.mesh2d_node_x.values
     return (x.min(), x.max())
 
 
-def get_y_lim(map_path: StrOrPath) -> Tuple[float, float]:
+def _get_y_lim(map_path: StrOrPath) -> Tuple[float, float]:
     with xr.open_dataset(map_path) as ds:
         y = ds.mesh2d_node_y.values
     return (y.min(), y.max())
 
 
-def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
+def _get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
     with xr.open_dataset(map_path) as ds:
         time = ds.time.values
     return time
@@ -101,15 +171,60 @@ def get_step_times(map_path: StrOrPath) -> npt.NDArray[np.datetime64]:
 
 @dataclass(frozen=True, repr=False)
 class Validate():
+    """Store for :class:`.Transect` objects
+    
+    Print the object to see the descriptions and indices of the stored
+    :class:`.Transect` objects.
+    
+    >>> validate = Validate()
+    >>> print(validate)
+    Validate(0: Centreline velocity
+             1: Axial velocity at $x^*=5$)
+    
+    >>> validate[0].to_xarray() #doctest: +ELLIPSIS
+    <xarray.DataArray '$u_0$' (dim_0: 10)>
+    array([0.40064647, 0.40064647, 0.39288889, 0.38189899, 0.39806061,
+           0.44460606, 0.49309091, 0.54610101, 0.56614141, 0.60622222])
+    Coordinates:
+        $z$      ... 0
+        $x$      (dim_0) float64 0.84 1.4 2.1 2.8 3.5 4.2 4.9 5.6 6.3 7.0
+        $y$      (dim_0) float64 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+    ...
+    
+    Use a :class:`.CaseStudy` object to translate the origin of the transects
+    to the turbine position.
+    
+    >>> from snl_d3d_cec_verify import MycekStudy
+    >>> case = MycekStudy()
+    >>> validate = Validate(case)
+    >>> validate[0].to_xarray() #doctest: +ELLIPSIS
+    <xarray.DataArray '$u_0$' (dim_0: 10)>
+    array([0.40064647, 0.40064647, 0.39288889, 0.38189899, 0.39806061,
+           0.44460606, 0.49309091, 0.54610101, 0.56614141, 0.60622222])
+    Coordinates:
+        $z$      ... -1
+        $x$      (dim_0) float64 6.84 7.4 8.1 8.8 9.5 10.2 10.9 11.6 12.3 13.0
+        $y$      (dim_0) float64 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0
+    ...
+    
+    :param case: Case study from which to get turbine position
+    :param data_dir: path to folder containing YAML files representing 
+        transects. Each file must have the ``attrs.description`` key set.
+        Defaults to ``Path("./mycek2014")``
+    
+    :raises FileNotFoundError: if ``data_dir`` is not a directory
+    
+    """
+    
     _transects: List[Transect] = field(default_factory=list, init=False)
-    case: InitVar[Optional[CaseStudy]] = None
-    data_dir: InitVar[Optional[StrOrPath]] = None
+    case: InitVar[Optional[CaseStudy]] = None #: :meta private:
+    data_dir: InitVar[Optional[StrOrPath]] = None #: :meta private:
     
     def __post_init__(self, case: Optional[CaseStudy],
                             data_dir: Optional[StrOrPath]):
         
         if data_dir is None:
-            data_dir = mycek_data_path()
+            data_dir = _mycek_data_path()
         else:
             data_dir = Path(data_dir)
         
@@ -166,7 +281,7 @@ class Validate():
         return msg
 
 
-def mycek_data_path() -> Path:
+def _mycek_data_path() -> Path:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     return Path(this_dir) / "mycek2014"
 
@@ -176,15 +291,78 @@ T = TypeVar('T', bound='Transect')
 Vector = Tuple[Num, Num, Num]
 
 
+@docstringtemplate
 @dataclass(eq=False, frozen=True)
 class Transect():
-    z: Num = field(repr=False)
+    """Store for data associated with a transect across the domain, at a 
+    particular z-level.
+    
+    Data is stored for each x and y pair, in order. For example:
+    
+    >>> x = Transect(-1, [1, 2, 3, 4], [2, 2, 2, 2], [5, 4, 3, 2])
+    >>> x.to_xarray() #doctest: +ELLIPSIS
+    <xarray.DataArray (dim_0: 4)>
+    array([5, 4, 3, 2])
+    Coordinates:
+        $z$      ... -1
+        $x$      (dim_0) ... 1 2 3 4
+        $y$      (dim_0) ... 2 2 2 2
+    Dimensions without coordinates: dim_0
+    
+    :class:`.Transect` objects can also be unpacked, like a dictionary, to 
+    extract matching data from the :meth:`.Faces.extract_z` method:
+    
+    >>> from snl_d3d_cec_verify import Result
+    >>> data_dir = getfixture('data_dir')
+    >>> result = Result(data_dir)
+    >>> result.faces.extract_z(-1, **x) #doctest: +ELLIPSIS
+    <xarray.Dataset>
+    Dimensions:  (dim_0: 4)
+    Coordinates:
+        $z$      ... -1
+        time     datetime64[ns] 2001-01-01T01:00:00
+        $x$      (dim_0) ... 1 2 3 4
+        $y$      (dim_0) ... 2 2 2 2
+    Dimensions without coordinates: dim_0
+    Data variables:
+        k        (dim_0) float64 1.002 1.002 1.002 1.001
+        $u$      (dim_0) float64 0.7793 0.7776 0.7766 0.7757
+        $v$      (dim_0) float64 1.193e-17 4.679e-17 2.729e-17 -2.519e-17
+        $w$      (dim_0) float64 -0.001658 0.0001347 -0.00114 0.0002256
+    
+    :param z: z-level of the transect, in meters
+    :param x: x-coordinates of the transect, in meters
+    :param y: y-coordinates of the transect, in meters
+    :param data: values at each point along the transect
+    :param name: name of the data stored in the transect
+    :param attrs: meta data associated with the transect
+    :param translation: translation of the transect origin, defaults to
+        {translation}
+    
+    :raises ValueError: if the lengths of ``x``, ``y``, or ``data`` do not
+        match
+    
+    """
+    
+    #: z-level of the transect, in meters
+    z: Num = field(repr=False) 
+    
+    #: x-coordinates of the transect, in meters
     x: npt.NDArray[np.float64] = field(repr=False)
+    
+    #: y-coordinates of the transect, in meters
     y: npt.NDArray[np.float64] = field(repr=False)
+    
+    #: values at each point along the transect
     data: Optional[npt.NDArray[np.float64]] = field(default=None, repr=False)
+    
+    #: name of the data stored in the transect
     name: Optional[str] = None
+    
+    #: meta data associated with the transect
     attrs: Optional[dict[str, str]] = None
-    translation: InitVar[Vector] = (0, 0, 0)
+    
+    translation: InitVar[Vector] = (0, 0, 0) #: :meta private:
     
     def __post_init__(self, translation: Vector):
         
@@ -208,11 +386,34 @@ class Transect():
         data = np.array(self.data)
         object.__setattr__(self, 'data', data)
     
+    @docstringtemplate
     @classmethod
     def from_csv(cls: Type[T], path: StrOrPath,
                                name: Optional[str] = None,
                                attrs: Optional[dict[str, str]] = None,
                                translation: Vector = (0, 0, 0)) -> T:
+        """Create a new :class:`.Transect` object from a CSV file. 
+        
+        The CSV file must have ``x``, ``y``, and ``z`` column headers, and
+        optionally a ``data`` column header. For example::
+            
+            x, y, z, data
+            7, 3, 0, 1
+            8, 3, 0, 2
+            9, 3, 0, 3
+        
+        :param path: path to the CSV file to load
+        :param name: name of data in the resulting :class:`.Transect` object
+        :param attrs: attributes for the resulting :class:`.Transect` object
+        :param translation: translation of the transect origin, defaults to
+            {translation}
+        
+        :raises ValueError: if the unique values in the z-column is greater
+            than one
+        
+        :rtype: Transect
+        
+        """
         
         path = Path(path).resolve(strict=True)
         cols = defaultdict(list)
@@ -242,9 +443,35 @@ class Transect():
                    attrs=attrs,
                    translation=translation)
     
+    @docstringtemplate
     @classmethod
     def from_yaml(cls: Type[T], path: StrOrPath,
                                 translation: Vector = (0, 0, 0)) -> T:
+        """Create a new :class:`.Transect` object from a YAML file. 
+        
+        The YAML file must have ``z`` , ``x`` and ``y``, and keys where ``z``
+        is a single value and ``x`` and ``y`` are arrays.
+        
+        Optionally, a ``data`` key can be given as an array, ``name`` key as a
+        single value (treated as a string) and an ``attrs`` key with a nested
+        dictionary. For example::
+            
+            z: -1.0
+            x: [7, 8, 9]
+            y: [3, 3, 3]
+            data: [1, 2, 3]
+            name: $\\gamma_0$
+            attrs:
+                mock: mock
+                path: not mock
+        
+        :param path: path to the YAML file to load
+        :param translation: translation of the transect origin, defaults to
+            {translation}
+        
+        :rtype: Transect
+        
+        """
         
         path = Path(path).resolve(strict=True)
         
@@ -267,11 +494,19 @@ class Transect():
                    name=name,
                    attrs=attrs,
                    translation=translation)
-
+    
     def keys(self):
+        """
+        :meta private:
+        """
         return KeysView(["kz", "x", "y"])
     
     def to_xarray(self) -> xr.DataArray:
+        """Export transect as a :class:`xarray.DataArray` object.
+        
+        :rtype: xarray.DataArray
+        
+        """
         
         keys = [f"${x}$" for x in ["z", "x", "y"]]
         coords: Mapping[Hashable, Any] = {keys[0]: self.z,
@@ -328,6 +563,19 @@ class Transect():
 
 def get_reset_origin(da: xr.DataArray,
                      origin: Vector) -> xr.DataArray:
+    """Move the origin in the given :class:`xarray.DataArray` object to the
+    given location
+    
+    The given :class:`xarray.DataArray` object must have coordinates
+    containing the characters ``x``, ``y`` and ``z``.
+    
+    :param da: object to modify.
+    :type da: xarray.DataArray
+    :param origin: updated origin
+    
+    :rtype: xarray.DataArray
+    
+    """
     
     axes_coords = _get_axes_coords(list(da.coords.keys()))
     axes_new = [da[coord].values - val
@@ -341,6 +589,20 @@ def get_reset_origin(da: xr.DataArray,
 
 
 def get_normalised_dims(da: xr.DataArray, factor: Num) -> xr.DataArray:
+    """Normalise the coordinates in the given :class:`xarray.DataArray` object
+    by the given factor.
+    
+    The given :class:`xarray.DataArray` object must have coordinates
+    containing the characters ``x``, ``y`` and ``z``. The returned object will
+    replace these coordinated with starred versions.
+    
+    :param da: object to modify
+    :type da: xarray.DataArray
+    :param factor: normalising factor, coordinates are divided by this value
+    
+    :rtype: xarray.DataArray
+    
+    """
     
     axes_coords = _get_axes_coords(list(da.coords.keys()))
     axes_star = [da[coord].values / factor for coord in axes_coords]
@@ -360,7 +622,19 @@ def get_normalised_dims(da: xr.DataArray, factor: Num) -> xr.DataArray:
 
 
 def get_normalised_data(da: xr.DataArray, factor: Num) -> xr.DataArray:
+    """Normalise the data in the given :class:`xarray.DataArray` object
+    by the given factor
     
+    If the given :class:`xarray.DataArray` object is named, the name will be
+    replaced with a starred version.
+    
+    :param da: object to modify.
+    :type da: xarray.DataArray
+    :param factor: normalising factor, the data is divided by this value
+    
+    :rtype: xarray.DataArray
+    
+    """
     datastar = da.values * factor
     name = str(da.name)
     
@@ -376,6 +650,24 @@ def get_normalised_data(da: xr.DataArray, factor: Num) -> xr.DataArray:
 def get_normalised_data_deficit(da: xr.DataArray,
                                 factor: Num,
                                 name: Optional[str] = None) -> xr.DataArray:
+    """Normalise the data in the given :class:`xarray.DataArray` object
+    by the given factor as a percentage deficit of that factor
+    
+    if :math:`x` is the data and :math:`f` is the normalising factor, then
+    the quantity generated by this function is:
+    
+    .. math::
+        
+       100 * (1 - x / f)
+    
+    :param da: object to modify
+    :type da: xarray.DataArray
+    :param factor: normalising factor, the data is divided by this value
+    :param name: name for the resulting data
+    
+    :rtype: xarray.DataArray
+    
+    """
     
     data = 100 * (1 - da.values / factor)
     
