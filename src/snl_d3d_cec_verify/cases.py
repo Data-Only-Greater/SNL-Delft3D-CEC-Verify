@@ -49,6 +49,14 @@ class CaseStudy:
         Defaults to {discharge}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
         filter. Defaults to {horizontal_momentum_filter}
+    :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
+        metres squared per second. Default to {horizontal_eddy_viscosity}
+    :param horizontal_eddy_diffusivity: uniform horizontal eddy diffusivity,
+        in metres squared per second. Default to {horizontal_eddy_diffusivity}
+    :param vertical_eddy_viscosity: uniform vertical eddy viscosity, in
+        metres squared per second. Default to {horizontal_eddy_viscosity}
+    :param vertical_eddy_diffusivity: uniform vertical eddy diffusivity,
+        in metres squared per second. Default to {vertical_eddy_diffusivity}
     
     :raises ValueError: if variables with multiple values have different
         lengths
@@ -66,6 +74,18 @@ class CaseStudy:
     
     #: inlet boundary discharge, in cubic meters per second
     discharge: OneOrManyNum = 6.0574
+    
+    #: uniform horizontal eddy viscosity, in metres squared per second
+    horizontal_eddy_viscosity: OneOrManyNum = 1e-06
+    
+    #: uniform horizontal eddy diffusivity, in metres squared per second
+    horizontal_eddy_diffusivity: OneOrManyNum = 1e-06
+    
+    #: uniform vertical eddy viscosity, in metres squared per second
+    vertical_eddy_viscosity: OneOrManyNum = 1e-06
+    
+    #: uniform vertical eddy diffusivity, in metres squared per second
+    vertical_eddy_diffusivity: OneOrManyNum = 1e-06
     
     #: use high-order horizontal momentum filter
     horizontal_momentum_filter: bool = True

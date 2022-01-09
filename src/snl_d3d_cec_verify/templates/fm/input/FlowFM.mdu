@@ -83,10 +83,10 @@ UnifFrictType                     = 1               # Uniform friction type (0: 
 UnifFrictCoef1D                   = 0.023           # Uniform friction coefficient in 1D links (0: no friction)
 UnifFrictCoefLin                  = 0               # Uniform linear friction coefficient for ocean models (0: no friction)
 Umodlin                           = 0               # Linear friction umod, for ifrctyp=4,5,6
-Vicouv                            = 1               # Uniform horizontal eddy viscosity
-Dicouv                            = 1               # Uniform horizontal eddy diffusivity
-Vicoww                            = 5E-05           # Uniform vertical eddy viscosity
-Dicoww                            = 5E-05           # Uniform vertical eddy diffusivity
+Vicouv                            = {{ '{:<15.9G}'.format(horizontal_eddy_viscosity) }} # Uniform horizontal eddy viscosity
+Dicouv                            = {{ '{:<15.9G}'.format(horizontal_eddy_diffusivity) }} # Uniform horizontal eddy diffusivity
+Vicoww                            = {{ '{:<15.9G}'.format(vertical_eddy_viscosity) }} # Uniform vertical eddy viscosity
+Dicoww                            = {{ '{:<15.9G}'.format(vertical_eddy_diffusivity) }} # Uniform vertical eddy diffusivity
 Vicwminb                          = 0               # Minimum viscosity in prod and buoyancy term
 Smagorinsky                       = 0               # Smagorinsky factor in horizontal turbulence
 Elder                             = 0               # Elder factor in horizontal turbulence

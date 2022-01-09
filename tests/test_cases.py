@@ -22,6 +22,10 @@ def test_casestudy_fields():
                                 'turb_pos_y',
                                 'turb_pos_z',
                                 'discharge',
+                                'horizontal_eddy_viscosity',
+                                'horizontal_eddy_diffusivity',
+                                'vertical_eddy_viscosity',
+                                'vertical_eddy_diffusivity',
                                 'horizontal_momentum_filter']
 
 
@@ -47,6 +51,10 @@ def test_casestudy_values(cases):
                             3,
                             -1,
                             6.0574,
+                            1e-06,
+                            1e-06,
+                            1e-06,
+                            1e-06,
                             True]
 
 

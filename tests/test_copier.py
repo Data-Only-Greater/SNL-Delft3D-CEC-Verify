@@ -67,6 +67,46 @@ def test_template_copy(tmp_path):
     assert text == expected_text + "\n"
 
 
+@pytest.mark.parametrize("value,         expected", [
+                         (1e-6,          "1E-06          "),
+                         (1,             "1              "),
+                         (1 + 1e-8,      "1.00000001     "),
+                         (1.00000001e-6, "1.00000001E-06 ")])
+def test_template_copy_numeric(tmp_path, value, expected):
+    
+    # Fake a src and destination
+    src_path = tmp_path / "src_path"
+    src_path.mkdir()
+    
+    sub_d = src_path / "sub"
+    sub_d.mkdir()
+    
+    p = sub_d / "numbers.txt"
+    p.write_text("{{ '{:<15.9G}'.format(x) }}")
+    
+    dst_path = tmp_path / "dst_path"
+    dst_path.mkdir()
+    
+    sub_d = dst_path / "sub"
+    sub_d.mkdir()
+    
+    # Create a jinja environment
+    env = Environment(loader=FileSystemLoader(str(src_path)),
+                      keep_trailing_newline=True)
+    
+    # Set the content value
+    data = {"x": value}
+    
+    # Run the test
+    _template_copy(env, dst_path, "sub/numbers.txt", data)
+    expected_p = dst_path / "sub" / "numbers.txt"
+    
+    assert expected_p.exists()
+    
+    text = expected_p.read_text()
+    assert text == expected
+
+
 def test_template_copy_unicode_decode_error(tmp_path):
     
     # Fake a src and destination
