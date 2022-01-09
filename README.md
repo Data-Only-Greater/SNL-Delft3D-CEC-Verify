@@ -126,7 +126,7 @@ To run unit, type testing and doctests on the package, first install the
 required dependencies:
 
 ```
-(_snld3d) > conda install -y mypy pytest pytest-mock
+(_snld3d) > conda install -y mypy pytest pytest-mock tox-conda
 ```
 
 To run the unit tests, type the following from the root directory:
@@ -146,6 +146,15 @@ To run doctests, type the following from the root directory:
 ```
 (_snld3d) > pytest --doctest-modules src
 ```
+
+To run all three test suites simultaneously, invoke tox from the root directory:
+
+```
+(_snld3d) > tox
+```
+
+Note that tox creates a dedicated environment for the tests, which can be time 
+consuming on first run (or if there are any dependency changes).
 
 ## Uninstall
 
