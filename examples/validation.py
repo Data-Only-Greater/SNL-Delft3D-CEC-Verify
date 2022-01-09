@@ -75,77 +75,78 @@ report_dir = Path("validation_report")
 report_dir.mkdir(exist_ok=True)
 data = defaultdict(list)
 
-for i, transect in enumerate(validate):
+with tempfile.TemporaryDirectory() as tmpdirname:
     
-    with tempfile.TemporaryDirectory() as tmpdirname:
+    # Create the project and then run it
+    template(case, tmpdirname)
+    runner(tmpdirname)
     
-        # Create the project and then run it
-        template(case, tmpdirname)
-        runner(tmpdirname)
+    # Pick up the results
+    result = Result(tmpdirname)
     
-        # Pick up the results
-        result = Result(tmpdirname)
+    for i, transect in enumerate(validate):
         
-        # Compare centreline
+        # Compare transect
         transect_sim = result.faces.extract_z(-1, **transect)
         transect_true = transect.to_xarray()
-    
-    # Add report section with plot
-    report.content.add_heading(transect.attrs['description'],
-                               level=2)
-    
-    # Determine plot x-axis
-    major_axis = f"${transect.attrs['major_axis']}^*$"
-    
-    # Create and save a u0 figure
-    transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
-    transect_true_u0 = get_u0(transect_true, case, transect_true)
-    
-    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-    transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
-    transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
-    ax.legend()
-    ax.grid()
-    ax.set_title("")
-    
-    plot_name = f"transect_u0_{i}.png"
-    plot_path = report_dir / plot_name
-    plt.savefig(plot_path, bbox_inches='tight')
-    
-    # Add figure with caption
-    caption = ("$u_0$ comparison (m/s). Experimental data reverse engineered "
-               f"from [@mycek2014, fig. {transect.attrs['figure']}].")
-    report.content.add_image(plot_name, caption, width="4in")
-    
-    # Calculate RMS error and store
-    rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
-    data["Transect"].append(transect.attrs['description'])
-    data["RMSE"].append(rmse)
-    
-    # Create and save a gamma0 figure
-    transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
-                                     case,
-                                     transect_true)
-    transect_true_gamma0 = get_gamma0(transect_true,
-                                      case,
-                                      transect_true)
-    
-    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-    transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
-    transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
-    ax.legend()
-    ax.grid()
-    ax.set_title("")
-    
-    plot_name = f"transect_gammm0_{i}.png"
-    plot_path = report_dir / plot_name
-    plt.savefig(plot_path, bbox_inches='tight')
-    
-    # Add figure with caption
-    caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
-               "engineered from [@mycek2014, fig. "
-               f"{transect.attrs['figure']}].")
-    report.content.add_image(plot_name, caption, width="4in")
+        
+        # Add report section with plot
+        report.content.add_heading(transect.attrs['description'],
+                                   level=2)
+        
+        # Determine plot x-axis
+        major_axis = f"${transect.attrs['major_axis']}^*$"
+        
+        # Create and save a u0 figure
+        transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
+        transect_true_u0 = get_u0(transect_true, case, transect_true)
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
+        transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
+        ax.legend()
+        ax.grid()
+        ax.set_title("")
+        
+        plot_name = f"transect_u0_{i}.png"
+        plot_path = report_dir / plot_name
+        plt.savefig(plot_path, bbox_inches='tight')
+        
+        # Add figure with caption
+        caption = ("$u_0$ comparison (m/s). Experimental data reverse "
+                   "engineered  from [@mycek2014, fig. "
+                   f"{transect.attrs['figure']}].")
+        report.content.add_image(plot_name, caption, width="4in")
+        
+        # Calculate RMS error and store
+        rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
+        data["Transect"].append(transect.attrs['description'])
+        data["RMSE"].append(rmse)
+        
+        # Create and save a gamma0 figure
+        transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
+                                         case,
+                                         transect_true)
+        transect_true_gamma0 = get_gamma0(transect_true,
+                                          case,
+                                          transect_true)
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
+        transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
+        ax.legend()
+        ax.grid()
+        ax.set_title("")
+        
+        plot_name = f"transect_gammm0_{i}.png"
+        plot_path = report_dir / plot_name
+        plt.savefig(plot_path, bbox_inches='tight')
+        
+        # Add figure with caption
+        caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
+                   "engineered from [@mycek2014, fig. "
+                   f"{transect.attrs['figure']}].")
+        report.content.add_image(plot_name, caption, width="4in")
 
 # Add table for errors
 df = pd.DataFrame(data)
