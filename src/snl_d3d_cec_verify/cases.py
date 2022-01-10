@@ -48,13 +48,13 @@ class CaseStudy:
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
     :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
-        metres squared per second. Default to {horizontal_eddy_viscosity}
+        metres squared per second. Defaults to {horizontal_eddy_viscosity}
     :param horizontal_eddy_diffusivity: uniform horizontal eddy diffusivity,
-        in metres squared per second. Default to {horizontal_eddy_diffusivity}
+        in metres squared per second. Defaults to {horizontal_eddy_diffusivity}
     :param vertical_eddy_viscosity: uniform vertical eddy viscosity, in
-        metres squared per second. Default to {horizontal_eddy_viscosity}
+        metres squared per second. Defaults to {horizontal_eddy_viscosity}
     :param vertical_eddy_diffusivity: uniform vertical eddy diffusivity,
-        in metres squared per second. Default to {vertical_eddy_diffusivity}
+        in metres squared per second. Defaults to {vertical_eddy_diffusivity}
     :param simulate_turbines: simulate turbines, defaults to
         {simulate_turbines}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
