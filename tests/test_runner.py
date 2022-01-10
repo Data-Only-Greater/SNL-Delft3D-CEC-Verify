@@ -144,7 +144,7 @@ def test_runner_call_error(capsys, tmp_path, mocker, data_dir):
         script = "run.bat"
     else:
         d3d_bin_path = data_dir / "linux"
-        script = "run.bat"
+        script = "run.sh"
     
     run_path = Path(data_dir) / "error" / script
     
@@ -215,7 +215,7 @@ def test_liverunner_call_error(tmp_path, mocker, data_dir):
         script = "run.bat"
     else:
         d3d_bin_path = data_dir / "linux"
-        script = "run.bat"
+        script = "run.sh"
     
     run_path = Path(data_dir) / "error" / script
     
