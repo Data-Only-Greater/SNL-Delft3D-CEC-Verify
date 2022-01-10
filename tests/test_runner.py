@@ -8,7 +8,8 @@ import pytest
 
 from snl_d3d_cec_verify.runner import (_get_dflowfm_entry_point,
                                        run_dflowfm,
-                                       Runner)
+                                       Runner,
+                                       LiveRunner)
 
 
 def test_get_dflowfm_entry_point(data_dir):
@@ -161,3 +162,73 @@ def test_runner_call_error(capsys, tmp_path, mocker, data_dir):
     assert "stderr" in captured.out
     assert "Error first line" in captured.out
     assert "Error third line" in captured.out
+
+
+def test_liverunner_call(tmp_path, data_dir):
+    
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    
+    os_name = platform.system()
+    
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
+    
+    runner = LiveRunner(d3d_bin_path)
+    out = ""
+    
+    for line in runner(tmp_path):
+        out += line
+    
+    assert "OMP_NUM_THREADS is already defined" in out
+
+
+def test_liverunner_call_relative_input_parts_none(tmp_path, data_dir):
+    
+    os_name = platform.system()
+    
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
+    
+    runner = LiveRunner(d3d_bin_path, relative_input_parts=None)
+    out = ""
+    
+    for line in runner(tmp_path):
+        out += line
+    
+    assert "OMP_NUM_THREADS is already defined" in out
+
+
+def test_liverunner_call_error(tmp_path, mocker, data_dir):
+    
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    
+    os_name = platform.system()
+    
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+        script = "run.bat"
+    else:
+        d3d_bin_path = data_dir / "linux"
+        script = "run.bat"
+    
+    run_path = Path(data_dir) / "error" / script
+    
+    mocker.patch('snl_d3d_cec_verify.runner._get_dflowfm_entry_point',
+                  return_value=run_path)
+    
+    runner = LiveRunner(d3d_bin_path)
+    out = ""
+    
+    with pytest.raises(RuntimeError) as excinfo:
+        for line in runner(tmp_path):
+            out += line
+    
+    assert "simulation failure" in str(excinfo)
+    assert "Error first line" in out
+    assert "Error third line" in out

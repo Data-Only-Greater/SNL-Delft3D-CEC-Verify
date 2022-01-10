@@ -6,7 +6,7 @@ import os
 import platform
 import subprocess
 from queue import Queue
-from typing import Generator, List, Optional
+from typing import Iterator, IO, List, Optional
 from pathlib import Path
 from threading import Thread
 from dataclasses import dataclass, field
@@ -100,10 +100,12 @@ class LiveRunner:
     settings across many Delft3D projects with real time output.
     
     Call the Runner object with the project path to execute the Delft3D model
+    and read the output line by line, like a generator
     
     >>> runner = Runner("path/to/Delft3D/src/bin",
     ...                  omp_num_threads=8)
-    >>> runner("path/to/project") # doctest: +SKIP
+    >>> for line in runner("path/to/project"): # doctest: +SKIP
+    ...     print(line)
     
     
     Currently only available for Windows and Linux.
@@ -125,7 +127,6 @@ class LiveRunner:
     d3d_bin_path: StrOrPath
     
     omp_num_threads: int = 1  #: The number of CPU threads to use
-    show_stdout: bool = False #: show Delft3D logging to stdout in console
     
     #: list of components representing the relative path to folder containing
     #: the delft3D model files, from the project folder. Set to None to given
@@ -133,9 +134,10 @@ class LiveRunner:
     relative_input_parts: Optional[List[str]] = field(
                                             default_factory=lambda: ["input"])
     
-    def __call__(self, project_path: StrOrPath) -> Generator[str]:
+    def __call__(self, project_path: StrOrPath) -> Iterator[str]:
         """
-        Run a simulation, given a prepared model.
+        Run a simulation, given a prepared model, and yield stdout and stdin
+        streams.
         
         :param project_path: path to Delft3D project folder 
         
@@ -159,7 +161,7 @@ class LiveRunner:
                          model_path,
                          self.omp_num_threads)
         
-        q = Queue()
+        q: Queue = Queue()
         Thread(target=_pipe_reader, args=[sp.stderr, q]).start()
         Thread(target=_pipe_reader, args=[sp.stdout, q]).start()
         
@@ -168,7 +170,10 @@ class LiveRunner:
         
         for i in range(2):
             
-            for source, line in iter(q.get, None):
+            source: IO
+            line: bytes
+            
+            for source, line in iter(q.get, None): # type: ignore
                 
                 msg = line.decode('utf-8')
                 
@@ -176,7 +181,7 @@ class LiveRunner:
                     captured_error = True
                 
                 yield msg
-                
+        
         if captured_error:
             print(stderr)
             raise RuntimeError("Delft3D simulation failure")
@@ -245,7 +250,8 @@ def _get_dflowfm_entry_point(d3d_bin_path: StrOrPath) -> Path:
     return dflowfm_entry_point
 
 
-def _pipe_reader(pipe, queue):
+def _pipe_reader(pipe: IO,
+                 queue: Queue):
     try:
         with pipe:
             for line in iter(pipe.readline, b''):
