@@ -134,8 +134,8 @@ def test_faces_frame_to_depth(faces_frame):
     
     assert isinstance(da, xr.DataArray)
     
-    assert len(da.x) == 18
-    assert len(da.y) == 4
+    assert len(da["$x$"]) == 18
+    assert len(da["$y$"]) == 4
     assert da.time.values.take(0) == ts
     
     # Same bounds as the frame
