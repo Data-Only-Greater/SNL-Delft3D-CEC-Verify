@@ -182,7 +182,7 @@ def test_liverunner_call(tmp_path, data_dir):
     for line in runner(tmp_path):
         out += line
     
-    assert "OMP_NUM_THREADS is already defined" in out
+    assert "--nodisplay --autostartstop" in out
 
 
 def test_liverunner_call_relative_input_parts_none(tmp_path, data_dir):
@@ -200,7 +200,7 @@ def test_liverunner_call_relative_input_parts_none(tmp_path, data_dir):
     for line in runner(tmp_path):
         out += line
     
-    assert "OMP_NUM_THREADS is already defined" in out
+    assert "--nodisplay --autostartstop" in out
 
 
 def test_liverunner_call_error(tmp_path, mocker, data_dir):
