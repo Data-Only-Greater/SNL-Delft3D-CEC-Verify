@@ -49,6 +49,32 @@ def test_template_call(mocker):
                                                    case.dy)
 
 
+@pytest.mark.parametrize("simulate_turbines", [True, False])
+def test_template_fm_simulate_turbines(mocker, simulate_turbines):
+    
+    mocker.patch("snl_d3d_cec_verify.template.write_gridfm_rectangle",
+                 autospec=True)
+    mocker.patch("snl_d3d_cec_verify.copier._basic_copy",
+                 autospec=True)
+    mock_write = mocker.patch('snl_d3d_cec_verify.copier.open',
+                              mocker.mock_open())
+    
+    case = CaseStudy(simulate_turbines=simulate_turbines)
+    project_path = "mock_template"
+    
+    template = Template()
+    template(case, project_path)
+    
+    open_args, _ = mock_write.call_args_list[1]
+    
+    assert open_args[0] == Path("mock_template/input/FlowFM.mdu")
+    
+    handle = mock_write()
+    write_args, _ = handle.write.call_args_list[1]
+    
+    assert ("[Turbines]\n" in write_args[0]) is simulate_turbines
+
+
 def test_template_call_too_many_cases():
     
     template = Template("mock_template")

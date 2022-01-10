@@ -70,7 +70,10 @@ class Template:
     
     #: variables to ignore in the given :class:`.CaseStudy` objects when
     #: filling templates
-    no_template: List[str] = field(default_factory=lambda: ["dx", "dy"])
+    no_template: List[str] = field(
+                                default_factory=lambda: ["dx",
+                                                         "dy",
+                                                         "simulate_turbines"])
     
     def __call__(self, case: CaseStudy,
                        project_path: StrOrPath,
@@ -107,6 +110,18 @@ class Template:
         # Convert booleans to ints
         data = {field: int(value) if type(value) is bool else value
                                         for field, value in data.items()}
+        
+        # Add Turbines section if requested
+        if case.simulate_turbines:
+            simulate_turbines = (
+                "\n"
+                "[Turbines]\n"
+                "TurbineFile                       = turbines.ini\n"
+                "CurvesFile                        = curves.trb")
+        else:
+            simulate_turbines = ""
+        
+        data["simulate_turbines"] = simulate_turbines
         
         template_path = Path(self.template_path)
         project_path = Path(project_path)
