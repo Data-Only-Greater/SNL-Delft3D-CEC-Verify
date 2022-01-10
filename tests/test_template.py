@@ -65,12 +65,12 @@ def test_template_fm_simulate_turbines(mocker, simulate_turbines):
     template = Template()
     template(case, project_path)
     
-    open_args, _ = mock_write.call_args_list[2]
+    open_args, _ = mock_write.call_args_list[1]
     
     assert open_args[0] == Path("mock_template/input/FlowFM.mdu")
     
     handle = mock_write()
-    write_args, _ = handle.write.call_args_list[2]
+    write_args, _ = handle.write.call_args_list[1]
     
     assert ("[Turbines]\n" in write_args[0]) is simulate_turbines
 

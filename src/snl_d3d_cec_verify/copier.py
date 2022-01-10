@@ -108,7 +108,7 @@ def _get_posix_relative_paths(root: StrOrPath) -> List[str]:
             posix_file = rel_file.replace(os.sep, posixpath.sep)
             all_paths.append(posix_file)
     
-    return all_paths
+    return sorted(all_paths)
 
 
 def _template_copy(env: Environment,
