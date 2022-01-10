@@ -89,6 +89,7 @@ template = Template()
 runner = Runner(get_d3d_bin_path(),
                 omp_num_threads=omp_num_threads)
 
+u_infty_data = defaultdict(list)
 case_counter = 0
 
 while True:
@@ -105,9 +106,14 @@ while True:
         
         u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
         u_infty = u_infty_ds["$u$"].values.take(0)
-        print(u_infty)
+        
+        u_infty_data["resolution (m)"].append(case.dx)
+        u_infty_data["value (m/s)"].append(u_infty)
     
     case_counter += 1
     
     if case_counter == max_experiments:
         break
+
+u_infty_df = pd.DataFrame(u_infty_data)
+print(u_infty_df)
