@@ -90,6 +90,8 @@ runner = Runner(get_d3d_bin_path(),
                 omp_num_threads=omp_num_threads)
 
 u_infty_data = defaultdict(list)
+u_wake_data = defaultdict(list)
+
 case_counter = 0
 
 while True:
@@ -97,7 +99,7 @@ while True:
     case = cases[case_counter]
     no_turb_case = replace(case, simulate_turbines=False)
     
-    # Determine $U_\infty$ for case
+    # Determine $U_\infty$ for case, by running without the turbine
     with tempfile.TemporaryDirectory() as tmpdirname:
         
         template(no_turb_case, tmpdirname)
@@ -110,10 +112,29 @@ while True:
         u_infty_data["resolution (m)"].append(case.dx)
         u_infty_data["value (m/s)"].append(u_infty)
     
+    # Run with turbines
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        
+        template(case, tmpdirname)
+        runner(tmpdirname)
+        result = Result(tmpdirname)
+        
+        # Collect wake velocity at 1.2D downstream
+        u_wake_ds = result.faces.extract_turbine_centre(-1,
+                                                        case,
+                                                        offset_x=0.84)
+        u_wake = u_wake_ds["$u$"].values.take(0)
+        
+        u_wake_data["resolution (m)"].append(case.dx)
+        u_wake_data["value (m/s)"].append(u_wake)
+    
     case_counter += 1
     
     if case_counter == max_experiments:
         break
 
 u_infty_df = pd.DataFrame(u_infty_data)
+u_wake_df = pd.DataFrame(u_wake_data)
+
 print(u_infty_df)
+print(u_wake_df)
