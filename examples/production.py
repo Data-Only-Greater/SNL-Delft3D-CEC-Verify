@@ -5,6 +5,7 @@ import platform
 import tempfile
 from pathlib import Path
 from collections import defaultdict
+from dataclasses import replace
 
 import numpy as np
 import pandas as pd
@@ -77,3 +78,36 @@ def get_rmse(estimated, observed):
 # 9. Compute at desired resolution if lower than last iteration
 # 10. Make report
 
+max_experiments = 2 #5
+omp_num_threads = 6
+
+grid_resolution = [1 / 2 ** i for i in range(max_experiments)]
+sigma = [int(2 / delta) for delta in grid_resolution]
+
+cases = MycekStudy(dx=grid_resolution, dy=grid_resolution, sigma=sigma)
+template = Template()
+runner = Runner(get_d3d_bin_path(),
+                omp_num_threads=omp_num_threads)
+
+case_counter = 0
+
+while True:
+    
+    case = cases[case_counter]
+    no_turb_case = replace(case, simulate_turbines=False)
+    
+    # Determine $U_\infty$ for case
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        
+        template(no_turb_case, tmpdirname)
+        runner(tmpdirname)
+        result = Result(tmpdirname)
+        
+        u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
+        u_infty = u_infty_ds["$u$"].values.take(0)
+        print(u_infty)
+    
+    case_counter += 1
+    
+    if case_counter == max_experiments:
+        break
