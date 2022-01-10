@@ -47,8 +47,6 @@ class CaseStudy:
     :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
-    :param horizontal_momentum_filter: use high-order horizontal momentum 
-        filter. Defaults to {horizontal_momentum_filter}
     :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
         metres squared per second. Default to {horizontal_eddy_viscosity}
     :param horizontal_eddy_diffusivity: uniform horizontal eddy diffusivity,
@@ -57,6 +55,10 @@ class CaseStudy:
         metres squared per second. Default to {horizontal_eddy_viscosity}
     :param vertical_eddy_diffusivity: uniform vertical eddy diffusivity,
         in metres squared per second. Default to {vertical_eddy_diffusivity}
+    :param simulate_turbines: simulate turbines, defaults to
+        {simulate_turbines}
+    :param horizontal_momentum_filter: use high-order horizontal momentum 
+        filter. Defaults to {horizontal_momentum_filter}
     
     :raises ValueError: if variables with multiple values have different
         lengths
@@ -86,6 +88,9 @@ class CaseStudy:
     
     #: uniform vertical eddy diffusivity, in metres squared per second
     vertical_eddy_diffusivity: OneOrManyNum = 1e-06
+    
+    #: simulate turbines
+    simulate_turbines: bool = True
     
     #: use high-order horizontal momentum filter
     horizontal_momentum_filter: bool = True

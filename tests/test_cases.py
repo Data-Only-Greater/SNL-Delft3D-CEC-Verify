@@ -26,6 +26,7 @@ def test_casestudy_fields():
                                 'horizontal_eddy_diffusivity',
                                 'vertical_eddy_viscosity',
                                 'vertical_eddy_diffusivity',
+                                'simulate_turbines',
                                 'horizontal_momentum_filter']
 
 
@@ -55,6 +56,7 @@ def test_casestudy_values(cases):
                             1e-06,
                             1e-06,
                             1e-06,
+                            True,
                             True]
 
 

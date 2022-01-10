@@ -227,7 +227,4 @@ StatsInterval                     =                 # Interval (in s) between si
 Writebalancefile                  = 0               # Write balance file (1: yes, 0: no)
 TimingsInterval                   =                 # Timings statistics output interval [Dd HH:MM:SS.ZZZ]
 Richardsononoutput                = 1               # Write Richardson numbers (1: yes, 0: no)
-
-[Turbines]
-TurbineFile                       = turbines.ini
-CurvesFile                        = curves.trb
+{{ simulate_turbines }}
