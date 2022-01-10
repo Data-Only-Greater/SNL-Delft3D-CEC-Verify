@@ -35,6 +35,8 @@ class Runner:
         Delft3D
     :param omp_num_threads: The number of CPU threads to use, defaults to
         {omp_num_threads}
+    :param show_stdout: show Delft3D logging to stdout in console, defaults
+        to {show_stdout}
     :param relative_input_parts: list of components representing the
         relative path to folder containing the delft3D model files, from the
         project folder. Set to None to use given path directly. Defaults to
@@ -48,6 +50,82 @@ class Runner:
     d3d_bin_path: StrOrPath
     
     omp_num_threads: int = 1  #: The number of CPU threads to use
+    show_stdout: bool = False #: show Delft3D logging to stdout in console
+    
+    #: list of components representing the relative path to folder containing
+    #: the delft3D model files, from the project folder. Set to None to given
+    #: path directly
+    relative_input_parts: Optional[List[str]] = field(
+                                            default_factory=lambda: ["input"])
+    
+    def __call__(self, project_path: StrOrPath):
+        """
+        Run a simulation, given a prepared model.
+        
+        :param project_path: path to Delft3D project folder 
+        
+        :raises OSError: if function is called on an unsupported operating
+            system
+        :raises FileNotFoundError: if the Delft3D entry point or model folder
+            could not be found
+        :raises RuntimeError: if the Delft3D simulation outputs to stderr, for
+            any reason
+        
+        """
+        
+        if self.relative_input_parts is None:
+            relative_input_parts = []
+        else:
+            relative_input_parts = self.relative_input_parts
+        
+        model_path = Path(project_path).joinpath(*relative_input_parts)
+        
+        sp = run_dflowfm(self.d3d_bin_path,
+                         model_path,
+                         self.omp_num_threads)
+        
+        out, err = sp.communicate()
+        
+        if out and self.show_stdout:
+            print('stdout      :', out.decode('utf-8'))
+        
+        if err:
+            print('stderr      :', err.decode('utf-8'))
+            raise RuntimeError("Delft3D simulation failure")
+
+
+@dataclass
+class LiveRunner:
+    """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
+    settings across many Delft3D projects with real time output.
+    
+    Call the Runner object with the project path to execute the Delft3D model
+    
+    >>> runner = Runner("path/to/Delft3D/src/bin",
+    ...                  omp_num_threads=8)
+    >>> runner("path/to/project") # doctest: +SKIP
+    
+    
+    Currently only available for Windows and Linux.
+    
+    :param d3d_bin_path: path to the ``bin`` folder generated when compiling
+        Delft3D
+    :param omp_num_threads: The number of CPU threads to use, defaults to
+        {omp_num_threads}
+    :param relative_input_parts: list of components representing the
+        relative path to folder containing the delft3D model files, from the
+        project folder. Set to None to use given path directly. Defaults to
+        :code:`["input"]`
+    
+    .. automethod:: __call__
+    
+    """
+    
+    #: path to the ``bin`` folder generated when compiling Delft3D
+    d3d_bin_path: StrOrPath
+    
+    omp_num_threads: int = 1  #: The number of CPU threads to use
+    show_stdout: bool = False #: show Delft3D logging to stdout in console
     
     #: list of components representing the relative path to folder containing
     #: the delft3D model files, from the project folder. Set to None to given
@@ -77,16 +155,37 @@ class Runner:
         
         model_path = Path(project_path).joinpath(*relative_input_parts)
         
-        for out in run_dflowfm(self.d3d_bin_path,
-                               model_path,
-                               self.omp_num_threads):
-            yield out
+        sp = run_dflowfm(self.d3d_bin_path,
+                         model_path,
+                         self.omp_num_threads)
+        
+        q = Queue()
+        Thread(target=_pipe_reader, args=[sp.stderr, q]).start()
+        Thread(target=_pipe_reader, args=[sp.stdout, q]).start()
+        
+        stderr = ""
+        captured_error = False
+        
+        for i in range(2):
+            
+            for source, line in iter(q.get, None):
+                
+                msg = line.decode('utf-8')
+                
+                if source == sp.stderr:
+                    captured_error = True
+                
+                yield msg
+                
+        if captured_error:
+            print(stderr)
+            raise RuntimeError("Delft3D simulation failure")
 
 
 @docstringtemplate
 def run_dflowfm(d3d_bin_path: StrOrPath,
                 model_path: StrOrPath,
-                omp_num_threads: int = 1) -> Generator[str]:
+                omp_num_threads: int = 1) -> subprocess.Popen:
     """Run a Delft3D flexible mesh simulation, given an existing Delft3D
     installation and a prepared model.
     
@@ -121,29 +220,7 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
                           cwd=model_path,
                           env=env)
     
-    q = Queue()
-    Thread(target=_pipe_reader, args=[sp.stderr, q]).start()
-    Thread(target=_pipe_reader, args=[sp.stdout, q]).start()
-    
-    stderr = ""
-    captured_error = False
-    
-    for i in range(2):
-        
-        for source, line in iter(q.get, None):
-            
-            msg = line.decode('utf-8')
-            
-            if source == sp.stderr:
-                stderr += msg
-                captured_error = True
-                continue
-            
-            if captured_error:
-                print(stderr)
-                raise RuntimeError("Delft3D simulation failure")
-            
-            yield msg
+    return sp
 
 
 def _get_dflowfm_entry_point(d3d_bin_path: StrOrPath) -> Path:

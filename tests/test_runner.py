@@ -2,6 +2,7 @@
 
 import platform
 from pathlib import Path
+from subprocess import Popen
 
 import pytest
 
@@ -67,70 +68,17 @@ def test_run_dflowfm( mocker, tmp_path, data_dir):
     
     omp_num_threads = 99
     
-    runner = run_dflowfm(d3d_bin_path,
-                         tmp_path,
-                         omp_num_threads)
+    sp = run_dflowfm(d3d_bin_path,
+                     tmp_path,
+                     omp_num_threads)
     
-    output = ""
-    
-    for msg in runner:
-        output += msg
-    
-    with pytest.raises(StopIteration):
-        next(runner)
+    assert isinstance(sp, Popen)
     
     cwd = spy_popen.call_args.kwargs['cwd']
     env = spy_popen.call_args.kwargs['env']
     
     assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
-    assert 'dflowfm' in output
-
-
-def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
-    
-    process_mock = mocker.Mock()
-    stdout_mock = mocker.Mock()
-    stdout_mock.readline.side_effect = ['normal'.encode(),
-                                        ''.encode()]
-    stdout_mock.__enter__ = mocker.Mock(return_value='foo')
-    stdout_mock.__exit__ = mocker.Mock(return_value='bar')
-    stderr_mock = mocker.Mock()
-    stderr_mock.readline.side_effect = ['error'.encode(),
-                                        ''.encode()]
-    stderr_mock.__enter__  = mocker.Mock(return_value='foo')
-    stderr_mock.__exit__ = mocker.Mock(return_value='bar')
-    
-    process_mock.stdout = stdout_mock
-    process_mock.stderr = stderr_mock
-    
-    mock_popen = mocker.patch('snl_d3d_cec_verify.runner.subprocess.Popen',
-                              return_value=process_mock)
-    
-    os_name = platform.system()
-    
-    if os_name == 'Windows':
-        d3d_bin_path = data_dir / "win"
-    else:
-        d3d_bin_path = data_dir / "linux"
-    
-    omp_num_threads = 99
-    
-    with pytest.raises(RuntimeError) as excinfo:
-        for _ in run_dflowfm(d3d_bin_path,
-                             tmp_path,
-                             omp_num_threads):
-            pass
-    
-    cwd = mock_popen.call_args.kwargs['cwd']
-    env = mock_popen.call_args.kwargs['env']
-    captured = capsys.readouterr()
-    os_name = platform.system()
-    
-    assert cwd == tmp_path
-    assert int(env['OMP_NUM_THREADS']) == omp_num_threads
-    assert 'error' in captured.out
-    assert "simulation failure" in str(excinfo)
 
 
 def test_run_dflowfm_missing_input_folder(mocker):
@@ -148,34 +96,68 @@ def test_run_dflowfm_missing_input_folder(mocker):
     assert project_path in str(excinfo)
 
 
-def test_runner_call(mocker):
+def test_runner_call(capsys, tmp_path, data_dir):
     
-    mock = mocker.patch('snl_d3d_cec_verify.runner.run_dflowfm')
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
     
-    d3d_bin_path = "mock_bin"
-    project_path = "mock_project"
-    runner = Runner(d3d_bin_path)
+    os_name = platform.system()
     
-    for _ in runner(project_path):
-        pass
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
     
-    mock.assert_called_with(d3d_bin_path,
-                            Path(project_path) / "input",
-                            runner.omp_num_threads)
+    runner = Runner(d3d_bin_path, show_stdout=True)
+    runner(tmp_path)
+    captured = capsys.readouterr()
+    
+    assert "stdout" in captured.out
 
 
-def test_runner_call_relative_input_parts_none(mocker):
+def test_runner_call_relative_input_parts_none(capsys, tmp_path, data_dir):
     
-    mock = mocker.patch('snl_d3d_cec_verify.runner.run_dflowfm')
+    os_name = platform.system()
     
-    d3d_bin_path = "mock_bin"
-    project_path = "mock_project"
-    runner = Runner(d3d_bin_path, relative_input_parts=None)
-    runner(project_path)
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+    else:
+        d3d_bin_path = data_dir / "linux"
     
-    for _ in runner(project_path):
-        pass
+    runner = Runner(d3d_bin_path, show_stdout=True, relative_input_parts=None)
+    runner(tmp_path)
+    captured = capsys.readouterr()
     
-    mock.assert_called_with(d3d_bin_path,
-                            Path(project_path),
-                            runner.omp_num_threads)
+    assert "stdout" in captured.out
+
+
+def test_runner_call_error(capsys, tmp_path, mocker, data_dir):
+    
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    
+    os_name = platform.system()
+    
+    if os_name == 'Windows':
+        d3d_bin_path = data_dir / "win"
+        script = "run.bat"
+    else:
+        d3d_bin_path = data_dir / "linux"
+        script = "run.bat"
+    
+    run_path = Path(data_dir) / "error" / script
+    
+    mocker.patch('snl_d3d_cec_verify.runner._get_dflowfm_entry_point',
+                  return_value=run_path)
+    
+    runner = Runner(d3d_bin_path, show_stdout=True)
+    
+    with pytest.raises(RuntimeError) as excinfo:
+        runner(tmp_path)
+    
+    captured = capsys.readouterr()
+    
+    assert "simulation failure" in str(excinfo)
+    assert "stderr" in captured.out
+    assert "Error first line" in captured.out
+    assert "Error third line" in captured.out
