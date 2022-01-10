@@ -53,7 +53,7 @@ def test_get_dflowfm_entry_point_missing_script(tmp_path):
     assert d3d_bin_path in str(excinfo)
 
 
-def test_run_dflowfm(capsys, mocker, tmp_path, data_dir):
+def test_run_dflowfm( mocker, tmp_path, data_dir):
     
     from snl_d3d_cec_verify.runner import subprocess
     
@@ -67,27 +67,42 @@ def test_run_dflowfm(capsys, mocker, tmp_path, data_dir):
     
     omp_num_threads = 99
     
-    run_dflowfm(d3d_bin_path,
-                tmp_path,
-                omp_num_threads,
-                show_stdout=True)
+    runner = run_dflowfm(d3d_bin_path,
+                         tmp_path,
+                         omp_num_threads)
+    
+    output = ""
+    
+    for msg in runner:
+        output += msg
+    
+    with pytest.raises(StopIteration):
+        next(runner)
     
     cwd = spy_popen.call_args.kwargs['cwd']
     env = spy_popen.call_args.kwargs['env']
-    captured = capsys.readouterr()
     
     assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
-    assert 'stdout' in captured.out
-    assert 'dflowfm' in captured.out
+    assert 'dflowfm' in output
 
 
 def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
     
     process_mock = mocker.Mock()
-    attrs = {'communicate.return_value': (''.encode(), 
-                                          'error'.encode())}
-    process_mock.configure_mock(**attrs)
+    stdout_mock = mocker.Mock()
+    stdout_mock.readline.side_effect = ['normal'.encode(),
+                                        ''.encode()]
+    stdout_mock.__enter__ = mocker.Mock(return_value='foo')
+    stdout_mock.__exit__ = mocker.Mock(return_value='bar')
+    stderr_mock = mocker.Mock()
+    stderr_mock.readline.side_effect = ['error'.encode(),
+                                        ''.encode()]
+    stderr_mock.__enter__  = mocker.Mock(return_value='foo')
+    stderr_mock.__exit__ = mocker.Mock(return_value='bar')
+    
+    process_mock.stdout = stdout_mock
+    process_mock.stderr = stderr_mock
     
     mock_popen = mocker.patch('snl_d3d_cec_verify.runner.subprocess.Popen',
                               return_value=process_mock)
@@ -102,10 +117,10 @@ def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
     omp_num_threads = 99
     
     with pytest.raises(RuntimeError) as excinfo:
-        run_dflowfm(d3d_bin_path,
-                    tmp_path,
-                    omp_num_threads,
-                    show_stdout=True)
+        for _ in run_dflowfm(d3d_bin_path,
+                             tmp_path,
+                             omp_num_threads):
+            pass
     
     cwd = mock_popen.call_args.kwargs['cwd']
     env = mock_popen.call_args.kwargs['env']
@@ -114,7 +129,6 @@ def test_run_dflowfm_error(capsys, mocker, tmp_path, data_dir):
     
     assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
-    assert 'stderr' in captured.out
     assert 'error' in captured.out
     assert "simulation failure" in str(excinfo)
 
@@ -126,8 +140,9 @@ def test_run_dflowfm_missing_input_folder(mocker):
     project_path = "mock_project"
     
     with pytest.raises(FileNotFoundError) as excinfo:
-        run_dflowfm(d3d_bin_path,
-                    project_path)
+        for _ in run_dflowfm(d3d_bin_path,
+                             project_path):
+            pass
     
     assert "Model folder could not be found" in str(excinfo)
     assert project_path in str(excinfo)
@@ -140,12 +155,13 @@ def test_runner_call(mocker):
     d3d_bin_path = "mock_bin"
     project_path = "mock_project"
     runner = Runner(d3d_bin_path)
-    runner(project_path)
+    
+    for _ in runner(project_path):
+        pass
     
     mock.assert_called_with(d3d_bin_path,
                             Path(project_path) / "input",
-                            runner.omp_num_threads,
-                            runner.show_stdout)
+                            runner.omp_num_threads)
 
 
 def test_runner_call_relative_input_parts_none(mocker):
@@ -157,7 +173,9 @@ def test_runner_call_relative_input_parts_none(mocker):
     runner = Runner(d3d_bin_path, relative_input_parts=None)
     runner(project_path)
     
+    for _ in runner(project_path):
+        pass
+    
     mock.assert_called_with(d3d_bin_path,
                             Path(project_path),
-                            runner.omp_num_threads,
-                            runner.show_stdout)
+                            runner.omp_num_threads)
