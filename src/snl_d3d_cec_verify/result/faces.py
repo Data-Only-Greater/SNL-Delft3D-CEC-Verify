@@ -430,7 +430,7 @@ class Faces(TimeStepResolver):
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> result.faces.extract_depth(-1)
-        <xarray.DataArray 'depth' (x: 18, y: 4)>
+        <xarray.DataArray 'depth' ($x$: 18, $y$: 4)>
         array([[2.00234445, 2.00234445, 2.00234445, 2.00234445],
                [2.00224624, 2.00224624, 2.00224624, 2.00224624],
                [2.00212823, 2.00212823, 2.00212823, 2.00212823],
@@ -450,8 +450,8 @@ class Faces(TimeStepResolver):
                [2.00027887, 2.00027887, 2.00027887, 2.00027887],
                [2.00014281, 2.00014281, 2.00014281, 2.00014281]])
         Coordinates:
-          * x        (x) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
-          * y        (y) float64 1.5 2.5 3.5 4.5
+          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
             time     datetime64[ns] 2001-01-01T01:00:00
         
         :param t_step: Time step index
@@ -582,12 +582,14 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
 
 
 def _faces_frame_to_depth(frame: pd.DataFrame,
-                         sim_time: pd.Timestamp) -> xr.DataArray:
+                          sim_time: pd.Timestamp) -> xr.DataArray:
     
     frame = frame.set_index(['x', 'y', 'k', 'time'])
     frame = frame.xs((0, sim_time), level=(2, 3))
     frame = frame.drop(["z", "u", "v", "w"], axis=1)
     ds = frame.to_xarray()
     ds = ds.assign_coords({"time": sim_time})
+    ds = ds.rename({"x": "$x$",
+                    "y": "$y$"})
     
     return ds.depth
