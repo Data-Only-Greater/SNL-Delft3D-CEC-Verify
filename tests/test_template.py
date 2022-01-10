@@ -67,7 +67,7 @@ def test_template_fm_simulate_turbines(mocker, simulate_turbines):
     
     open_args, _ = mock_write.call_args_list[2]
     
-    assert open_args[0] == Path("mock_template\\input\\FlowFM.mdu")
+    assert open_args[0] == Path("mock_template/input/FlowFM.mdu")
     
     handle = mock_write()
     write_args, _ = handle.write.call_args_list[2]
