@@ -47,7 +47,11 @@ def test_template_call(mocker):
     
     mock_write_gridfm_rectangle.assert_called_with(expected_net_path,
                                                    case.dx,
-                                                   case.dy)
+                                                   case.dy,
+                                                   case.x0,
+                                                   case.x1,
+                                                   case.y0,
+                                                   case.y1)
 
 
 @pytest.mark.parametrize("simulate_turbines", [True, False])

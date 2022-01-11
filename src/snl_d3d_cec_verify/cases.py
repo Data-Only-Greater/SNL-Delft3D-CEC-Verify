@@ -42,6 +42,10 @@ class CaseStudy:
     :param dx: grid spacing in x-direction, in meters. Defaults to {dx}
     :param dy: grid spacing in y-direction, in meters. Defaults to {dy}
     :param sigma: number of vertical layers, defaults to {sigma}
+    :param x0: minimum x-value, in metres, defaults to {x0}
+    :param x1: maximum x-value, in metres, defaults to {x1}
+    :param y0: minimum y-value, in metres, defaults to {y0}
+    :param y1: maximum y-value, in metres, defaults to {y1}
     :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
     :param dt_init: initial time step, in seconds. Defaults to {dt_init}
     :param turb_pos_x: turbine x-position, in meters. Defaults to {turb_pos_x}
@@ -72,6 +76,10 @@ class CaseStudy:
     dx: OneOrMany[Num] = 1 #: grid spacing in x-direction, in meters
     dy: OneOrMany[Num] = 1 #: grid spacing in y-direction, in meters
     sigma: OneOrMany[Num] = 3 #: number of vertical layers
+    x0: OneOrMany[Num] = 0 #: minimum x-value, in metres
+    x1: OneOrMany[Num] = 18 #: maximum x-value, in metres
+    y0: OneOrMany[Num] = 1 #: minimum y-value, in metres
+    y1: OneOrMany[Num] = 5 #: maximum y-value, in metres
     dt_max: OneOrMany[Num] = 1 #: maximum time step, in seconds
     dt_init: OneOrMany[Num] = 1 #: initial time step, in seconds
     turb_pos_x: OneOrMany[Num] = 6 #: turbine x-position, in meters

@@ -134,8 +134,16 @@ class Template:
         # Inform the type checker that we have Num for single value cases
         dx = cast(Num, case.dx)
         dy = cast(Num, case.dy)
+        x0 = cast(Num, case.x0)
+        x1 = cast(Num, case.x1)
+        y0 = cast(Num, case.y0)
+        y1 = cast(Num, case.y1)
         
         copy(template_path, project_path, data=data, exist_ok=exist_ok)
         write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
                                dx,
-                               dy)
+                               dy,
+                               x0,
+                               x1,
+                               y0,
+                               y1)
