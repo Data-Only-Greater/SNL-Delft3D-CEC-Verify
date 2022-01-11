@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Union
+from typing import Any, List, Optional, TypeVar, Union
 from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
 
@@ -10,7 +10,9 @@ from .types import Num
 from ._docs import docstringtemplate
 
 # Reused compound types
-OneOrManyNum = Union[Num, Sequence[Num]]
+T = TypeVar('T')
+OneOrMany = Union[T, Sequence[T]]
+OneOrManyOptional = Union[Optional[T], Sequence[Optional[T]]]
 
 
 @docstringtemplate
@@ -59,41 +61,46 @@ class CaseStudy:
         {simulate_turbines}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
         filter. Defaults to {horizontal_momentum_filter}
+    :param stats_interval: interval for simulation progress output. Defaults
+        to {stats_interval}
     
     :raises ValueError: if variables with multiple values have different
         lengths
     
     """
     
-    dx: OneOrManyNum = 1 #: grid spacing in x-direction, in meters
-    dy: OneOrManyNum = 1 #: grid spacing in y-direction, in meters
-    sigma: OneOrManyNum = 3 #: number of vertical layers
-    dt_max: OneOrManyNum = 1 #: maximum time step, in seconds
-    dt_init: OneOrManyNum = 1 #: initial time step, in seconds
-    turb_pos_x: OneOrManyNum = 6 #: turbine x-position, in meters
-    turb_pos_y: OneOrManyNum = 3 #: turbine y-position, in meters
-    turb_pos_z: OneOrManyNum = -1 #: turbine z-position, in meters
+    dx: OneOrMany[Num] = 1 #: grid spacing in x-direction, in meters
+    dy: OneOrMany[Num] = 1 #: grid spacing in y-direction, in meters
+    sigma: OneOrMany[Num] = 3 #: number of vertical layers
+    dt_max: OneOrMany[Num] = 1 #: maximum time step, in seconds
+    dt_init: OneOrMany[Num] = 1 #: initial time step, in seconds
+    turb_pos_x: OneOrMany[Num] = 6 #: turbine x-position, in meters
+    turb_pos_y: OneOrMany[Num] = 3 #: turbine y-position, in meters
+    turb_pos_z: OneOrMany[Num] = -1 #: turbine z-position, in meters
     
     #: inlet boundary discharge, in cubic meters per second
-    discharge: OneOrManyNum = 6.0574
+    discharge: OneOrMany[Num] = 6.0574
     
     #: uniform horizontal eddy viscosity, in metres squared per second
-    horizontal_eddy_viscosity: OneOrManyNum = 1e-06
+    horizontal_eddy_viscosity: OneOrMany[Num] = 1e-06
     
     #: uniform horizontal eddy diffusivity, in metres squared per second
-    horizontal_eddy_diffusivity: OneOrManyNum = 1e-06
+    horizontal_eddy_diffusivity: OneOrMany[Num] = 1e-06
     
     #: uniform vertical eddy viscosity, in metres squared per second
-    vertical_eddy_viscosity: OneOrManyNum = 1e-06
+    vertical_eddy_viscosity: OneOrMany[Num] = 1e-06
     
     #: uniform vertical eddy diffusivity, in metres squared per second
-    vertical_eddy_diffusivity: OneOrManyNum = 1e-06
+    vertical_eddy_diffusivity: OneOrMany[Num] = 1e-06
     
     #: simulate turbines
     simulate_turbines: bool = True
     
     #: use high-order horizontal momentum filter
     horizontal_momentum_filter: bool = True
+    
+    #: interval for simulation progress output
+    stats_interval: OneOrManyOptional[Num] = None
     
     def __post_init__(self):
         
@@ -191,6 +198,6 @@ class MycekStudy(CaseStudy):
     
     """
    
-    turb_pos_x: OneOrManyNum = field(default=6, init=False)
-    turb_pos_y: OneOrManyNum = field(default=3, init=False)
-    turb_pos_z: OneOrManyNum = field(default=-1, init=False)
+    turb_pos_x: OneOrMany[Num] = field(default=6, init=False)
+    turb_pos_y: OneOrMany[Num] = field(default=3, init=False)
+    turb_pos_z: OneOrMany[Num] = field(default=-1, init=False)

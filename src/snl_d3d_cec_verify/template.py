@@ -81,7 +81,8 @@ class Template:
         """Create a new Delft3D project from the given :class:`.CaseStudy`
         object, at the given path.
         
-        Note that boolean values are converted to integers.
+        Note that boolean values are converted to integers and Nones are
+        converted to empty strings.
         
         :param case: :class:`.CaseStudy` object from which to build the
             project
@@ -109,6 +110,10 @@ class Template:
         
         # Convert booleans to ints
         data = {field: int(value) if type(value) is bool else value
+                                        for field, value in data.items()}
+        
+        # Convert None to ""
+        data = {field: "" if value is None else value
                                         for field, value in data.items()}
         
         # Add Turbines section if requested
