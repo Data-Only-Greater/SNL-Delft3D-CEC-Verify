@@ -94,10 +94,10 @@ class CaseStudy:
     vertical_eddy_diffusivity: OneOrMany[Num] = 1e-06
     
     #: simulate turbines
-    simulate_turbines: bool = True
+    simulate_turbines: OneOrMany[bool] = True
     
     #: use high-order horizontal momentum filter
-    horizontal_momentum_filter: bool = True
+    horizontal_momentum_filter: OneOrMany[bool] = True
     
     #: interval for simulation progress output
     stats_interval: OneOrManyOptional[Num] = None
