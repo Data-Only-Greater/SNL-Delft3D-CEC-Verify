@@ -98,6 +98,18 @@ def test_casestudy_get_case_single(cases):
     assert test is not case
 
 
+def test_casestudy_length_one_sequences():
+    
+    test = CaseStudy(dx=(1,),
+                     dy=(1,),
+                     sigma=(1,))
+    
+    assert len(test) == 1
+    assert test.dx == 1
+    assert test.dy == 1
+    assert test.sigma == 1
+
+
 @pytest.mark.parametrize("index", [-2, 1])
 def test_casestudy_get_case_out_of_bounds_sigle(cases, index):
     

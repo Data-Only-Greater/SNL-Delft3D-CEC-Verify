@@ -100,6 +100,12 @@ class CaseStudy:
         mutli_values = {n: v for n, v in zip(self.fields, self.values)
                                                 if isinstance(v, Sequence)}
         
+        # Unpack single length sequences
+        for name, value in mutli_values.copy().items():
+            if len(value) != 1: continue
+            object.__setattr__(self, name, value[0])
+            mutli_values.pop(name)
+        
         if not mutli_values: return
         
         lengths = {n: len(x) for n, x in mutli_values.items()}
