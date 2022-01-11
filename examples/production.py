@@ -11,16 +11,18 @@ import numpy as np
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+from convergence import Convergence
 
 from snl_d3d_cec_verify import (MycekStudy,
                                 Report,
                                 Result,
-                                Runner,
+                                LiveRunner,
                                 Template,
                                 Validate)
 from snl_d3d_cec_verify.result import (get_reset_origin,
                                        get_normalised_dims,
                                        get_normalised_data_deficit)
+from snl_d3d_cec_verify.text import Spinner
 
 matplotlib.rcParams.update({'font.size': 8})
 
@@ -78,32 +80,49 @@ def get_rmse(estimated, observed):
 # 9. Compute at desired resolution if lower than last iteration
 # 10. Make report
 
-max_experiments = 2 #5
-omp_num_threads = 6
+max_experiments = 5
+omp_num_threads = 8
 
 grid_resolution = [1 / 2 ** i for i in range(max_experiments)]
 sigma = [int(2 / delta) for delta in grid_resolution]
+stats_interval = [240 / (k ** 2) for k in sigma]
 
-cases = MycekStudy(dx=grid_resolution, dy=grid_resolution, sigma=sigma)
+cases = MycekStudy(dx=grid_resolution,
+                   dy=grid_resolution,
+                   sigma=sigma,
+                   stats_interval=stats_interval)
 template = Template()
-runner = Runner(get_d3d_bin_path(),
-                omp_num_threads=omp_num_threads)
+runner = LiveRunner(get_d3d_bin_path(),
+                    omp_num_threads=omp_num_threads)
+spin = Spinner()
 
 u_infty_data = defaultdict(list)
 u_wake_data = defaultdict(list)
+u_infty_convergence = Convergence()
+u_wake_convergence = Convergence()
 
 case_counter = 0
+asymptotic_range = False
 
 while True:
     
+    if case_counter + 1 > len(cases):
+        break
+    
     case = cases[case_counter]
     no_turb_case = replace(case, simulate_turbines=False)
+    
+    print(f"Running without turbine with resolution {case.dx}")
     
     # Determine $U_\infty$ for case, by running without the turbine
     with tempfile.TemporaryDirectory() as tmpdirname:
         
         template(no_turb_case, tmpdirname)
-        runner(tmpdirname)
+        
+        for line in runner(tmpdirname):
+            spin()
+        print("")
+        
         result = Result(tmpdirname)
         
         u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
@@ -111,12 +130,20 @@ while True:
         
         u_infty_data["resolution (m)"].append(case.dx)
         u_infty_data["value (m/s)"].append(u_infty)
+        
+        u_infty_convergence.add_grids([(case.dx, u_infty)])
+    
+    print(f"Running with turbine with resolution {case.dx}m")
     
     # Run with turbines
     with tempfile.TemporaryDirectory() as tmpdirname:
         
         template(case, tmpdirname)
-        runner(tmpdirname)
+        
+        for line in runner(tmpdirname):
+            spin()
+        print("")
+        
         result = Result(tmpdirname)
         
         # Collect wake velocity at 1.2D downstream
@@ -127,8 +154,20 @@ while True:
         
         u_wake_data["resolution (m)"].append(case.dx)
         u_wake_data["value (m/s)"].append(u_wake)
+        
+        # Record 
+        u_wake_convergence.add_grids([(case.dx, u_wake)])
     
     case_counter += 1
+    
+    if case_counter < 3: continue
+    
+    print(u_infty_convergence[0].asymptotic_ratio)
+    print(u_wake_convergence[0].asymptotic_ratio)
+    
+    if abs(1 - u_wake_convergence[0].asymptotic_ratio) < 0.01:
+        asymptotic_range = True
+        break
     
     if case_counter == max_experiments:
         break
@@ -138,3 +177,7 @@ u_wake_df = pd.DataFrame(u_wake_data)
 
 print(u_infty_df)
 print(u_wake_df)
+
+print(asymptotic_range)
+print(u_wake_convergence[0].fine.gci_fine)
+print(u_wake_convergence.get_resolution(0.01))
