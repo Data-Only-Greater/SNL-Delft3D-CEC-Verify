@@ -99,11 +99,11 @@ class LiveRunner:
     """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
     settings across many Delft3D projects with real time output.
     
-    Call the Runner object with the project path to execute the Delft3D model
-    and read the output line by line, like a generator
+    Call the LiveRunner object with the project path to execute the Delft3D
+    model and read the output line by line, like a generator
     
-    >>> runner = Runner("path/to/Delft3D/src/bin",
-    ...                  omp_num_threads=8)
+    >>> runner = LiveRunner("path/to/Delft3D/src/bin",
+    ...                     omp_num_threads=8)
     >>> for line in runner("path/to/project"): # doctest: +SKIP
     ...     print(line)
     

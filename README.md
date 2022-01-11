@@ -17,7 +17,7 @@ experiment conducted by Mycek et al.[[1]](#1).
 
 ## Installation
 
-:warning: This repository uses [Git LFS][8] to store large files, so if you
+:warning: This repository uses [Git LFS][7] to store large files, so if you
 want to clone the repository, make sure to use `git lfs clone` to download all
 of the files and set up LFS.
 
@@ -115,7 +115,7 @@ called `validation_report`.
 ## Documentation
 
 API documentation, which describes the classes and functions used in the 
-examples, can be found [here][9].
+examples, can be found [here][8].
 
 Documentation updates will be ongoing. Instructions for building the 
 documentation locally are available [here](docs/README.md).
@@ -180,8 +180,7 @@ this package. If you intend to publish results using this data, make sure to
 acknowledge its source at the point of use, e.g. _"Experimental data reverse 
 engineered from Mycek et al.[[1]](#1), fig. 11a."_.
 
-Some of the code in this package is derived from the [delft3dfmpy][6] and
-[django][7] projects.
+Some of the code in this package is derived from the [delft3dfmpy][6] project.
 
 ## References
 
@@ -195,6 +194,5 @@ Renewable Energy, 66, 729–746.
 [4]: https://www.anaconda.com/products/individual
 [5]: https://pandoc.org/
 [6]: https://github.com/openearth/delft3dfmpy
-[7]: https://github.com/django/django
-[8]: https://git-lfs.github.com/
-[9]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/api/snl_d3d_cec_verify.html
+[7]: https://git-lfs.github.com/
+[8]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/api/snl_d3d_cec_verify.html
