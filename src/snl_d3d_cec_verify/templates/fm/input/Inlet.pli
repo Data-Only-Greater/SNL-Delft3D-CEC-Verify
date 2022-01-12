@@ -1,4 +1,4 @@
 Inlet
     2    2
 {{ '{:.15G}  {:.15G}'.format(x0, y1) }} Inlet_0001
-{{ '{:.15G}  {:.15G}'.format(x0, y0) }} Inlet_0001
+{{ '{:.15G}  {:.15G}'.format(x0, y0) }} Inlet_0002
