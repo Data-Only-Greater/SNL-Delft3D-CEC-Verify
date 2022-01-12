@@ -38,8 +38,9 @@ def test_template_call(mocker):
     mock_copy.assert_called()
     mock_copy_kwargs = mock_copy.call_args.kwargs
     
-    assert set(mock_copy.call_args.args) == set([Path(template_path),
-                                                 Path(project_path)])
+    assert set(mock_copy.call_args.args) == set(
+                                        [Path(template._template_tmp.name),
+                                         Path(project_path)])
     assert set(expected_fields) <= set(mock_copy_kwargs["data"])
     assert mock_copy_kwargs["exist_ok"] is exist_ok
     assert mock_copy_kwargs["data"]["horizontal_momentum_filter"] == 1

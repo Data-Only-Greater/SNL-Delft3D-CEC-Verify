@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from typing import cast, List, Optional
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
+from distutils.dir_util import copy_tree
 
 from .cases import CaseStudy
 from .copier import copy
@@ -14,7 +16,7 @@ from .types import Num, StrOrPath
 from ._docs import docstringtemplate
 
 
-def package_fm_template_path():
+def package_fm_template_path() -> Path:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     return Path(this_dir) / "templates" / "fm"
 
@@ -26,7 +28,9 @@ class Template:
     
     Utilises the :func:`.copier.copy` function to fill the template and the
     :func:`.gridfm.write_gridfm_rectangle` function to create the flexible
-    mesh grid.
+    mesh grid. Note that the template files are copied on initialization,
+    therefore changes to the template source will not affect the object's
+    output.
     
     Call a Template object with a length one :class:`.CaseStudy` object and
     a path at which to create a Delft3D project. For example:
@@ -62,8 +66,7 @@ class Template:
     
     """
     
-    #: path to the Delft3D project template
-    template_path: StrOrPath = field(default_factory=package_fm_template_path)
+    template_path: InitVar[StrOrPath] = None
     
     #: if True, allow an existing path to be overwritten
     exist_ok: bool = False
@@ -74,6 +77,16 @@ class Template:
                                 default_factory=lambda: ["dx",
                                                          "dy",
                                                          "simulate_turbines"])
+    
+    _template_tmp: tempfile.TemporaryDirectory = field(init=False, repr=False)
+    
+    def __post_init__(self, template_path: StrOrPath):
+        
+        if template_path is None:
+            template_path = package_fm_template_path()
+        
+        self._template_tmp = tempfile.TemporaryDirectory()
+        copy_tree(str(template_path), self._template_tmp.name)
     
     def __call__(self, case: CaseStudy,
                        project_path: StrOrPath,
@@ -128,7 +141,7 @@ class Template:
         
         data["simulate_turbines"] = simulate_turbines
         
-        template_path = Path(self.template_path)
+        template_path = Path(self._template_tmp.name)
         project_path = Path(project_path)
         
         # Inform the type checker that we have Num for single value cases
