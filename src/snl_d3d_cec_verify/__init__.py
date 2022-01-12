@@ -3,10 +3,11 @@
 from .cases import CaseStudy, MycekStudy
 from .report import Report
 from .result import Result, Validate
-from .runner import Runner
+from .runner import LiveRunner, Runner
 from .template import Template
 
 __all__ = ["CaseStudy",
+           "LiveRunner",
            "MycekStudy",
            "Report",
            "Result",

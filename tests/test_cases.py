@@ -16,6 +16,10 @@ def test_casestudy_fields():
     assert CaseStudy.fields == ['dx',
                                 'dy',
                                 'sigma',
+                                'x0',
+                                'x1',
+                                'y0',
+                                'y1',
                                 'dt_max',
                                 'dt_init',
                                 'turb_pos_x',
@@ -27,7 +31,8 @@ def test_casestudy_fields():
                                 'vertical_eddy_viscosity',
                                 'vertical_eddy_diffusivity',
                                 'simulate_turbines',
-                                'horizontal_momentum_filter']
+                                'horizontal_momentum_filter',
+                                'stats_interval']
 
 
 def test_casestudy_unequal_inputs():
@@ -46,6 +51,10 @@ def test_casestudy_values(cases):
     assert cases.values == [(1, 2, 3, 4),
                             (1, 2, 3, 4),
                             (1, 2, 3, 4),
+                            0,
+                            18,
+                            1,
+                            5,
                             1,
                             1,
                             6,
@@ -57,7 +66,8 @@ def test_casestudy_values(cases):
                             1e-06,
                             1e-06,
                             True,
-                            True]
+                            True,
+                            None]
 
 
 @pytest.mark.parametrize("index", [0, 1, 2, 3])
@@ -96,6 +106,18 @@ def test_casestudy_get_case_single(cases):
     assert test.dy == case.dy
     assert test.sigma == case.sigma
     assert test is not case
+
+
+def test_casestudy_length_one_sequences():
+    
+    test = CaseStudy(dx=(1,),
+                     dy=(1,),
+                     sigma=(1,))
+    
+    assert len(test) == 1
+    assert test.dx == 1
+    assert test.dy == 1
+    assert test.sigma == 1
 
 
 @pytest.mark.parametrize("index", [-2, 1])

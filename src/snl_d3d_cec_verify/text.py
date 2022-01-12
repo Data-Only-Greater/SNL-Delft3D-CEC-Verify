@@ -1,48 +1,51 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) Django Software Foundation and individual contributors.
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
-#
-#     1. Redistributions of source code must retain the above copyright notice,
-#        this list of conditions and the following disclaimer.
-#
-#     2. Redistributions in binary form must reproduce the above copyright
-#        notice, this list of conditions and the following disclaimer in the
-#        documentation and/or other materials provided with the distribution.
-#
-#     3. Neither the name of Django nor the names of its contributors may be used
-#        to endorse or promote products derived from this software without
-#        specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import unicodedata
 import re
+import sys
+import itertools
+from typing import Optional
 
-def slugify(value, allow_unicode=False):
+
+class Spinner():
+    """An ASCII spinner which writes to stdout
+    
+    Running the spinner without input:
+    
+    >>> spin = Spinner()
+    >>> for _ in range(4):
+    ...     spin()
+    -\b \b/\b \b|\b \b\\\b \b
+    
+    If text passed to the spinner contains a percentage sign, the spinner
+    will display the percentage value:
+    
+    >>> for line in ["1.1%", "1.2%"]:
+    ...     spin(line)
+    1.1%\b\b\b\b    \b\b\b\b1.2%\b\b\b\b    \b\b\b\b
+    
+    .. automethod:: __call__
+    
     """
-    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
-    dashes to single dashes. Remove characters that aren't alphanumerics,
-    underscores, or hyphens. Convert to lowercase. Also strip leading and
-    trailing whitespace, dashes, and underscores.
-    """
-    value = str(value)
-    if allow_unicode:
-        value = unicodedata.normalize('NFKC', value)
-    else:
-        value = unicodedata.normalize(
-                    'NFKD', value).encode('ascii', 'ignore').decode('ascii')
-    value = re.sub(r'[^\w\s-]', '', value.lower())
-    return re.sub(r'[-\s]+', '-', value).strip('-_')
+    
+    def __init__(self):
+        self.spinner = itertools.cycle(['-', '/', '|', '\\'])
+    
+    def __call__(self, text: Optional[str] = None):
+        """Increment the spinner and write to stdout
+        
+        :param text: text to parse for percentage sign
+        
+        """
+        
+        out = None
+        
+        if text is not None:
+            percentage = re.search(r'\d+\.\d+(?=%)', text)
+            if percentage is not None:
+                out = percentage.group() + "%"
+        
+        if out is None: out = next(self.spinner)
+        
+        sys.stdout.write(out)
+        sys.stdout.flush()
+        sys.stdout.write('\b' * len(out) + ' ' * len(out) + '\b' * len(out))

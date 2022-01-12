@@ -14,7 +14,7 @@ def test_package_fm_template_path():
     assert str(expected) in str(result)
 
 
-def test_template_call(mocker):
+def test_template_call(mocker, tmp_path):
     
     mock_copy = mocker.patch("snl_d3d_cec_verify.template.copy",
                              autospec=True)
@@ -22,7 +22,6 @@ def test_template_call(mocker):
                     "snl_d3d_cec_verify.template.write_gridfm_rectangle",
                     autospec=True)
     
-    template_path = "mock_template"
     exist_ok = True
     case = CaseStudy()
     project_path = "mock_template"
@@ -32,21 +31,27 @@ def test_template_call(mocker):
                                            if field not in excluded_fields]
     expected_net_path = Path(project_path) / "input" / "FlowFM_net.nc"
     
-    template = Template(template_path, exist_ok)
+    template = Template(tmp_path, exist_ok)
     template(case, project_path)
     
     mock_copy.assert_called()
     mock_copy_kwargs = mock_copy.call_args.kwargs
     
-    assert set(mock_copy.call_args.args) == set([Path(template_path),
-                                                 Path(project_path)])
+    assert set(mock_copy.call_args.args) == set(
+                                        [Path(template._template_tmp.name),
+                                         Path(project_path)])
     assert set(expected_fields) <= set(mock_copy_kwargs["data"])
     assert mock_copy_kwargs["exist_ok"] is exist_ok
     assert mock_copy_kwargs["data"]["horizontal_momentum_filter"] == 1
+    assert mock_copy_kwargs["data"]["stats_interval"] == ''
     
     mock_write_gridfm_rectangle.assert_called_with(expected_net_path,
                                                    case.dx,
-                                                   case.dy)
+                                                   case.dy,
+                                                   case.x0,
+                                                   case.x1,
+                                                   case.y0,
+                                                   case.y1)
 
 
 @pytest.mark.parametrize("simulate_turbines", [True, False])
