@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import shutil
 import platform
 import tempfile
 from pathlib import Path
@@ -90,7 +91,9 @@ stats_interval = [240 / (k ** 2) for k in sigma]
 cases = MycekStudy(dx=grid_resolution,
                    dy=grid_resolution,
                    sigma=sigma,
-                   stats_interval=stats_interval)
+                   stats_interval=stats_interval,
+                   x0=4,
+                   x1=8)
 template = Template()
 runner = LiveRunner(get_d3d_bin_path(),
                     omp_num_threads=omp_num_threads)
@@ -104,6 +107,9 @@ u_wake_convergence = Convergence()
 case_counter = 0
 asymptotic_range = False
 
+run_directory = Path("production_runs")
+run_directory.mkdir(exist_ok=True)
+
 while True:
     
     if case_counter + 1 > len(cases):
@@ -112,51 +118,71 @@ while True:
     case = cases[case_counter]
     no_turb_case = replace(case, simulate_turbines=False)
     
-    print(f"Running without turbine with resolution {case.dx}")
+    print(f"Test without turbine at {case.dx}m resolution")
+    
+    no_turb_dir = run_directory / f"no_turbine_{case.dx}"
+    
+    if no_turb_dir.is_dir():
+        try:
+            Result(no_turb_dir)
+        except FileNotFoundError:
+            shutil.rmtree(no_turb_dir)
     
     # Determine $U_\infty$ for case, by running without the turbine
-    with tempfile.TemporaryDirectory() as tmpdirname:
+    if not no_turb_dir.is_dir():
         
-        template(no_turb_case, tmpdirname)
+        no_turb_dir.mkdir()
         
-        for line in runner(tmpdirname):
-            spin()
+        template(no_turb_case, no_turb_dir)
+        
+        for line in runner(no_turb_dir):
+            spin(line)
         print("")
-        
-        result = Result(tmpdirname)
-        
-        u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
-        u_infty = u_infty_ds["$u$"].values.take(0)
-        
-        u_infty_data["resolution (m)"].append(case.dx)
-        u_infty_data["value (m/s)"].append(u_infty)
-        
-        u_infty_convergence.add_grids([(case.dx, u_infty)])
     
-    print(f"Running with turbine with resolution {case.dx}m")
+    result = Result(no_turb_dir)
+    
+    u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
+    u_infty = u_infty_ds["$u$"].values.take(0)
+    
+    u_infty_data["resolution (m)"].append(case.dx)
+    u_infty_data["value (m/s)"].append(u_infty)
+    
+    u_infty_convergence.add_grids([(case.dx, u_infty)])
+    
+    print(f"Test with turbine at {case.dx}m resolution")
+    
+    turb_dir = run_directory / f"turbine_{case.dx}"
+    
+    if turb_dir.is_dir():
+        try:
+            Result(turb_dir)
+        except FileNotFoundError:
+            shutil.rmtree(turb_dir)
     
     # Run with turbines
-    with tempfile.TemporaryDirectory() as tmpdirname:
+    if not turb_dir.is_dir():
         
-        template(case, tmpdirname)
+        turb_dir.mkdir()
         
-        for line in runner(tmpdirname):
-            spin()
+        template(case, turb_dir)
+        
+        for line in runner(turb_dir):
+            spin(line)
         print("")
-        
-        result = Result(tmpdirname)
-        
-        # Collect wake velocity at 1.2D downstream
-        u_wake_ds = result.faces.extract_turbine_centre(-1,
-                                                        case,
-                                                        offset_x=0.84)
-        u_wake = u_wake_ds["$u$"].values.take(0)
-        
-        u_wake_data["resolution (m)"].append(case.dx)
-        u_wake_data["value (m/s)"].append(u_wake)
-        
-        # Record 
-        u_wake_convergence.add_grids([(case.dx, u_wake)])
+    
+    result = Result(turb_dir)
+    
+    # Collect wake velocity at 1.2D downstream
+    u_wake_ds = result.faces.extract_turbine_centre(-1,
+                                                    case,
+                                                    offset_x=0.84)
+    u_wake = u_wake_ds["$u$"].values.take(0)
+    
+    u_wake_data["resolution (m)"].append(case.dx)
+    u_wake_data["value (m/s)"].append(u_wake)
+    
+    # Record 
+    u_wake_convergence.add_grids([(case.dx, u_wake)])
     
     case_counter += 1
     
