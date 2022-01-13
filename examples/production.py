@@ -91,13 +91,13 @@ stats_interval = [240 / (k ** 2) for k in sigma]
 cases = MycekStudy(dx=grid_resolution,
                    dy=grid_resolution,
                    sigma=sigma,
-                   stats_interval=stats_interval,
                    x0=4,
-                   x1=8)
+                   x1=8,
+                   stats_interval=stats_interval,
+                   restart_interval=600)
 template = Template()
 runner = LiveRunner(get_d3d_bin_path(),
                     omp_num_threads=omp_num_threads)
-spin = Spinner()
 
 u_infty_data = defaultdict(list)
 u_wake_data = defaultdict(list)
@@ -135,8 +135,9 @@ while True:
         
         template(no_turb_case, no_turb_dir)
         
-        for line in runner(no_turb_dir):
-            spin(line)
+        with Spinner() as spin:
+            for line in runner(no_turb_dir):
+                spin(line)
         print("")
     
     result = Result(no_turb_dir)
@@ -166,8 +167,9 @@ while True:
         
         template(case, turb_dir)
         
-        for line in runner(turb_dir):
-            spin(line)
+        with Spinner() as spin:
+            for line in runner(turb_dir):
+                spin(line)
         print("")
     
     result = Result(turb_dir)
