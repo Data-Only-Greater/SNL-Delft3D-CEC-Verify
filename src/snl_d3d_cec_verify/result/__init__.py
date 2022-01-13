@@ -246,7 +246,7 @@ class Validate():
         translation = (turb_pos_x, turb_pos_y, turb_pos_z)
         transects = []
         
-        for item in data_dir.iterdir():
+        for item in sorted(data_dir.iterdir()):
             
             if not item.is_file(): continue
             if not item.suffix == '.yaml': continue
