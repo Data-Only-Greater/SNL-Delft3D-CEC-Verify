@@ -32,7 +32,8 @@ def test_casestudy_fields():
                                 'vertical_eddy_diffusivity',
                                 'simulate_turbines',
                                 'horizontal_momentum_filter',
-                                'stats_interval']
+                                'stats_interval',
+                                'restart_interval']
 
 
 def test_casestudy_unequal_inputs():
@@ -67,7 +68,8 @@ def test_casestudy_values(cases):
                             1e-06,
                             True,
                             True,
-                            None]
+                            None,
+                            0]
 
 
 @pytest.mark.parametrize("index", [0, 1, 2, 3])

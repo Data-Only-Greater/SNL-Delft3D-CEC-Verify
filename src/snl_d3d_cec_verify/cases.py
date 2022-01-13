@@ -65,8 +65,10 @@ class CaseStudy:
         {simulate_turbines}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
         filter. Defaults to {horizontal_momentum_filter}
-    :param stats_interval: interval for simulation progress output. Defaults
-        to {stats_interval}
+    :param stats_interval: interval for simulation progress output, in seconds
+        of simulation time. Defaults to {stats_interval}
+    :param restart_interval: interval for restart file output, in seconds of
+        simulation time. Defaults to {restart_interval}
     
     :raises ValueError: if variables with multiple values have different
         lengths
@@ -107,8 +109,11 @@ class CaseStudy:
     #: use high-order horizontal momentum filter
     horizontal_momentum_filter: OneOrMany[bool] = True
     
-    #: interval for simulation progress output
+    #: interval for simulation progress output, in seconds
     stats_interval: OneOrManyOptional[Num] = None
+    
+    #:interval for restart file output, in seconds
+    restart_interval: OneOrMany[Num] = 0
     
     def __post_init__(self):
         
