@@ -3,7 +3,7 @@
 import os
 import shutil
 import platform
-import tempfile
+import warnings
 from pathlib import Path
 from collections import defaultdict
 from dataclasses import replace
@@ -65,6 +65,65 @@ def get_gamma0(da, case, transect):
     return da
 
 
+def plot_transects(case, validate, result, report, report_dir):
+    
+    for i, transect in enumerate(validate):
+        
+        # Compare transect
+        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_true = transect.to_xarray()
+        
+        # Determine plot x-axis
+        major_axis = f"${transect.attrs['major_axis']}^*$"
+        
+        # Create and save a u0 figure
+        transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
+        transect_true_u0 = get_u0(transect_true, case, transect_true)
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
+        transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
+        ax.legend()
+        ax.grid()
+        ax.set_title("")
+        
+        resolution = str(case.dx).replace(".", "_")
+        plot_name = f"transect_u0_{i}_{resolution}.png"
+        plot_path = report_dir / plot_name
+        plt.savefig(plot_path, bbox_inches='tight')
+        
+        # Add figure with caption
+        caption = ("$u_0$ comparison (m/s). Experimental data reverse "
+                   "engineered  from [@mycek2014, fig. "
+                   f"{transect.attrs['figure']}].")
+        report.content.add_image(plot_name, caption, width="4in")
+        
+        # Create and save a gamma0 figure
+        transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
+                                         case,
+                                         transect_true)
+        transect_true_gamma0 = get_gamma0(transect_true,
+                                          case,
+                                          transect_true)
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
+        transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
+        ax.legend()
+        ax.grid()
+        ax.set_title("")
+        
+        plot_name = f"transect_gammm0_{i}_{resolution}.png"
+        plot_path = report_dir / plot_name
+        plt.savefig(plot_path, bbox_inches='tight')
+        
+        # Add figure with caption
+        caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
+                   "engineered from [@mycek2014, fig. "
+                   f"{transect.attrs['figure']}].")
+        report.content.add_image(plot_name, caption, width="4in")
+
+
 def get_rmse(estimated, observed):
     return np.sqrt(((estimated - observed) ** 2).mean())
 
@@ -110,6 +169,12 @@ asymptotic_range = False
 run_directory = Path("production_runs")
 run_directory.mkdir(exist_ok=True)
 
+report = Report(79, "%d %B %Y")
+report_dir = Path("production_report")
+report_dir.mkdir(exist_ok=True)
+
+report.content.add_heading("Tests Cases", level=2)
+
 while True:
     
     if case_counter + 1 > len(cases):
@@ -117,8 +182,10 @@ while True:
     
     case = cases[case_counter]
     no_turb_case = replace(case, simulate_turbines=False)
+    validate = Validate(case)
     
-    print(f"Test without turbine at {case.dx}m resolution")
+    section = f"{case.dx}m Resolution"
+    print(section)
     
     no_turb_dir = run_directory / f"no_turbine_{case.dx}"
     
@@ -131,6 +198,8 @@ while True:
     # Determine $U_\infty$ for case, by running without the turbine
     if not no_turb_dir.is_dir():
         
+        print("Simulating without turbine")
+        
         no_turb_dir.mkdir()
         
         template(no_turb_case, no_turb_dir)
@@ -138,7 +207,6 @@ while True:
         with Spinner() as spin:
             for line in runner(no_turb_dir):
                 spin(line)
-        print("")
     
     result = Result(no_turb_dir)
     
@@ -148,9 +216,10 @@ while True:
     u_infty_data["resolution (m)"].append(case.dx)
     u_infty_data["value (m/s)"].append(u_infty)
     
-    u_infty_convergence.add_grids([(case.dx, u_infty)])
-    
-    print(f"Test with turbine at {case.dx}m resolution")
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore",
+                                message="Insufficient grids for analysis")
+        u_infty_convergence.add_grids([(case.dx, u_infty)])
     
     turb_dir = run_directory / f"turbine_{case.dx}"
     
@@ -163,6 +232,8 @@ while True:
     # Run with turbines
     if not turb_dir.is_dir():
         
+        print("Simulating with turbine")
+        
         turb_dir.mkdir()
         
         template(case, turb_dir)
@@ -170,7 +241,6 @@ while True:
         with Spinner() as spin:
             for line in runner(turb_dir):
                 spin(line)
-        print("")
     
     result = Result(turb_dir)
     
@@ -183,8 +253,34 @@ while True:
     u_wake_data["resolution (m)"].append(case.dx)
     u_wake_data["value (m/s)"].append(u_wake)
     
-    # Record 
-    u_wake_convergence.add_grids([(case.dx, u_wake)])
+    # Record
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore",
+                                message="Insufficient grids for analysis")
+        u_wake_convergence.add_grids([(case.dx, u_wake)])
+    
+    # Report
+    report.content.add_heading(section,
+                               level=3)
+    
+    plot_transects(case, validate, result, report, report_dir)
+    
+    report.content.add_text(
+        "Free stream velocity, "
+        f"$U_\\infty=\\SI{{{u_infty:.6g}}}{{\\metre\\per\\second}}$"
+        )
+    
+    report.content.add_text(
+        "Wake velocity at $1.2D$, "
+        f"$U_{{1.2}}=\\SI{{{u_wake:.6g}}}{{\\metre\\per\\second}}$"
+        )
+    
+    gamma1dot2 = 100 * (1 - u_wake / u_infty)
+    
+    report.content.add_text(
+        "Wake deficit at $1.2D$, "
+        f"$\\gamma_{{1.2}}=\\SI{{{gamma1dot2:.6g}}}{{\\percent}}$"
+        )
     
     case_counter += 1
     
@@ -209,3 +305,33 @@ print(u_wake_df)
 print(asymptotic_range)
 print(u_wake_convergence[0].fine.gci_fine)
 print(u_wake_convergence.get_resolution(0.01))
+
+# Add section for the references
+report.content.add_heading("References", level=2)
+
+# Add report metadata
+os_name = platform.system()
+report.title = f"Validation Example ({os_name})"
+report.date = "today"
+
+# Write the report to file
+with open(report_dir / "report.md", "wt") as f:
+    for line in report:
+        f.write(line)
+
+# Convert file to docx or print report to stdout
+try:
+    
+    import pypandoc
+    
+    pypandoc.convert_file(f"{report_dir / 'report.md'}",
+                          'docx',
+                          outputfile=f"{report_dir / 'report.docx'}",
+                          extra_args=['-C',
+                                      f'--resource-path={report_dir}',
+                                      '--bibliography=validation.bib',
+                                      '--reference-doc=reference.docx'])
+
+except ImportError:
+    
+    print(report)
