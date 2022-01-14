@@ -501,20 +501,26 @@ def _map_to_faces_frame(map_path: StrOrPath,
     with xr.open_dataset(map_path) as ds:
         
         time = ds.time[t_step].values.take(0)
+        x_values = ds.mesh2d_face_x.values
+        y_values = ds.mesh2d_face_y.values
+        depth_values = ds.mesh2d_waterdepth.values
+        sigma_values = ds.mesh2d_layer_sigma.values
+        u_values = ds.mesh2d_ucx.values
+        v_values = ds.mesh2d_ucy.values
+        w_values = ds.mesh2d_ucz.values
         
         for iface in ds.mesh2d_nFaces.values:
             
-            x = ds.mesh2d_face_x[iface].values.take(0)
-            y = ds.mesh2d_face_y[iface].values.take(0)
-            depth = ds.mesh2d_waterdepth[t_step, iface].values.take(0)
+            x = x_values[iface]
+            y = y_values[iface]
+            depth = depth_values[t_step, iface]
             
             for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
                 
-                z = ds.mesh2d_layer_sigma[ilayer].values * \
-                                ds.mesh2d_waterdepth[t_step, iface].values
-                u = ds.mesh2d_ucx[t_step, iface, ilayer].values.take(0)
-                v = ds.mesh2d_ucy[t_step, iface, ilayer].values.take(0)
-                w = ds.mesh2d_ucz[t_step, iface, ilayer].values.take(0)
+                z = sigma_values[ilayer] * depth
+                u = u_values[t_step, iface, ilayer]
+                v = v_values[t_step, iface, ilayer]
+                w = w_values[t_step, iface, ilayer]
                 
                 data["x"].append(x)
                 data["y"].append(y)
