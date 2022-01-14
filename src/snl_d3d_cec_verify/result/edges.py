@@ -136,6 +136,13 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
     with xr.open_dataset(map_path) as ds:
     
         time = ds.time[t_step].values.take(0)
+        edge_node_values = ds.mesh2d_edge_nodes.values
+        edge_face_values = ds.mesh2d_edge_faces.values
+        node_x_values = ds.mesh2d_node_x.values
+        node_y_values = ds.mesh2d_node_y.values
+        face_x_values = ds.mesh2d_face_x.values
+        face_y_values = ds.mesh2d_face_y.values
+        u1_values = ds.mesh2d_u1.values
         
         for iedge in ds.mesh2d_nEdges.values:
             
@@ -143,9 +150,9 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
             two = (0, 1)
             
             for inode in two:
-                index = ds.mesh2d_edge_nodes[iedge, inode] - 1
-                x = ds.mesh2d_node_x[index]
-                y = ds.mesh2d_node_y[index]
+                index = edge_node_values[iedge, inode] - 1
+                x = node_x_values[index]
+                y = node_y_values[index]
                 p = np.array((x, y))
                 points.append(p)
             
@@ -157,13 +164,13 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
             
             for iface in two:
                 
-                index = int(ds.mesh2d_edge_faces[iedge, iface]) - 1
+                index = int(edge_face_values[iedge, iface]) - 1
                 
                 if index < 0:
                     p = np.array(line.centroid)
                 else:
-                    x = ds.mesh2d_face_x[index]
-                    y = ds.mesh2d_face_y[index]
+                    x = face_x_values[index]
+                    y = face_y_values[index]
                     p = np.array((x, y))
                 
                 points.append(p)
@@ -174,7 +181,7 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
             
             for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
                 
-                u1 = ds.mesh2d_u1[t_step, iedge, ilayer].values.take(0)
+                u1 = u1_values[t_step, iedge, ilayer]
                 
                 data["geometry"].append(line)
                 data["k"].append(k)
