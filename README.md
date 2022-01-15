@@ -55,7 +55,7 @@ can be optionally converted to Word format if the `pypandoc` package is
 installed. To install it, type:
 
 ```
-(_snld3d) > conda install -y pypandoc
+(_snld3d) > conda install -y pypandoc pandoc=2.12
 ```
 
 Currently, a compiled copy of SNL-Delft3D-FM-CEC must be available for the 
