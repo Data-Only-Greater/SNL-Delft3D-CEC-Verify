@@ -635,7 +635,7 @@ def get_normalised_data(da: xr.DataArray, factor: Num) -> xr.DataArray:
     :rtype: xarray.DataArray
     
     """
-    datastar = da.values * factor
+    datastar = da.values / factor
     name = str(da.name)
     
     if name is not None:
