@@ -430,7 +430,7 @@ def test_get_normalised_data(dataarray):
     result = get_normalised_data(dataarray, 0.5)
     
     assert result.name == "mock *"
-    assert np.isclose(result.values, [0, 0, 0.5]).all()
+    assert np.isclose(result.values, [0, 0, 2]).all()
 
 
 def test_get_normalised_data_latex():
