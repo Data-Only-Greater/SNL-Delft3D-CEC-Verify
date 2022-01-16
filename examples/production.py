@@ -22,6 +22,7 @@ from snl_d3d_cec_verify import (MycekStudy,
                                 Validate)
 from snl_d3d_cec_verify.result import (get_reset_origin,
                                        get_normalised_dims,
+                                       get_normalised_data,
                                        get_normalised_data_deficit)
 from snl_d3d_cec_verify.text import Spinner
 
@@ -44,11 +45,12 @@ def get_d3d_bin_path():
     return root.resolve()
 
 
-def get_u0(da, case, transect):
+def get_u0(da, case, transect, factor):
     
     da = get_reset_origin(da,
                           (case.turb_pos_x, case.turb_pos_y, case.turb_pos_z))
     da = get_normalised_dims(da, transect.attrs["$D$"])
+    da = get_normalised_data(da, factor)
     
     return da
 
@@ -65,63 +67,42 @@ def get_gamma0(da, case, transect):
     return da
 
 
-def plot_transects(case, validate, result, report, report_dir):
+def plot_transects(case,
+                   validate,
+                   result,
+                   factor,
+                   ustar_ax,
+                   gamma_ax):
     
     for i, transect in enumerate(validate):
         
+        transect_true = transect.to_xarray()
+        
         # Compare transect
         transect_sim = result.faces.extract_z(-1, **transect)
-        transect_true = transect.to_xarray()
         
         # Determine plot x-axis
         major_axis = f"${transect.attrs['major_axis']}^*$"
         
         # Create and save a u0 figure
-        transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
-        transect_true_u0 = get_u0(transect_true, case, transect_true)
+        transect_sim_u0 = get_u0(transect_sim["$u$"],
+                                 case,
+                                 transect_true,
+                                 factor)
         
-        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-        transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
-        transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
-        ax.legend()
-        ax.grid()
-        ax.set_title("")
-        
-        resolution = str(case.dx).replace(".", "_")
-        plot_name = f"transect_u0_{i}_{resolution}.png"
-        plot_path = report_dir / plot_name
-        plt.savefig(plot_path, bbox_inches='tight')
-        
-        # Add figure with caption
-        caption = ("$u_0$ comparison (m/s). Experimental data reverse "
-                   "engineered  from [@mycek2014, fig. "
-                   f"{transect.attrs['figure']}].")
-        report.content.add_image(plot_name, caption, width="4in")
+        transect_sim_u0.plot(ax=ustar_ax[i],
+                             x=major_axis,
+                             label=f'{case.dx}m')
         
         # Create and save a gamma0 figure
         transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
                                          case,
                                          transect_true)
-        transect_true_gamma0 = get_gamma0(transect_true,
-                                          case,
-                                          transect_true)
         
-        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-        transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
-        transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
-        ax.legend()
-        ax.grid()
-        ax.set_title("")
-        
-        plot_name = f"transect_gammm0_{i}_{resolution}.png"
-        plot_path = report_dir / plot_name
-        plt.savefig(plot_path, bbox_inches='tight')
-        
-        # Add figure with caption
-        caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
-                   "engineered from [@mycek2014, fig. "
-                   f"{transect.attrs['figure']}].")
-        report.content.add_image(plot_name, caption, width="4in")
+        transect_sim_gamma0.plot(ax=gamma_ax[i],
+                                 x=major_axis,
+                                 label=f'{case.dx}m')
+
 
 
 def get_rmse(estimated, observed):
@@ -173,7 +154,20 @@ report = Report(79, "%d %B %Y")
 report_dir = Path("production_report")
 report_dir.mkdir(exist_ok=True)
 
-report.content.add_heading("Tests Cases", level=2)
+global_validate = Validate()
+ustar_figs = []
+ustar_axs = []
+gamma_figs = []
+gamma_axs = []
+
+for _ in global_validate:
+    ustar_fig, ustar_ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    gamma_fig, gamma_ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    ustar_figs.append(ustar_fig)
+    ustar_axs.append(ustar_ax)
+    gamma_figs.append(gamma_fig)
+    gamma_axs.append(gamma_ax)
+
 
 while True:
     
@@ -259,35 +253,14 @@ while True:
                                 message="Insufficient grids for analysis")
         u_wake_convergence.add_grids([(case.dx, u_wake)])
     
-    # Report
-    report.content.add_heading(section,
-                               level=3)
-    
-    plot_transects(case, validate, result, report, report_dir)
-    
-    report.content.add_text(
-        "Free stream velocity, "
-        f"$U_\\infty=\\SI{{{u_infty:.6g}}}{{\\metre\\per\\second}}$"
-        )
-    
-    report.content.add_text(
-        "Wake velocity at $1.2D$, "
-        f"$U_{{1.2}}=\\SI{{{u_wake:.6g}}}{{\\metre\\per\\second}}$"
-        )
-    
-    gamma1dot2 = 100 * (1 - u_wake / u_infty)
-    
-    report.content.add_text(
-        "Wake deficit at $1.2D$, "
-        f"$\\gamma_{{1.2}}=\\SI{{{gamma1dot2:.6g}}}{{\\percent}}$"
-        )
+    plot_transects(case, validate, result, u_infty, ustar_axs, gamma_axs)
     
     case_counter += 1
     
     if case_counter < 3: continue
     
-    print(u_infty_convergence[0].asymptotic_ratio)
-    print(u_wake_convergence[0].asymptotic_ratio)
+    # print(u_infty_convergence[0].asymptotic_ratio)
+    # print(u_wake_convergence[0].asymptotic_ratio)
     
     if abs(1 - u_wake_convergence[0].asymptotic_ratio) < 0.01:
         asymptotic_range = True
@@ -295,6 +268,52 @@ while True:
     
     if case_counter == max_experiments:
         break
+
+
+for i, transect in enumerate(global_validate):
+    
+    transect_true = transect.to_xarray()
+    major_axis = f"${transect.attrs['major_axis']}^*$"
+    
+    transect_true_u0 = get_u0(transect_true, case, transect_true, 0.8)
+    transect_true_u0.plot(ax=ustar_axs[i], x=major_axis, label='Experiment')
+    
+    ustar_axs[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ustar_axs[i].grid()
+    ustar_axs[i].set_title("")
+    
+    plot_name = f"transect_u0_{i}.png"
+    plot_path = report_dir / plot_name
+    ustar_figs[i].savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Normalised turbine centreline velocity, $u^*_0$, "
+               "comparison (m/s). Experimental data reverse engineered "
+               f"from [@mycek2014, fig. {transect.attrs['figure']}].")
+    report.content.add_image(plot_name, caption, width="4in")
+    
+    transect_true_gamma0 = get_gamma0(transect_true,
+                                      case,
+                                      transect_true)
+    transect_true_gamma0.plot(ax=gamma_axs[i],
+                              x=major_axis,
+                              label='Experiment')
+    
+    gamma_axs[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    gamma_axs[i].grid()
+    gamma_axs[i].set_title("")
+    
+    plot_name = f"transect_gammm0_{i}.png"
+    plot_path = report_dir / plot_name
+    gamma_figs[i].savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Normalised turbine centreline velocity deficit, "
+               "$\gamma_0$, comparison (%). Experimental data reverse "
+               "engineered from [@mycek2014, fig. "
+               f"{transect.attrs['figure']}].")
+    report.content.add_image(plot_name, caption, width="4in")
+
 
 u_infty_df = pd.DataFrame(u_infty_data)
 u_wake_df = pd.DataFrame(u_wake_data)
