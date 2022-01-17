@@ -46,6 +46,7 @@ class CaseStudy:
     :param x1: maximum x-value, in metres, defaults to {x1}
     :param y0: minimum y-value, in metres, defaults to {y0}
     :param y1: maximum y-value, in metres, defaults to {y1}
+    :param bed_level: uniform bed level, in metres, defaults to {bed_level}
     :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
     :param dt_init: initial time step, in seconds. Defaults to {dt_init}
     :param turb_pos_x: turbine x-position, in meters. Defaults to {turb_pos_x}
@@ -82,6 +83,7 @@ class CaseStudy:
     x1: OneOrMany[Num] = 18 #: maximum x-value, in metres
     y0: OneOrMany[Num] = 1 #: minimum y-value, in metres
     y1: OneOrMany[Num] = 5 #: maximum y-value, in metres
+    bed_level: OneOrMany[Num] = -2 #: uniform bed level, in metres
     dt_max: OneOrMany[Num] = 1 #: maximum time step, in seconds
     dt_init: OneOrMany[Num] = 1 #: initial time step, in seconds
     turb_pos_x: OneOrMany[Num] = 6 #: turbine x-position, in meters

@@ -134,7 +134,7 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
     data = collections.defaultdict(list)
     
     with xr.open_dataset(map_path) as ds:
-    
+        
         time = ds.time[t_step].values.take(0)
         edge_node_values = ds.mesh2d_edge_nodes.values
         edge_face_values = ds.mesh2d_edge_faces.values
