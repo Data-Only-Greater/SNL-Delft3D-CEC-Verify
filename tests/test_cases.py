@@ -20,6 +20,7 @@ def test_casestudy_fields():
                                 'x1',
                                 'y0',
                                 'y1',
+                                'bed_level',
                                 'dt_max',
                                 'dt_init',
                                 'turb_pos_x',
@@ -32,7 +33,8 @@ def test_casestudy_fields():
                                 'vertical_eddy_diffusivity',
                                 'simulate_turbines',
                                 'horizontal_momentum_filter',
-                                'stats_interval']
+                                'stats_interval',
+                                'restart_interval']
 
 
 def test_casestudy_unequal_inputs():
@@ -55,6 +57,7 @@ def test_casestudy_values(cases):
                             18,
                             1,
                             5,
+                            -2,
                             1,
                             1,
                             6,
@@ -67,7 +70,8 @@ def test_casestudy_values(cases):
                             1e-06,
                             True,
                             True,
-                            None]
+                            None,
+                            0]
 
 
 @pytest.mark.parametrize("index", [0, 1, 2, 3])
@@ -129,6 +133,22 @@ def test_casestudy_get_case_out_of_bounds_sigle(cases, index):
         case.get_case(index)
     
     assert "index out of range" in str(excinfo)
+
+
+@pytest.mark.parametrize("variable", ["x0", "x1", "y0", "y1", "bed_level"])
+def test_mycekstudy_variables_error(variable):
+    
+    input_dict = {"dx": (1, 2, 3),
+                  "dy": (2, 3, 4),
+                  variable: 1}
+    
+    # Won't throw with CaseStudy but does with MycekStudy
+    CaseStudy(**input_dict)
+    
+    with pytest.raises(TypeError) as excinfo:
+        MycekStudy(**input_dict)
+    
+    assert variable in str(excinfo)
 
 
 @pytest.mark.parametrize("axis", ["x", "y", "z"])
