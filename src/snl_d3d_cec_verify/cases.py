@@ -196,7 +196,7 @@ class CaseStudy:
 @dataclass(frozen=True)
 class MycekStudy(CaseStudy):
     """Class for defining cases corresponding to the Mycek study. Subclass 
-    of :class:`.CaseStudy` with the turbine position fixed.
+    of :class:`.CaseStudy` with the domain and turbine position fixed.
     
     :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
     :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
@@ -205,8 +205,22 @@ class MycekStudy(CaseStudy):
     :param dt_init: initial time step, in seconds. Defaults to {dt_init}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
+        metres squared per second. Defaults to {horizontal_eddy_viscosity}
+    :param horizontal_eddy_diffusivity: uniform horizontal eddy diffusivity,
+        in metres squared per second. Defaults to {horizontal_eddy_diffusivity}
+    :param vertical_eddy_viscosity: uniform vertical eddy viscosity, in
+        metres squared per second. Defaults to {horizontal_eddy_viscosity}
+    :param vertical_eddy_diffusivity: uniform vertical eddy diffusivity,
+        in metres squared per second. Defaults to {vertical_eddy_diffusivity}
+    :param simulate_turbines: simulate turbines, defaults to
+        {simulate_turbines}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
         filter. Defaults to {horizontal_momentum_filter}
+    :param stats_interval: interval for simulation progress output, in seconds
+        of simulation time. Defaults to {stats_interval}
+    :param restart_interval: interval for restart file output, in seconds of
+        simulation time. Defaults to {restart_interval}
     
     :raises ValueError: if variables with multiple values have different
         lengths
@@ -216,3 +230,8 @@ class MycekStudy(CaseStudy):
     turb_pos_x: OneOrMany[Num] = field(default=6, init=False)
     turb_pos_y: OneOrMany[Num] = field(default=3, init=False)
     turb_pos_z: OneOrMany[Num] = field(default=-1, init=False)
+    x0: OneOrMany[Num] = field(default=0, init=False)
+    x1: OneOrMany[Num] = field(default=18, init=False)
+    y0: OneOrMany[Num] = field(default=1, init=False)
+    y1: OneOrMany[Num] = field(default=5, init=False)
+    bed_level: OneOrMany[Num] = field(default=-2, init=False)
