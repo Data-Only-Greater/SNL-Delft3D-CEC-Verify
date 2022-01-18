@@ -112,6 +112,7 @@ def plot_transects(case,
 
 def get_rmse(estimated, observed):
     estimated = estimated[~np.isnan(estimated)]
+    if len(estimated) == 0: return np.nan
     observed = observed[:len(estimated)]
     return np.sqrt(((estimated - observed[:len(estimated)]) ** 2).mean())
 
@@ -140,8 +141,6 @@ def get_transect_error(case, validate, result, factor, data):
         data["resolution (m)"].append(case.dx)
         data["Transect"].append(transect.attrs['description'])
         data["RMSE"].append(rmse)
-        
-        print(rmse)
 
 
 def get_cells(case):
@@ -175,8 +174,6 @@ def main():
     cases = MycekStudy(dx=grid_resolution,
                        dy=grid_resolution,
                        sigma=sigma,
-                       x0=4,
-                       x1=8,
                        stats_interval=stats_interval,
                        restart_interval=600)
     template = Template()
@@ -190,13 +187,12 @@ def main():
     u_wake_convergence = Convergence()
     
     case_counter = 0
-    asymptotic_range = False
     
-    run_directory = Path("production_runs")
+    run_directory = Path("grid_convergence_runs")
     run_directory.mkdir(exist_ok=True)
     
     report = Report(79, "%d %B %Y")
-    report_dir = Path("production_report")
+    report_dir = Path("grid_convergence_report")
     report_dir.mkdir(exist_ok=True)
     
     global_validate = Validate()
@@ -311,11 +307,7 @@ def main():
         
         if case_counter < 3: continue
         
-        # print(u_infty_convergence[0].asymptotic_ratio)
-        # print(u_wake_convergence[0].asymptotic_ratio)
-        
         if abs(1 - u_wake_convergence[0].asymptotic_ratio) < 0.01:
-            asymptotic_range = True
             break
         
         if case_counter == max_experiments:
@@ -342,18 +334,39 @@ def main():
     gamma0_err = abs((gamma0_sim - gamma0_true) / gamma0_true)
     
     transect_df = pd.DataFrame(transect_data)
-    print(transect_df)
+    transect_grouped = transect_df.groupby(["Transect"])
+    
+    transect_summary = ""
+    n_transects = len(global_validate)
+    
+    for i, transect in enumerate(global_validate):
+        
+        description = transect.attrs['description']
+        transect_df = transect_grouped.get_group(description).drop("Transect",
+                                                                   axis=1)
+        transect_rmse = transect_df.iloc[-1, 1]
+        
+        transect_summary += (
+            f"For the {description.lower()} transect, the root mean square "
+            f"error at the lowest grid resolution was {transect_rmse:.4g}.")
+        
+        if (i + 1) < n_transects:
+            transect_summary += " "
     
     report.content.add_heading("Summary", level=2)
     
-    report.content.add_text(
-        f"{len(cases)} cases were conducted with the final case, with grid "
-        f"resolution of {case.dx}m, achieving an asymptotic ratio of "
-        f"{u_wake_convergence[0].asymptotic_ratio:.4g} (asymptotic range is "
-        "indicated by a value $\\approx 1$). At zero grid resolution, the "
-        "normalised velocity deficit measured 1.2 diameters downstream from "
-        f"the turbine is {gamma0_sim:.4g}\%, a {gamma0_err * 100:.4g}\% error "
-        f"against the measured value of {gamma0_true:.4g}\%.")
+    summary_text = (
+        f"This is a grid convergence study of {len(cases)} cases. The "
+        f"case with the finest grid resolution, of {case.dx}m, achieved an "
+        f"asymptotic ratio of {u_wake_convergence[0].asymptotic_ratio:.4g} "
+        "(asymptotic range is indicated by a value $\\approx 1$). At zero "
+        "grid resolution, the normalised velocity deficit measured 1.2 "
+        f"diameters downstream from the turbine was {gamma0_sim:.4g}\%, a "
+        f"{gamma0_err * 100:.4g}\% error against the measured value of "
+        f"{gamma0_true:.4g}\%. ")
+    summary_text += transect_summary
+    
+    report.content.add_text(summary_text)
     
     report.content.add_heading("Grid Convergence Studies", level=2)
     
@@ -370,7 +383,8 @@ def main():
         f"{gci_required * 100}\% is {u_infty_gci:.4g}m.")
     
     caption = ("Free stream velocity ($U_\\infty$) per grid resolution "
-               "with computational cells and error to zero resolution value")
+               "with computational cells and error against value at zero grid "
+               "resolution")
     report.content.add_table(u_infty_df,
                              index=False,
                              caption=caption)
@@ -385,8 +399,8 @@ def main():
     fig.savefig(plot_path, bbox_inches='tight')
     
     # Add figure with caption
-    caption = ("Free stream velocity error to zero resolution value "
-               "per grid resolution ")
+    caption = ("Free stream velocity error against value at zero grid "
+               "resolution per grid resolution ")
     report.content.add_image(plot_name, caption, width="3.64in")
     
     report.content.add_heading("Wake Velocity", level=3)
@@ -404,7 +418,7 @@ def main():
     
     caption = ("Wake centerline velocity 1.2 diameters downstream "
                "($U_{1.2D}$) per grid resolution with computational cells and "
-               "error to zero resolution value")
+               "error against value at zero grid resolution")
     report.content.add_table(u_wake_df,
                              index=False,
                              caption=caption)
@@ -419,7 +433,7 @@ def main():
     fig.savefig(plot_path, bbox_inches='tight')
     
     # Add figure with caption
-    caption = ("Wake velocity error to zero resolution value "
+    caption = ("Wake velocity error against value at zero grid resolution "
                "per grid resolution ")
     report.content.add_image(plot_name, caption, width="3.64in")
     
@@ -434,11 +448,28 @@ def main():
     report.content.add_heading("Wake Transects", level=2)
     
     report.content.add_text(
-        "This section presents wake velocity transects for the turbine "
-        "centreline and at cross-sections within the plane of the turbine "
-        "centre.")
+        "This section presents axial velocity transects along the turbine "
+        "centreline and at cross-sections along the $y$-axis. Errors are "
+        "reported relative to the experimental data given in [@mycek2014].")
     
     for i, transect in enumerate(global_validate):
+        
+        description = transect.attrs['description']
+        report.content.add_heading(description, level=3)
+        
+        transect_df = transect_grouped.get_group(description).drop("Transect",
+                                                                   axis=1)
+        transect_rmse = transect_df.iloc[-1, 1]
+        
+        report.content.add_text(
+            "The root mean square error (RMSE) for this transect at the "
+            f"finest grid resolution of {case.dx}m was {transect_rmse:.4g}.")
+        
+        caption = ("Root mean square error (RMSE) for the normalised "
+                   "velocity, $u^*_0$, per grid resolution.")
+        report.content.add_table(transect_df,
+                                 index=False,
+                                 caption=caption)
         
         transect_true = transect.to_xarray()
         major_axis = f"${transect.attrs['major_axis']}^*$"
@@ -457,9 +488,9 @@ def main():
         ustar_figs[i].savefig(plot_path, bbox_inches='tight')
         
         # Add figure with caption
-        caption = ("Normalised turbine centreline velocity, $u^*_0$, "
-                   "comparison (m/s). Experimental data reverse engineered "
-                   f"from [@mycek2014, fig. {transect.attrs['figure']}].")
+        caption = ("Normalised velocity, $u^*_0$, (m/s) per grid resolution "
+                   "comparison. Experimental data reverse engineered from "
+                   f"[@mycek2014, fig. {transect.attrs['figure']}].")
         report.content.add_image(plot_name, caption, width="5.68in")
         
         transect_true_gamma0 = get_gamma0(transect_true,
@@ -477,24 +508,18 @@ def main():
         gamma_figs[i].savefig(plot_path, bbox_inches='tight')
         
         # Add figure with caption
-        caption = ("Normalised turbine centreline velocity deficit, "
-                   "$\gamma_0$, comparison (%). Experimental data reverse "
+        caption = ("Normalised velocity deficit, $\gamma_0$, (%) per grid "
+                   "resolution comparison. Experimental data reverse "
                    "engineered from [@mycek2014, fig. "
                    f"{transect.attrs['figure']}].")
         report.content.add_image(plot_name, caption, width="5.68in")
-        
-        
-    
-    print(asymptotic_range)
-    print(u_wake_convergence[0].fine.gci_fine)
-    print(u_wake_convergence.get_resolution(0.01))
     
     # Add section for the references
     report.content.add_heading("References", level=2)
     
     # Add report metadata
     os_name = platform.system()
-    report.title = f"Validation Example ({os_name})"
+    report.title = f"Grid Convergence Study ({os_name})"
     report.date = "today"
     
     # Write the report to file
