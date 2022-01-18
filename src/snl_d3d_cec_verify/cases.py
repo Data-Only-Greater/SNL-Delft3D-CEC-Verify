@@ -227,11 +227,11 @@ class MycekStudy(CaseStudy):
     
     """
    
-    turb_pos_x: OneOrMany[Num] = field(default=6, init=False)
-    turb_pos_y: OneOrMany[Num] = field(default=3, init=False)
-    turb_pos_z: OneOrMany[Num] = field(default=-1, init=False)
     x0: OneOrMany[Num] = field(default=0, init=False)
     x1: OneOrMany[Num] = field(default=18, init=False)
     y0: OneOrMany[Num] = field(default=1, init=False)
     y1: OneOrMany[Num] = field(default=5, init=False)
     bed_level: OneOrMany[Num] = field(default=-2, init=False)
+    turb_pos_x: OneOrMany[Num] = field(default=6, init=False)
+    turb_pos_y: OneOrMany[Num] = field(default=3, init=False)
+    turb_pos_z: OneOrMany[Num] = field(default=-1, init=False)

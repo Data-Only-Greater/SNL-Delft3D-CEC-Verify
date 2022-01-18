@@ -135,6 +135,22 @@ def test_casestudy_get_case_out_of_bounds_sigle(cases, index):
     assert "index out of range" in str(excinfo)
 
 
+@pytest.mark.parametrize("variable", ["x0", "x1", "y0", "y1", "bed_level"])
+def test_mycekstudy_variables_error(variable):
+    
+    input_dict = {"dx": (1, 2, 3),
+                  "dy": (2, 3, 4),
+                  variable: 1}
+    
+    # Won't throw with CaseStudy but does with MycekStudy
+    CaseStudy(**input_dict)
+    
+    with pytest.raises(TypeError) as excinfo:
+        MycekStudy(**input_dict)
+    
+    assert variable in str(excinfo)
+
+
 @pytest.mark.parametrize("axis", ["x", "y", "z"])
 def test_mycekstudy_turb_pos_error(axis):
     
