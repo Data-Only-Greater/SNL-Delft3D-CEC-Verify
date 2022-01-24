@@ -164,9 +164,11 @@ def main():
     # 9. Compute at desired resolution if lower than last iteration
     # 10. Make report
     
+    # Reduce max experiments to 3, for tractable running time.
     max_experiments = 5
     omp_num_threads = 8
     
+    # Set grid resolutions and reporting times
     grid_resolution = [1 / 2 ** i for i in range(max_experiments)]
     sigma = [int(2 / delta) for delta in grid_resolution]
     stats_interval = [240 / (k ** 2) for k in sigma]
@@ -177,6 +179,9 @@ def main():
                        stats_interval=stats_interval,
                        restart_interval=600)
     template = Template()
+    
+    # Use the LiveRunner class to get real time feedback from the Delft3D
+    # calculation
     runner = LiveRunner(get_d3d_bin_path(),
                         omp_num_threads=omp_num_threads)
     

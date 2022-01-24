@@ -10,18 +10,18 @@
 # SNL-Delft3D-CEC-Verify
 
 SNL-Delft3D-CEC-Verify is a python package for automated testing of 
-[SNL-Delft3D-FM-CEC][2] which adds current energy converter (CEC) support to 
-the [Delft3D Flexible Mesh Suite][3]. This package is used to verify the 
+[SNL-Delft3D-FM-CEC][101] which adds current energy converter (CEC) support to 
+the [Delft3D Flexible Mesh Suite][102]. This package is used to verify the 
 performance of SNL-Delft3D-FM-CEC by comparing against the 2014 flume 
 experiment conducted by Mycek et al.[[1]](#1).
 
 ## Installation
 
-:warning: This repository uses [Git LFS][7] to store large files, so if you
+:warning: This repository uses [Git LFS][106] to store large files, so if you
 want to clone the repository, make sure to use `git lfs clone` to download all
 of the files and set up LFS.
 
-The preferred method of installation is to use [Anaconda Python][4]. Download
+The preferred method of installation is to use [Anaconda Python][103]. Download
 this package, open an Anaconda prompt and then change directory into the
 package root. Now create a conda environment using the following command:
 
@@ -50,7 +50,7 @@ examples, the `matplotlib` library is also required. To install it, type:
 ```
 
 
-The examples generate reports in [Pandoc][5] markdown format. These reports 
+The examples generate reports in [Pandoc][104] markdown format. These reports 
 can be optionally converted to Word format if the `pypandoc` package is 
 installed. To install it, type:
 
@@ -112,10 +112,50 @@ call Python:
 If successful, the report files (and images) will be placed in a sub-directory
 called `validation_report`.
 
+### Grid Convergence Study
+
+Required files:
++   `grid_convergence.py`
++   `validation.bib` (for conversion to Word format)
++   `reference.docx` (for conversion to Word format)
+
+This is the first "production" example, designed to generate meaningful results.
+A grid convergence study (see e.g. [[2]](#2)) is conducted for the turbine 
+simulation to determine the free stream and wake velocities at infinite grid
+resolution. The results are then compared to the results of 
+Mycek et al.[[1]](#1).
+
+Note that this study takes a considerable amount of wall-clock time to 
+complete. On an [Intel i7-4790][108], the full study required 78 hours. To run 
+an incomplete study, with a more tractable time scale, change the 
+`max_experiments` variable, in the `main()` function to `3`. Pre-calculated 
+results of the full study are available in the [online documentation][110].
+
+This example also requires the [convergence][109] package to be installed, by
+issuing the following command in the conda environment:
+
+```
+(_snld3d) > pip install convergence
+```
+
+To run the example, move to the directory containing `grid_convergence.py` and
+then call Python:
+
+```
+(_snld3d) > python grid_convergence.py
+```
+
+If successful, the report files (and images) will be placed in a sub-directory 
+called `grid_convergence_report`. To avoid repeating simulations in the event 
+of an unexpected failure or change to the `grid_convergence.py` file, the 
+Delft3D simulations are stored in a sub-directory called 
+`grid_convergence_runs`. If Delft3D is updated, ensure to delete or move this 
+folder, so that new simulations are conducted.
+
 ## Documentation
 
 API documentation, which describes the classes and functions used in the 
-examples, can be found [here][8].
+examples, can be found [here][107].
 
 Documentation updates will be ongoing. Instructions for building the 
 documentation locally are available [here](docs/README.md).
@@ -180,7 +220,7 @@ this package. If you intend to publish results using this data, make sure to
 acknowledge its source at the point of use, e.g. _"Experimental data reverse 
 engineered from Mycek et al.[[1]](#1), fig. 11a."_.
 
-Some of the code in this package is derived from the [delft3dfmpy][6] project.
+Some of the code in this package is derived from the [delft3dfmpy][105] project.
 
 ## References
 
@@ -189,10 +229,17 @@ Mycek, P., Gaurier, B., Germain, G., Pinon, G., & Rivoalen, E. (2014).
 Experimental study of the turbulence intensity effects on marine current turbines behaviour. Part I: One single turbine.
 Renewable Energy, 66, 729–746.
 
-[2]: https://github.com/SNL-WaterPower/SNL-Delft3D-FM-CEC
-[3]: https://www.deltares.nl/en/software/delft3d-flexible-mesh-suite/
-[4]: https://www.anaconda.com/products/individual
-[5]: https://pandoc.org/
-[6]: https://github.com/openearth/delft3dfmpy
-[7]: https://git-lfs.github.com/
-[8]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/api/snl_d3d_cec_verify.html
+<a id="2">[2]</a> 
+Examining Spatial (Grid) Convergence. (2002).
+Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial/spatconv.html
+
+[101]: https://github.com/SNL-WaterPower/SNL-Delft3D-FM-CEC
+[102]: https://www.deltares.nl/en/software/delft3d-flexible-mesh-suite/
+[103]: https://www.anaconda.com/products/individual
+[104]: https://pandoc.org/
+[105]: https://github.com/openearth/delft3dfmpy
+[106]: https://git-lfs.github.com/
+[107]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/api/snl_d3d_cec_verify.html
+[108]: https://www.intel.com/content/www/us/en/products/sku/80806/intel-core-i74790-processor-8m-cache-up-to-4-00-ghz/specifications.html
+[109]: https://github.com/Data-Only-Greater/convergence
+[110]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/validation/index.html
