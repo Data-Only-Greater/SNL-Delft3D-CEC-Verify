@@ -26,6 +26,7 @@ this package, open an Anaconda prompt and then change directory into the
 package root. Now create a conda environment using the following command:
 
 ```
+(base) > cd .conda
 (base) > conda env create --file environment.yml
 ```
 

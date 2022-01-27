@@ -1,0 +1,63 @@
+{% set version = "0.3.0" %}
+
+package:
+  name: snl_d3d_cec_verify
+  version: {{ version }}
+
+source:
+   - path: ../../LICENSE.txt
+   - path: ../../pyproject.toml
+   - path: ../../setup.py
+   - path: ../../setup.cfg
+   - path: ../../src/conftest.py
+     folder: src/conftest.py
+   - path: ../../src/snl_d3d_cec_verify/
+     folder: src/snl_d3d_cec_verify/
+   - path: ../../test_data
+     folder: test_data/
+   - path: ../../tests
+     folder: tests/
+
+build:
+  noarch: python
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  host:
+    - python
+    - setuptools
+  run:
+    - python >=3.9.9,<3.10
+    - geopandas
+    - jinja2
+    - netCDF4
+    - numpy >=1.21
+    - pandas
+    - pyyaml
+    - scipy
+    - shapely
+    - tabulate
+    - xarray >=0.20.1
+
+test:
+  imports:
+    - snl_d3d_cec_verify
+  source_files:
+    - tests
+    - test_data
+  requires:
+    - pytest
+    - pytest-mock
+  commands:
+    - pytest
+
+about:
+  home: https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Automated verification of SNL-Delft3D-CEC based on the 2014 Mycek experiment
+
+# See
+# https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html
+# for  more information about meta.yaml
