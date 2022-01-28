@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     env:
       conda-directory: ${{ github.workspace }}/.conda
     if: github.repository == 'Data-Only-Greater/SNL-Delft3D-CEC-Verify'
