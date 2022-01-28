@@ -27,4 +27,3 @@ jobs:
       run: |
         conda install -y anaconda-client
         anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
-      working-directory: ${{env.conda-directory}}
