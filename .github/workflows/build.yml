@@ -24,7 +24,7 @@ jobs:
         conda-build-version: "*"
     - name: Build conda package
       run: |
-        conda build --no-anaconda-upload -c conda-forge recipe
+        conda build --no-anaconda-upload --override-channels -c conda-forge recipe
       working-directory: ${{env.conda-directory}}
     - name: Upload conda package
       run: |
