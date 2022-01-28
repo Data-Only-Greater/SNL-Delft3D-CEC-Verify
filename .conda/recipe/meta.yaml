@@ -1,4 +1,4 @@
-{% set version = "0.4.0" %}
+{% set version = "0.4.1" %}
 
 package:
   name: snl-delft3d-cec-verify
@@ -29,7 +29,8 @@ requirements:
     - setuptools
   run:
     - python >=3.9.9,<3.10
-    - geopandas
+    - brotlipy
+    - geopandas-base
     - jinja2
     - netCDF4
     - numpy >=1.21

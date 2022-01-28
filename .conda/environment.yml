@@ -1,7 +1,7 @@
 name: _snld3d
 channels:
   - conda-forge
-  - defaults
+  - nodefaults
 dependencies:
   - python>=3.9.9,<3.10
   - pip
