@@ -1,7 +1,7 @@
 {% set version = "0.4.0" %}
 
 package:
-  name: snl_d3d_cec_verify
+  name: snl-delft3d-cec-verify
   version: {{ version }}
 
 source:
