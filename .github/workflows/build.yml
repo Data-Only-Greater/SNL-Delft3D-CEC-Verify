@@ -1,0 +1,29 @@
+name: Conda Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      conda-directory: ${{ github.workspace }}/.conda
+    if: github.repository == 'Data-Only-Greater/SNL-Delft3D-CEC-Verify'
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        lfs: 'true'
+        token: ${{ secrets.ADMIN_TOKEN }}
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        conda-build-version: "*"
+    - name: Build conda package
+      run: |
+        conda build --no-anaconda-upload -c conda-forge recipe
+      working-directory: ${{env.conda-directory}}
+    - name: Upload conda package
+      run: |
+        conda install -y anaconda-client
+        anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
