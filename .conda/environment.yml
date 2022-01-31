@@ -22,6 +22,7 @@ dependencies:
   # Testing
   - mypy
   - pytest
+  - pytest-cov
   - pytest-mock
   - tox-conda
   # Documentation
