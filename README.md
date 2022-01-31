@@ -242,16 +242,17 @@ SNL-Delft3D-CEC-Verify package in development mode:
 
 ### Testing
 
-To run the unit tests, type the following from the root directory:
+To run the unit tests and get a coverage report, type the following from the 
+root directory:
 
 ```
-(_snld3d) > pytest
+(_snld3d) > pytest --cov-report term-missing --cov="./src/snl_d3d_cec_verify/"
 ```
 
 To run the type tests, type the following from the root directory:
 
 ```
-(_snld3d) > mypy --install-types src
+(_snld3d) > mypy --install-types --non-interactive src
 ```
 
 To run doctests, type the following from the root directory:
@@ -285,13 +286,13 @@ the `docs` directory:
 Then to build, for Windows:
 
 ```
-(_snld3d) > .\make.bat HTML
+(_snld3d) > .\make.bat html
 ```
 
 Alternatively for Linux
 
 ```
-(_snld3d) > make HTML
+(_snld3d) > make html
 ```
 
 The documentation can then be opened at the path `docs/_build/html/index.html`.
