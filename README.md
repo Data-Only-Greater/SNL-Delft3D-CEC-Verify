@@ -296,6 +296,15 @@ Alternatively for Linux
 
 The documentation can then be opened at the path `docs/_build/html/index.html`.
 
+### Versioning
+
+Use [python-semantic-release][115] to update version numbers in the package.
+For instance, to add a commit that bumps the patch version, call:
+
+```
+(_snld3d) > semantic-release version --patch
+```
+
 ### Uninstall
 
 To remove the conda environment containing SNL-Delft3D-CEC-Verify, open an
@@ -347,3 +356,4 @@ Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial
 [112]: https://github.com/tox-dev/sphinx-autodoc-typehints
 [113]: https://insipid-sphinx-theme.readthedocs.io/
 [114]: https://github.com/conda-forge/miniforge
+[115]: https://python-semantic-release.readthedocs.io/en/latest/
