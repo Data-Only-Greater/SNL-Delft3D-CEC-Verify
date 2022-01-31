@@ -27,7 +27,7 @@ copyright = '2022, Mathew Topper'
 author = 'Mathew Topper'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.0'
+release = '0.4.3'
 
 
 # -- General configuration ---------------------------------------------------
