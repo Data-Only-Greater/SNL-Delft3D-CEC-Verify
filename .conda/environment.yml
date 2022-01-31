@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
+  # Package
   - python>=3.9.9,<3.10
   - pip
   - brotlipy
@@ -16,3 +17,13 @@ dependencies:
   - shapely
   - tabulate
   - xarray>=0.20.1
+  # Testing
+  - mypy
+  - pytest
+  - pytest-mock
+  - tox-conda
+  # Documentation
+  - sphinx
+  - sphinx-autodoc-typehints
+  - pip:
+    - insipid-sphinx-theme

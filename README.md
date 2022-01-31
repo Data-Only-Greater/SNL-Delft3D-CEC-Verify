@@ -6,6 +6,7 @@
 [![documentation](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/docs.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/docs.yml)
 
 [![codecov](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify)
+[![Conda](https://img.shields.io/conda/v/dataonlygreater/snl-delft3d-cec-verify?label=conda)](https://anaconda.org/dataonlygreater/snl-delft3d-cec-verify)
 
 # SNL-Delft3D-CEC-Verify
 
@@ -15,29 +16,78 @@ the [Delft3D Flexible Mesh Suite][102]. This package is used to verify the
 performance of SNL-Delft3D-FM-CEC by comparing against the 2014 flume 
 experiment conducted by Mycek et al.[[1]](#1).
 
-## Installation
+## Quick Start
 
-:warning: This repository uses [Git LFS][106] to store large files, so if you
-want to clone the repository, make sure to use `git lfs clone` to download all
-of the files and set up LFS.
+### Python Distribution
 
-The preferred method of installation is to use [Anaconda Python][103]. Download
-this package, open an Anaconda prompt and then change directory into the
-package root. Now create a conda environment using the following command:
+Due to the many non-Python binary requirements of the package dependencies, 
+installation requires the use of [Anaconda Python][103] or a fully free-to-use 
+equivalent, such as [Miniforge][114].
 
-```
-(base) > cd .conda
-(base) > conda env create --file environment.yml
-```
+### Install
 
-Activate the `_snld3d` environment, setup the channels, and then install the 
-SNL-Delft3D-CEC-Verify package:
+From a conda prompt create a named environment, set up the required channels
+and then install the `snl-delft3d-cec-verify` conda package:
 
 ```
-(base) > conda activate _snld3d
-(_snld3d) > conda config --env --add channels conda-forge
-(_snld3d) > pip install --no-deps -e .
+(base) > conda create -y -n snld3d --override-channels -c conda-forge "python>=3.9.9,<3.10" pip
+(base) > conda activate snld3d
+(snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
+(snld3d) > conda config --env --set channel_priority strict
+(snld3d) > conda install -y snl-delft3d-cec-verify
 ```
+
+After this, working with SNL-Delft3D-CEC-Verify requires that the `snld3d`
+environment be activated:
+
+```
+(base) > conda activate snld3d
+(snld3d) >
+```
+
+### Update
+
+To update to the latest version of the conda package, using the `snld3d` 
+environment, type:
+
+```
+(snld3d) > conda update -y snl-delft3d-cec-verify
+```
+
+### Minimal Working Example
+
+The following presents an example of running a case study, based on the Mycek
+experiment, and collecting results at the turbine centre. Note that the token
+`<D3D_BIN>`, should be replaced with the path to the `bin` directory of the
+compiled Delft3D source code.
+
+```python
+>>> import tempfile
+>>> from snl_d3d_cec_verify import MycekStudy, Result, Runner, Template
+>>> template = Template()
+>>> runner = Runner(<D3D_BIN>)
+>>> case = MycekStudy()
+>>> with tempfile.TemporaryDirectory() as tmpdirname:
+...     template(case, tmpdirname)
+...     runner(tmpdirname)
+...     result = Result(tmpdirname)
+...     print(result.faces.extract_turbine_centre(-1, case))
+Dimensions:  (dim_0: 1)
+Coordinates:
+    $z$      int32 -1
+    time     datetime64[ns] 2001-01-01T01:00:00
+    $x$      (dim_0) int32 6
+    $y$      (dim_0) int32 3
+Dimensions without coordinates: dim_0
+Data variables:
+    k        (dim_0) float64 0.9993
+    $u$      (dim_0) float64 0.7147
+    $v$      (dim_0) float64 4.467e-17
+    $w$      (dim_0) float64 -0.002604
+
+```
+
+More detailed examples are provided in the section below.
 
 ## Examples
 
@@ -47,7 +97,7 @@ Examples are provided in the `examples` folder. As plots are generated in the
 examples, the `matplotlib` library is also required. To install it, type:
 
 ```
-(_snld3d) > conda install -y matplotlib
+(snld3d) > conda install -y matplotlib
 ```
 
 
@@ -56,7 +106,7 @@ can be optionally converted to Word format if the `pypandoc` package is
 installed. To install it, type:
 
 ```
-(_snld3d) > conda install -y pypandoc pandoc=2.12
+(snld3d) > conda install -y pypandoc pandoc=2.12
 ```
 
 Currently, a compiled copy of SNL-Delft3D-FM-CEC must be available for the 
@@ -71,7 +121,7 @@ setting the `D3D_BIN` environment variable, instead of copying the example
 files. To set `D3D_BIN`, for example, using PowerShell:
 
 ```
-(_snld3d) > $env:D3D_BIN = "\path\to\SNL-Delft3D-FM-CEC\src\bin"
+(snld3d) > $env:D3D_BIN = "\path\to\SNL-Delft3D-FM-CEC\src\bin"
 ```
 
 ### Basic Example
@@ -87,7 +137,7 @@ To run the example, move to the directory containing `basic.py` and then
 call Python:
 
 ```
-(_snld3d) > python basic.py
+(snld3d) > python basic.py
 ```
 
 If successful, the report files (and images) will be placed in a sub-directory
@@ -107,7 +157,7 @@ To run the example, move to the directory containing `validation.py` and then
 call Python:
 
 ```
-(_snld3d) > python validation.py
+(snld3d) > python validation.py
 ```
 
 If successful, the report files (and images) will be placed in a sub-directory
@@ -136,14 +186,14 @@ This example also requires the [convergence][109] package to be installed, by
 issuing the following command in the conda environment:
 
 ```
-(_snld3d) > pip install convergence
+(snld3d) > pip install convergence
 ```
 
 To run the example, move to the directory containing `grid_convergence.py` and
 then call Python:
 
 ```
-(_snld3d) > python grid_convergence.py
+(snld3d) > python grid_convergence.py
 ```
 
 If successful, the report files (and images) will be placed in a sub-directory 
@@ -156,19 +206,41 @@ folder, so that new simulations are conducted.
 ## Documentation
 
 API documentation, which describes the classes and functions used in the 
-examples, can be found [here][107].
+examples, can be found [here][107]. Documentation updates are ongoing. 
 
-Documentation updates will be ongoing. Instructions for building the 
-documentation locally are available [here](docs/README.md).
+## Development
 
-## Testing
+### Installation
 
-To run unit, type testing and doctests on the package, first install the 
-required dependencies:
+:warning: This repository uses [Git LFS][106] to store large files, so make 
+sure to use `git lfs clone` when cloning the repository to download all of the 
+files and set up LFS. For example:
 
 ```
-(_snld3d) > conda install -y mypy pytest pytest-mock tox-conda
+> git lfs clone https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify.git
 ```
+
+Due to the many non-Python binary requirements of the package dependencies, 
+installation requires the use of [Anaconda Python][103] or a fully free-to-use 
+equivalent, such as [Miniforge][114]. Open a conda prompt and then change 
+directory into the package root. Use the following commands to install the 
+package, testing and documentation dependencies into the `_snld3d` environment.
+
+```
+(base) > conda env create --file .conda/environment.yml
+```
+
+Activate the `_snld3d` environment, setup the channels, and then install the 
+SNL-Delft3D-CEC-Verify package in development mode:
+
+```
+(base) > conda activate _snld3d
+(_snld3d) > conda config --env --add channels conda-forge
+(_snld3d) > conda config --env --set channel_priority strict
+(_snld3d) > pip install --no-deps -e .
+```
+
+### Testing
 
 To run the unit tests, type the following from the root directory:
 
@@ -197,7 +269,34 @@ To run all three test suites simultaneously, invoke tox from the root directory:
 Note that tox creates a dedicated environment for the tests, which can be time 
 consuming on first run (or if there are any dependency changes).
 
-## Uninstall
+### Documentation
+
+HTML documentation is built using the [Sphinx][111] documentation system, with 
+the [sphinx-autodoc-typehints][112] plugin and the [insipid][113] theme.
+
+To build the documentation locally, activate the conda environment and move to
+the `docs` directory:
+
+```
+(base) > conda activate _snld3d
+(_snld3d) > cd docs
+```
+
+Then to build, for Windows:
+
+```
+(_snld3d) > .\make.bat HTML
+```
+
+Alternatively for Linux
+
+```
+(_snld3d) > make HTML
+```
+
+The documentation can then be opened at the path `docs/_build/html/index.html`.
+
+### Uninstall
 
 To remove the conda environment containing SNL-Delft3D-CEC-Verify, open an
 Ananconda prompt and type:
@@ -244,3 +343,7 @@ Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial
 [108]: https://www.intel.com/content/www/us/en/products/sku/80806/intel-core-i74790-processor-8m-cache-up-to-4-00-ghz/specifications.html
 [109]: https://github.com/Data-Only-Greater/convergence
 [110]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/validation/index.html
+[111]: https://www.sphinx-doc.org/en/master/
+[112]: https://github.com/tox-dev/sphinx-autodoc-typehints
+[113]: https://insipid-sphinx-theme.readthedocs.io/
+[114]: https://github.com/conda-forge/miniforge
