@@ -30,11 +30,10 @@ From a conda prompt create a named environment, set up the required channels
 and then install the `snl-delft3d-cec-verify` conda package:
 
 ```
-(base) > conda create -y -n snld3d --override-channels -c conda-forge "python>=3.9.9,<3.10" pip
+(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater "python>=3.9.9,<3.10" snl-delft3d-cec-verify=0.4.3
 (base) > conda activate snld3d
 (snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
 (snld3d) > conda config --env --set channel_priority strict
-(snld3d) > conda install -y snl-delft3d-cec-verify
 ```
 
 After this, working with SNL-Delft3D-CEC-Verify requires that the `snld3d`
