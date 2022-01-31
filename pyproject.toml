@@ -10,3 +10,12 @@ filterwarnings = [
     "ignore::DeprecationWarning:pywintypes",
 ]
 doctest_optionflags = "NORMALIZE_WHITESPACE"
+
+[tool.semantic_release]
+branch = "main"
+version_pattern = [
+    "setup.cfg:version = (\\d+\\.\\d+\\.\\d+)",
+    ".conda/recipe/meta.yaml:{{% set version = \"(\\d+\\.\\d+\\.\\d+)\" %}}",
+    "docs/conf.py:release = '(\\d+\\.\\d+\\.\\d+)'"
+]
+tag_commit = false
