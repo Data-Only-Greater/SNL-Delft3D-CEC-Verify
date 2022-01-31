@@ -26,14 +26,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
           auto-activate-base: false
       - run: |
-          conda config --env --add channels conda-forge
           conda info
       - name: Install package
         run: |
           pip install --no-deps -e .
       - name: Run checks
         run: |
-          conda install -y mypy
           mypy --install-types --non-interactive src
   status:
     name: Static Type Checks

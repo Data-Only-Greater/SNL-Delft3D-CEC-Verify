@@ -21,14 +21,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
           auto-activate-base: false
       - run: |
-          conda config --env --add channels conda-forge
           conda info
       - name: Install package
         run: |
           pip install --no-deps -e .
       - name: Run tests
         run: |
-          conda install -y pytest
           pytest --doctest-modules src
   build:
     runs-on: ubuntu-latest
@@ -48,7 +46,6 @@ jobs:
           python-version: '3.9'
           auto-activate-base: false
       - run: |
-          conda config --env --add channels conda-forge
           conda info
       - name: Install package
         run: |
@@ -57,8 +54,6 @@ jobs:
         run: echo "BUILD_DIR=$(mktemp -d -t pages-XXXXXXXXXX)" >> $GITHUB_ENV
       - name: Build docs
         run: |
-          conda install sphinx sphinx-autodoc-typehints
-          pip install insipid-sphinx-theme
           sphinx-build -b html -W --keep-going ./docs ${{ env.BUILD_DIR }}
       - name: Deploy
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
