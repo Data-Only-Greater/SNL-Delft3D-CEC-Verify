@@ -47,12 +47,12 @@ autodoc_member_order = 'bysource'
 
 # Intersphinx configuration
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
-                       'geopandas': ('https://geopandas.org/en/stable/', None),
-                       'jinja': ('https://jinja.palletsprojects.com/en/latest/', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'pandas': ('http://pandas.pydata.org/pandas-docs/dev', None),
+                       'geopandas': ('https://geopandas.org/en/v0.10.2/', None),
+                       'jinja': ('https://jinja.palletsprojects.com/en/3.0.x/', None),
+                       'numpy': ('https://numpy.org/doc/1.22/', None),
+                       'pandas': ('https://pandas.pydata.org/pandas-docs/version/1.3', None),
                        'shapely': ('https://shapely.readthedocs.io/en/stable', None),
-                       'xarray': ('https://xarray.pydata.org/en/stable/', None)}
+                       'xarray': ('https://xarray.pydata.org/en/v0.20.1/', None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
