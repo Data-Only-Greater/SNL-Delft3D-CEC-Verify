@@ -79,4 +79,7 @@ html_theme = 'insipid'
 # documentation, such as robots.txt or .htaccess. Relative paths are taken as 
 # relative to the configuration directory. They are copied to the output 
 # directory. They will overwrite any existing file of the same name.
-html_extra_path = ["README.md"]
+html_extra_path = [
+    ".gitignore",
+    "README.md",
+]
