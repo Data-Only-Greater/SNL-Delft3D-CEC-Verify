@@ -61,7 +61,7 @@ experiment, and collecting results at the turbine centre. Note that the token
 `<D3D_BIN>`, should be replaced with the path to the `bin` directory of the
 compiled Delft3D source code.
 
-```python
+```pycon
 >>> import tempfile
 >>> from snl_d3d_cec_verify import MycekStudy, Result, Runner, Template
 >>> template = Template()
