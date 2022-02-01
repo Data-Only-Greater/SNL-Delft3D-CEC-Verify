@@ -26,8 +26,9 @@ equivalent, such as [Miniforge][114].
 
 ### Install
 
-From a conda prompt create a named environment, set up the required channels
-and then install the `snl-delft3d-cec-verify` conda package:
+From a conda prompt create a named environment in which to install the 
+`snl-delft3d-cec-verify` conda package and then set up the channels required 
+for future updates:
 
 ```
 (base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.4.3
