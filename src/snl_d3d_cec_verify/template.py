@@ -11,7 +11,7 @@ from distutils.dir_util import copy_tree
 
 from .cases import CaseStudy
 from .copier import copy
-from .gridfm import write_gridfm_rectangle
+from .grid import write_fm_rectangle
 from .types import Num, StrOrPath
 from ._docs import docstringtemplate
 
@@ -153,10 +153,10 @@ class Template:
         y1 = cast(Num, case.y1)
         
         copy(template_path, project_path, data=data, exist_ok=exist_ok)
-        write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
-                               dx,
-                               dy,
-                               x0,
-                               x1,
-                               y0,
-                               y1)
+        write_fm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
+                           dx,
+                           dy,
+                           x0,
+                           x1,
+                           y0,
+                           y1)

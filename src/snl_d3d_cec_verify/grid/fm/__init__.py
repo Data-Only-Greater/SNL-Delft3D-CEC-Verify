@@ -18,18 +18,21 @@ from shapely.geometry import MultiPolygon, Polygon # type: ignore
 from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
 from .geometry import as_polygon_list
-from ..types import Num
+from .writer import write # Convenience import
+from .._shared import generate_grid_nodes
+from ...types import Num
 
 if TYPE_CHECKING: # pragma: no cover
     import numpy.typing as npt
 
+__all__ = ["Rectangular", "write"]
 
-class Mesh2D:
 
+class Rectangular:
+    
     def __init__(self):
         self.fill_value_z = -999.0
         self.missing_z_value = None
-        
         self.meshgeomdim = meshgeomdim(pointer(c_char()),
                                        2,
                                        0,
@@ -43,6 +46,8 @@ class Mesh2D:
                                        -1,
                                        0)
         self.meshgeom = meshgeom(self.meshgeomdim)
+        self.meshgeomdim.maxnumfacenodes = 4
+        self.rotated = False
     
     def altitude_constant(self, constant, where='face'):
         zvalues = np.ones(getattr(self.meshgeomdim, f'num{where}')) * constant
@@ -50,15 +55,7 @@ class Mesh2D:
     
     def set_missing_z_value(self, value):
         self.missing_z_value = value
-
-
-class Rectangular(Mesh2D):
     
-    def __init__(self):
-        Mesh2D.__init__(self)
-        self.meshgeomdim.maxnumfacenodes = 4
-        self.rotated = False
-        
     def generate_grid(self, x0,
                             y0,
                             xsize,
@@ -71,22 +68,7 @@ class Rectangular(Mesh2D):
         will have size adjusted if dx and dy do not divide perfectly.
         """
         
-        # Generate x and y spacing
-        ncols = int(xsize / dx)
-        nrows = int(ysize / dy)
-        
-        x1 = x0 + xsize
-        y1 = y0 + ysize
-        
-        x = np.linspace(x0, x0 + dx * (ncols), ncols + 1)
-        y = np.linspace(y0, y0 + dy * (nrows), nrows + 1)
-        
-        # Adjust last row and column if overlap
-        if not np.isclose(x[-1], x1):
-            x = np.append(x, x1) 
-        
-        if not np.isclose(y[-1], y1):
-            y = np.append(y, y1)
+        x, y = generate_grid_nodes(x0, y0, xsize, ysize, dx, dy)
         
         # Record spacing of last row and column
         c0 = x[-1] - x[-2]
@@ -137,6 +119,8 @@ class Rectangular(Mesh2D):
         face_df = face_df.set_index("index")
         
         # Get the face nodes
+        x1 = x0 + xsize
+        y1 = y0 + ysize
         face_nodes =  np.asarray(
             [_get_face_nodes(node_df, row.values, dx, dy, x1, y1, c0, c1)
                                          for _, row in face_df.iterrows()])
