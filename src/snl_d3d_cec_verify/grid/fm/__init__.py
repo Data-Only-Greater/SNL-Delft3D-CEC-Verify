@@ -19,7 +19,7 @@ from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
 from .geometry import as_polygon_list
 from .writer import write # Convenience import
-from .._shared import generate_grid_nodes
+from ..shared import generate_grid_xy
 from ...types import Num
 
 if TYPE_CHECKING: # pragma: no cover
@@ -68,7 +68,7 @@ class Rectangular:
         will have size adjusted if dx and dy do not divide perfectly.
         """
         
-        x, y = generate_grid_nodes(x0, y0, xsize, ysize, dx, dy)
+        x, y = generate_grid_xy(x0, y0, xsize, ysize, dx, dy)
         
         # Record spacing of last row and column
         c0 = x[-1] - x[-2]

@@ -6,7 +6,7 @@ import xarray as xr
 from snl_d3d_cec_verify.grid import write_fm_rectangle
 
 
-def test_write_gridfm_rectangle(tmp_path):
+def test_write_fm_rectangle(tmp_path):
     
     out_path = tmp_path / "FlowFM_net.nc"
     write_fm_rectangle(out_path, 1.1, 1.1, 0, 2, 0, 2)

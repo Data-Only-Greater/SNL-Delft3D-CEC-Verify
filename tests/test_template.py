@@ -18,8 +18,8 @@ def test_template_call(mocker, tmp_path):
     
     mock_copy = mocker.patch("snl_d3d_cec_verify.template.copy",
                              autospec=True)
-    mock_write_gridfm_rectangle = mocker.patch(
-                    "snl_d3d_cec_verify.template.write_gridfm_rectangle",
+    mock_write_fm_rectangle = mocker.patch(
+                    "snl_d3d_cec_verify.template.write_fm_rectangle",
                     autospec=True)
     
     exist_ok = True
@@ -45,19 +45,19 @@ def test_template_call(mocker, tmp_path):
     assert mock_copy_kwargs["data"]["horizontal_momentum_filter"] == 1
     assert mock_copy_kwargs["data"]["stats_interval"] == ''
     
-    mock_write_gridfm_rectangle.assert_called_with(expected_net_path,
-                                                   case.dx,
-                                                   case.dy,
-                                                   case.x0,
-                                                   case.x1,
-                                                   case.y0,
-                                                   case.y1)
+    mock_write_fm_rectangle.assert_called_with(expected_net_path,
+                                               case.dx,
+                                               case.dy,
+                                               case.x0,
+                                               case.x1,
+                                               case.y0,
+                                               case.y1)
 
 
 @pytest.mark.parametrize("simulate_turbines", [True, False])
 def test_template_fm_simulate_turbines(mocker, simulate_turbines):
     
-    mocker.patch("snl_d3d_cec_verify.template.write_gridfm_rectangle",
+    mocker.patch("snl_d3d_cec_verify.template.write_fm_rectangle",
                  autospec=True)
     mocker.patch("snl_d3d_cec_verify.copier._basic_copy",
                  autospec=True)

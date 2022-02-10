@@ -27,10 +27,9 @@ class Template:
     """Class for creating Delft3D projects from templates
     
     Utilises the :func:`.copier.copy` function to fill the template and the
-    :func:`.gridfm.write_gridfm_rectangle` function to create the flexible
-    mesh grid. Note that the template files are copied on initialization,
-    therefore changes to the template source will not affect the object's
-    output.
+    :func:`.grid.write_fm_rectangle` function to create the flexible mesh 
+    grid. Note that the template files are copied on initialization, therefore 
+    changes to the template source will not affect the object's output.
     
     Call a Template object with a length one :class:`.CaseStudy` object and
     a path at which to create a Delft3D project. For example:
