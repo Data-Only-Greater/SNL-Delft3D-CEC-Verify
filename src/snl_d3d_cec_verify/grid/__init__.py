@@ -7,8 +7,11 @@ from shapely.geometry import box # type: ignore
 
 from .fm import Rectangular as RectangularFM
 from .fm import write as writeFM
+from .structured import write_rectangle as write_structured_rectangle
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
+
+__all__ = ["write_fm_rectangle", "write_structured_rectangle"]
 
 
 @docstringtemplate
