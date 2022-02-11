@@ -12,26 +12,26 @@ from .checks import check_argument
 from .cstructures import meshgeom, meshgeomdim
 
 
-def write2D(twodmesh, path):
+def write(mesh, path):
     
-    mesh2d = meshgeom(meshgeomdim())
-    mesh2d.meshgeomdim.dim = 2
+    final_mesh = meshgeom(meshgeomdim())
+    final_mesh.meshgeomdim.dim = 2
     
-    if not hasattr(twodmesh, 'meshgeom'):
-        check_argument(twodmesh, 'twodmesh', meshgeom)
-        geometries = twodmesh
+    if not hasattr(mesh, 'meshgeom'):
+        check_argument(mesh, 'mesh', meshgeom)
+        geometries = mesh
     else:
-        if not isinstance(twodmesh.meshgeom, meshgeom):
+        if not isinstance(mesh.meshgeom, meshgeom):
             raise TypeError('The given mesh should have an attribute '
                             '"meshgeom".')
-        geometries = twodmesh.meshgeom
+        geometries = mesh.meshgeom
     
-    mesh2d.add_from_other(geometries)
+    final_mesh.add_from_other(geometries)
     
     with create_netcdf(path) as ncfile:
         init_shared(ncfile)
-        init_2dmesh(ncfile, mesh2d)
-        set_2dmesh(ncfile, mesh2d)
+        init_mesh(ncfile, final_mesh)
+        set_mesh(ncfile, final_mesh)
 
 
 @contextmanager
@@ -54,16 +54,16 @@ def init_shared(ncfile):
     ncfile.createDimension("Two", 2)
 
 
-def init_2dmesh(ncfile, cmesh2d):
+def init_mesh(ncfile, cmesh):
     
     ncfile.createDimension("max_nmesh2d_face_nodes",
-                           cmesh2d.meshgeomdim.maxnumfacenodes)
-    ncfile.createDimension("mesh2d_nEdges", cmesh2d.meshgeomdim.numedge)
-    ncfile.createDimension("mesh2d_nFaces", cmesh2d.meshgeomdim.numface)
-    ncfile.createDimension("mesh2d_nNodes", cmesh2d.meshgeomdim.numnode)
+                           cmesh.meshgeomdim.maxnumfacenodes)
+    ncfile.createDimension("mesh2d_nEdges", cmesh.meshgeomdim.numedge)
+    ncfile.createDimension("mesh2d_nFaces", cmesh.meshgeomdim.numface)
+    ncfile.createDimension("mesh2d_nNodes", cmesh.meshgeomdim.numnode)
 
 
-def set_2dmesh(ncfile, cmesh2d):
+def set_mesh(ncfile, cmesh):
     
     mesh2d = ncfile.createVariable("mesh2d", "i4", ())
     mesh2d.long_name = "Topology data of 2D network"
@@ -105,14 +105,14 @@ def set_2dmesh(ncfile, cmesh2d):
     mesh2d_z.coordinates = 'mesh2d_node_x mesh2d_node_y'
     mesh2d_z.grid_mapping = ''
     
-    mesh2d_x[:] = cmesh2d.get_values("nodex")
-    mesh2d_y[:] = cmesh2d.get_values("nodey")
+    mesh2d_x[:] = cmesh.get_values("nodex")
+    mesh2d_y[:] = cmesh.get_values("nodey")
     
     # Edges:
     # mesh2d_xu = ncfile.createVariable("mesh2d_edge_x", np.float64,  "nmesh2d_edges")
     # mesh2d_yu = ncfile.createVariable("mesh2d_edge_y", np.float64,  "nmesh2d_edges")
-    # mesh2d_xu[:] = cmesh2d.get_values("edgex")
-    # mesh2d_yu[:] = cmesh2d.get_values("edgey")
+    # mesh2d_xu[:] = cmesh.get_values("edgex")
+    # mesh2d_yu[:] = cmesh.get_values("edgey")
     # mesh2d_xu.long_name = 'x-coordinate of mesh edges'
     # mesh2d_yu.long_name = 'y-coordinate of mesh edges'
     
@@ -132,7 +132,7 @@ def set_2dmesh(ncfile, cmesh2d):
     mesh2d_en.location = 'edge'
     mesh2d_en.mesh = 'mesh2d'
     
-    mesh2d_en[:] = cmesh2d.get_values('edge_nodes', as_array=True)
+    mesh2d_en[:] = cmesh.get_values('edge_nodes', as_array=True)
     
     # mesh2d_et = ncfile.createVariable("mesh2d_edge_types", "i4", mesh2d.edge_dimension)
     # mesh2d_et.long_name = 'edge type (relation between edge and flow geometry)'
@@ -153,7 +153,7 @@ def set_2dmesh(ncfile, cmesh2d):
     mesh2d_fn.location = 'face'
     mesh2d_fn.long_name = 'maps every face to the nodes that it defines'
     mesh2d_fn.start_index = 1
-    mesh2d_fn[:] = cmesh2d.get_values('face_nodes', as_array=True)
+    mesh2d_fn[:] = cmesh.get_values('face_nodes', as_array=True)
     
     mesh2d_face_x = ncfile.createVariable("mesh2d_face_x",
                                           np.float64,
@@ -178,16 +178,16 @@ def set_2dmesh(ncfile, cmesh2d):
     mesh2d_face_z.coordinates = 'mesh2d_face_x mesh2d_face_y'
     mesh2d_face_z.grid_mapping = ''
     
-    mesh2d_face_x[:] = cmesh2d.get_values("facex")
-    mesh2d_face_y[:] = cmesh2d.get_values("facey")
+    mesh2d_face_x[:] = cmesh.get_values("facex")
+    mesh2d_face_y[:] = cmesh.get_values("facey")
     
     # Assign altitude data
     # To faces
-    if cmesh2d.is_allocated('facez'):
-        mesh2d_face_z[:] = cmesh2d.get_values("facez")
+    if cmesh.is_allocated('facez'):
+        mesh2d_face_z[:] = cmesh.get_values("facez")
     # Assign to nodes
-    if cmesh2d.is_allocated('nodez'):
-        mesh2d_z[:] = cmesh2d.get_values("nodez")
+    if cmesh.is_allocated('nodez'):
+        mesh2d_z[:] = cmesh.get_values("nodez")
     # Raise error if none of both is allocated
-    if not cmesh2d.is_allocated('nodez') and not cmesh2d.is_allocated('facez'):
+    if not cmesh.is_allocated('nodez') and not cmesh.is_allocated('facez'):
         raise ValueError('Assign altitude values either to nodes or faces.')

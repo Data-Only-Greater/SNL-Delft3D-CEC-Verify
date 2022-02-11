@@ -17,6 +17,7 @@ from ._docs import docstringtemplate
 __all__ = ["run_dflowfm"]
 
 
+@docstringtemplate
 @dataclass
 class Runner:
     """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
@@ -94,6 +95,7 @@ class Runner:
             raise RuntimeError("Delft3D simulation failure")
 
 
+@docstringtemplate
 @dataclass
 class LiveRunner:
     """A wrapper around the :func:`.run_dflowfm` function to allow reuse of

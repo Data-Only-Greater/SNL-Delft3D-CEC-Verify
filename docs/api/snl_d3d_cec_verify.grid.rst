@@ -1,7 +1,7 @@
-snl\_d3d\_cec\_verify.gridfm package
+snl\_d3d\_cec\_verify.grid package
 ====================================
 
-.. automodule:: snl_d3d_cec_verify.gridfm
+.. automodule:: snl_d3d_cec_verify.grid
    :members:
    :undoc-members:
    :show-inheritance:

@@ -11,7 +11,7 @@ from distutils.dir_util import copy_tree
 
 from .cases import CaseStudy
 from .copier import copy
-from .gridfm import write_gridfm_rectangle
+from .grid import write_fm_rectangle
 from .types import Num, StrOrPath
 from ._docs import docstringtemplate
 
@@ -27,10 +27,9 @@ class Template:
     """Class for creating Delft3D projects from templates
     
     Utilises the :func:`.copier.copy` function to fill the template and the
-    :func:`.gridfm.write_gridfm_rectangle` function to create the flexible
-    mesh grid. Note that the template files are copied on initialization,
-    therefore changes to the template source will not affect the object's
-    output.
+    :func:`.grid.write_fm_rectangle` function to create the flexible mesh 
+    grid. Note that the template files are copied on initialization, therefore 
+    changes to the template source will not affect the object's output.
     
     Call a Template object with a length one :class:`.CaseStudy` object and
     a path at which to create a Delft3D project. For example:
@@ -153,10 +152,10 @@ class Template:
         y1 = cast(Num, case.y1)
         
         copy(template_path, project_path, data=data, exist_ok=exist_ok)
-        write_gridfm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
-                               dx,
-                               dy,
-                               x0,
-                               x1,
-                               y0,
-                               y1)
+        write_fm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
+                           dx,
+                           dy,
+                           x0,
+                           x1,
+                           y0,
+                           y1)
