@@ -10,15 +10,13 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+import os
 import sys
 from pathlib import Path
 
-def src_dir():
-    this_file = Path(__file__).resolve()
-    return (this_file.parent / ".." / "src" / "snl_d3d_cec_verify").resolve()
-
-sys.path.insert(0, src_dir())
-
+docs_source_dir = Path(os.getenv("SPHINX_MULTIVERSION_SOURCEDIR", default="."))
+package_dir = docs_source_dir / ".." / "src"
+sys.path.append(str(package_dir.resolve()))
 
 # -- Project information -----------------------------------------------------
 
@@ -39,7 +37,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.githubpages'
+    'sphinx.ext.githubpages',
+    'sphinx_multiversion'
 ]
 
 # Autodoc configuration
@@ -53,6 +52,10 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'pandas': ('https://pandas.pydata.org/pandas-docs/version/1.3', None),
                        'shapely': ('https://shapely.readthedocs.io/en/stable', None),
                        'xarray': ('https://xarray.pydata.org/en/v0.20.1/', None)}
+
+# sphinx_multiversion configuration
+smv_branch_whitelist = r'(main)$'
+smv_remote_whitelist = r'^(origin)$'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -83,3 +86,15 @@ html_extra_path = [
     ".gitignore",
     "README.md",
 ]
+
+# Custom sidebar templates, must be a dictionary that maps document names to
+# template names.
+html_sidebars = {
+    '**': [
+        'globaltoc.html',
+        'separator.html',
+        'indices.html',
+        'separator.html',
+        'versioning.html'
+    ],
+}
