@@ -56,6 +56,8 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
 # sphinx_multiversion configuration
 smv_branch_whitelist = r'(main)$'
 smv_remote_whitelist = r'^(origin)$'
+smv_released_pattern = r'^refs/tags/.*$'
+smv_latest_version = 'v0.4.3'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -76,7 +78,7 @@ html_theme = 'insipid'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
 
 # A list of paths that contain extra files not directly related to the 
 # documentation, such as robots.txt or .htaccess. Relative paths are taken as 
@@ -98,3 +100,7 @@ html_sidebars = {
         'versioning.html'
     ],
 }
+
+html_css_files = [
+    'custom.css',
+]

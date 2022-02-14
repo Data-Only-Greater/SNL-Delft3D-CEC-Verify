@@ -14,8 +14,10 @@ doctest_optionflags = "NORMALIZE_WHITESPACE"
 [tool.semantic_release]
 branch = "main"
 version_pattern = [
+    "README.md:snl-delft3d-cec-verify=(\\d+\\.\\d+\\.\\d+)",
     "setup.cfg:version = (\\d+\\.\\d+\\.\\d+)",
     ".conda/recipe/meta.yaml:{{% set version = \"(\\d+\\.\\d+\\.\\d+)\" %}}",
-    "docs/conf.py:release = '(\\d+\\.\\d+\\.\\d+)'"
+    "docs/conf.py:release = '(\\d+\\.\\d+\\.\\d+)'",
+    "docs/conf.py:smv_latest_version = 'v(\\d+\\.\\d+\\.\\d+)'"
 ]
 tag_commit = false
