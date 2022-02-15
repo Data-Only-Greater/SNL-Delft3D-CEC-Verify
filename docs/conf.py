@@ -16,6 +16,7 @@ from pathlib import Path
 
 docs_source_dir = Path(os.getenv("SPHINX_MULTIVERSION_SOURCEDIR", default="."))
 package_dir = docs_source_dir / ".." / "src"
+print(package_dir.resolve())
 sys.path.append(str(package_dir.resolve()))
 
 # -- Project information -----------------------------------------------------

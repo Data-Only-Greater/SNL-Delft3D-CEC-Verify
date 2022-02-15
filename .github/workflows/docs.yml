@@ -19,6 +19,7 @@ jobs:
           # activate-environment: _snld3d
           # environment-file: .conda/environment.yml
           # python-version: ${{ matrix.python-version }}
+          # mamba-version: "*"
           # auto-activate-base: false
       # - run: |
           # conda info
@@ -44,6 +45,7 @@ jobs:
           activate-environment: _snld3d
           environment-file: .conda/environment.yml
           python-version: '3.9'
+          mamba-version: "*"
           auto-activate-base: false
       - run: |
           conda info
