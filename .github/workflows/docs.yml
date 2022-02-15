@@ -19,7 +19,6 @@ jobs:
           # activate-environment: _snld3d
           # environment-file: .conda/environment.yml
           # python-version: ${{ matrix.python-version }}
-          # mamba-version: "*"
           # auto-activate-base: false
       # - run: |
           # conda info
@@ -45,13 +44,9 @@ jobs:
           activate-environment: _snld3d
           environment-file: .conda/environment.yml
           python-version: '3.9'
-          mamba-version: "*"
           auto-activate-base: false
       - run: |
           conda info
-      - name: Install package
-        run: |
-          pip install --no-deps -e .
       - name: Create build directory
         run: echo "BUILD_DIR=$(mktemp -d -t pages-XXXXXXXXXX)" >> $GITHUB_ENV
       - name: Build docs
