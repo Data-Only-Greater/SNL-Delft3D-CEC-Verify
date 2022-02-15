@@ -10,15 +10,13 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+import os
 import sys
 from pathlib import Path
 
-def src_dir():
-    this_file = Path(__file__).resolve()
-    return (this_file.parent / ".." / "src" / "snl_d3d_cec_verify").resolve()
-
-sys.path.insert(0, src_dir())
-
+docs_source_dir = Path(os.getenv("SPHINX_MULTIVERSION_SOURCEDIR", default="."))
+package_dir = docs_source_dir / ".." / "src"
+sys.path.append(str(package_dir.resolve()))
 
 # -- Project information -----------------------------------------------------
 
@@ -39,7 +37,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.githubpages'
+    'sphinx_multiversion'
 ]
 
 # Autodoc configuration
@@ -54,14 +52,24 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'shapely': ('https://shapely.readthedocs.io/en/stable', None),
                        'xarray': ('https://xarray.pydata.org/en/v0.20.1/', None)}
 
+# sphinx_multiversion configuration
+smv_branch_whitelist = r'(main)$'
+smv_remote_whitelist = r'^(origin)$'
+smv_tag_whitelist = r'^v(\d+\.\d+\.\d+)$' # r'^v(?!0.4.0|0.4.1|0.4.2)\d+\.\d+\.\d+$'
+smv_released_pattern = r'^refs/tags/.*$'
+smv_latest_version = 'v0.4.3'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = [
+    '_assets',
+    '_build',
+    'Thumbs.db',
+    '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -73,13 +81,26 @@ html_theme = 'insipid'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
 
 # A list of paths that contain extra files not directly related to the 
 # documentation, such as robots.txt or .htaccess. Relative paths are taken as 
 # relative to the configuration directory. They are copied to the output 
 # directory. They will overwrite any existing file of the same name.
-html_extra_path = [
-    ".gitignore",
-    "README.md",
+#html_extra_path =
+
+# Custom sidebar templates, must be a dictionary that maps document names to
+# template names.
+html_sidebars = {
+    '**': [
+        'globaltoc.html',
+        'separator.html',
+        'indices.html',
+        'separator.html',
+        'versioning.html'
+    ],
+}
+
+html_css_files = [
+    'custom.css',
 ]

@@ -1,0 +1,18 @@
+{% if versions %}
+<p class="caption" role="heading">
+  <span class="caption-text">{{ _('Tags') }}</span>
+</p>
+<ul class="versionlist">
+  {%- for item in versions.tags|reverse %}
+  <li><a href="{{ item.url }}">{{ item.name }}</a></li>
+  {%- endfor %}
+</ul>
+<p class="caption" role="heading">
+  <span class="caption-text">{{ _('Branches') }}</span>
+</p>
+<ul class="versionlist">
+  {%- for item in versions.branches %}
+  <li><a href="{{ item.url }}">{{ item.name }}</a></li>
+  {%- endfor %}
+</ul>
+{% endif %}
