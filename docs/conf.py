@@ -37,7 +37,6 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.githubpages',
     'sphinx_multiversion'
 ]
 
@@ -56,6 +55,7 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
 # sphinx_multiversion configuration
 smv_branch_whitelist = r'(main)$'
 smv_remote_whitelist = r'^(origin)$'
+smv_tag_whitelist = r'^v(\d+\.\d+\.\d+)$' # r'^v(?!0.4.0|0.4.1|0.4.2)\d+\.\d+\.\d+$'
 smv_released_pattern = r'^refs/tags/.*$'
 smv_latest_version = 'v0.4.3'
 
@@ -65,8 +65,11 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = [
+    '_assets',
+    '_build',
+    'Thumbs.db',
+    '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -84,10 +87,7 @@ html_static_path = ['_static']
 # documentation, such as robots.txt or .htaccess. Relative paths are taken as 
 # relative to the configuration directory. They are copied to the output 
 # directory. They will overwrite any existing file of the same name.
-html_extra_path = [
-    ".gitignore",
-    "README.md",
-]
+#html_extra_path =
 
 # Custom sidebar templates, must be a dictionary that maps document names to
 # template names.
