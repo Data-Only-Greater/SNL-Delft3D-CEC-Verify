@@ -23,8 +23,9 @@ def write_rectangle(path: StrOrPath,
                     y0: Num = 1,
                     y1: Num = 5):
     """Create a rectangular Delft3D structured mesh grid, in a rectangular 
-    domain (``x0``, ``y0``, ``x1``, ``y1``), and save to the given path as
-    ``D3D.grd`` and ``D3D.enc``.
+    domain (``x0``, ``y0``, ``x1``, ``y1``), with discharge and water level 
+    boundaries, and save to the given path as``D3D.grd``, ``D3D.enc`` and 
+    ``D3D.bnd``.
     
     :param path: destination path for the grid file
     :param dx: grid spacing in the x-direction, in metres
@@ -54,6 +55,14 @@ def write_rectangle(path: StrOrPath,
     enc_path = Path(path) / "D3D.enc"
     
     with open(enc_path, "w") as f:
+        f.writelines(msgs)
+    
+    msgs = make_bnd(x, y)
+    msgs = [v + "\n" for v in msgs]
+    
+    bnd_path = Path(path) / "D3D.bnd"
+    
+    with open(bnd_path, "w") as f:
         f.writelines(msgs)
 
 
@@ -119,9 +128,9 @@ def make_enc(x: Sequence[Num],
              y: Sequence[Num]) -> List[str]:
     
     x0 = 1
-    x1 = x0 + len(x)
+    x1 = x0 + len(x) - 1
     y0 = 1
-    y1 = y0 + len(y)
+    y1 = y0 + len(y) - 1
     template = " {:>5} {:>5}"
     
     return [template.format(x0, y0),
@@ -129,3 +138,36 @@ def make_enc(x: Sequence[Num],
             template.format(x1, y1),
             template.format(x0, y1),
             template.format(x0, y0)]
+
+
+def make_bnd(x: Sequence[Num],
+             y: Sequence[Num]) -> List[str]:
+    
+    x0 = 1
+    x1 = x0 + len(x) - 1
+    y0 = 1
+    y1 = y0 + len(y) - 1
+    
+    up_msg = (f"Upstream             T T {x0:>5} {y0:>5} {x0:>5} {y1:>5}  "
+              "0.0000000e+000 Logarithmic")
+    down_msg = (f"Downstream           Z T {x1:>5} {y0:>5} {x1:>5} {y1:>5}  "
+                "0.0000000e+000")
+    
+    return [up_msg, down_msg]
+
+
+def make_d3d() -> List[str]:
+    
+    msgs = [
+        "[FileInformation]",
+        "  FileGeneratedBy  = Data Only Greater, SNL-Delft3D-CEC-Verify "
+       f"Version {version('SNL-Delft3D-CEC-Verify')} ({platform.system()})",
+        "  FileCreationDate = "
+       f"{datetime.today().strftime('%Y-%m-%d, %H:%M:%S')}",
+        "  FileVersion      = 0.02",
+        "[Grid]",
+        "  Type        = RGF",
+        "  FileName    = D3D.grd"
+        ]
+    
+    return msgs

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import math
+from datetime import date
 
 import numpy as np
 import pytest
@@ -9,7 +10,9 @@ from snl_d3d_cec_verify.grid.structured import (write_rectangle,
                                                 make_header,
                                                 make_eta_x,
                                                 make_eta_y,
-                                                make_enc)
+                                                make_enc,
+                                                make_bnd,
+                                                make_d3d)
 
 
 
@@ -23,12 +26,13 @@ def test_write_rectangle(tmp_path, x0, x1, y0, y1):
     write_rectangle(tmp_path, 1, 1, x0, x1, y0, y1)
     files = list(x for x in tmp_path.iterdir() if x.is_file())
     
-    assert len(files) == 2
+    assert len(files) == 3
     
     file_names = [f.name for f in files]
     
     assert "D3D.grd" in file_names
     assert "D3D.enc" in file_names
+    assert "D3D.bnd" in file_names
     
     with open(tmp_path / "D3D.grd", "r") as f:
         lines = f.readlines()
@@ -41,6 +45,11 @@ def test_write_rectangle(tmp_path, x0, x1, y0, y1):
         lines = f.readlines()
     
     assert len(lines) == 5
+    
+    with open(tmp_path / "D3D.bnd", "r") as f:
+        lines = f.readlines()
+    
+    assert len(lines) == 2
 
 
 def test_make_header():
@@ -144,7 +153,51 @@ def test_make_enc():
     
     assert len(test) == 5
     assert test[0] == "     1     1"
-    assert test[1] == "    13     1"
-    assert test[2] == "    13     4"
-    assert test[3] == "     1     4"
+    assert test[1] == "    12     1"
+    assert test[2] == "    12     3"
+    assert test[3] == "     1     3"
     assert test[4] == test[0]
+
+
+def test_make_bnd():
+    
+    x = [0] * 12
+    y = [0] * 3
+    
+    test = make_bnd(x, y)
+    
+    assert len(test) == 2
+    
+    assert "     1     1     1     3" in test[0]
+    upstream = test[0].split()
+    
+    assert upstream[1] == "T"
+    assert upstream[2] == "T"
+    assert float(upstream[7]) == 0.0
+    assert upstream[8] == "Logarithmic"
+    
+    assert "    12     1    12     3" in test[1]
+    downstream = test[1].split()
+    
+    assert downstream[1] == "Z"
+    assert downstream[2] == "T"
+    assert float(upstream[7]) == 0.0
+
+
+def test_make_d3d():
+    
+    test = make_d3d()
+    
+    assert test[0] == "[FileInformation]"
+    assert test[4] == "[Grid]"
+    
+    words = test[1].split()
+    
+    assert words[0] == "FileGeneratedBy"
+    assert words[1] == "="
+    
+    words = test[2].split()
+    
+    assert words[0] == "FileCreationDate"
+    assert words[1] == "="
+    assert date.fromisoformat(words[2][:-1]) == date.today()
