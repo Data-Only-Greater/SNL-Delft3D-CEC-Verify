@@ -24,7 +24,7 @@ def write_rectangle(path: StrOrPath,
                     y1: Num = 5):
     """Create a rectangular Delft3D structured mesh grid, in a rectangular 
     domain (``x0``, ``y0``, ``x1``, ``y1``), and save to the given path as
-    ``D3D.grd``.
+    ``D3D.grd`` and ``D3D.enc``.
     
     :param path: destination path for the grid file
     :param dx: grid spacing in the x-direction, in metres
@@ -43,9 +43,17 @@ def write_rectangle(path: StrOrPath,
     msgs = make_header(x, y) + make_eta_x(x, y) + make_eta_y(x, y)
     msgs = [v + "\n" for v in msgs]
     
-    file_path = Path(path) / "D3D.grd"
+    grd_path = Path(path) / "D3D.grd"
     
-    with open(file_path, "w") as f:
+    with open(grd_path, "w") as f:
+        f.writelines(msgs)
+    
+    msgs = make_enc(x, y)
+    msgs = [v + "\n" for v in msgs]
+    
+    enc_path = Path(path) / "D3D.enc"
+    
+    with open(enc_path, "w") as f:
         f.writelines(msgs)
 
 
@@ -105,3 +113,19 @@ def _make_eta(x: Sequence[Num],
             msg = ' ' * 13
     
     return msgs
+
+
+def make_enc(x: Sequence[Num],
+             y: Sequence[Num]) -> List[str]:
+    
+    x0 = 1
+    x1 = x0 + len(x)
+    y0 = 1
+    y1 = y0 + len(y)
+    template = " {:>5} {:>5}"
+    
+    return [template.format(x0, y0),
+            template.format(x1, y0),
+            template.format(x1, y1),
+            template.format(x0, y1),
+            template.format(x0, y0)]

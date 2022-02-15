@@ -8,7 +8,8 @@ import pytest
 from snl_d3d_cec_verify.grid.structured import (write_rectangle,
                                                 make_header,
                                                 make_eta_x,
-                                                make_eta_y)
+                                                make_eta_y,
+                                                make_enc)
 
 
 
@@ -22,18 +23,24 @@ def test_write_rectangle(tmp_path, x0, x1, y0, y1):
     write_rectangle(tmp_path, 1, 1, x0, x1, y0, y1)
     files = list(x for x in tmp_path.iterdir() if x.is_file())
     
-    assert len(files) == 1
+    assert len(files) == 2
     
-    grd_file = files[0]
+    file_names = [f.name for f in files]
     
-    assert grd_file.name == "D3D.grd"
+    assert "D3D.grd" in file_names
+    assert "D3D.enc" in file_names
     
-    with open(grd_file, "r") as f:
+    with open(tmp_path / "D3D.grd", "r") as f:
         lines = f.readlines()
     
     rows = 2 * math.ceil((x1 - x0 + 1) / 5) * (y1 - y0 + 1) + 8
     
     assert len(lines) == rows
+    
+    with open(tmp_path / "D3D.enc", "r") as f:
+        lines = f.readlines()
+    
+    assert len(lines) == 5
 
 
 def test_make_header():
@@ -126,3 +133,18 @@ def test_make_eta_y(x, y):
         expected = [y[i]] * len(nums)
         
         assert np.isclose(nums, expected).all()
+
+
+def test_make_enc():
+    
+    x = [0] * 12
+    y = [0] * 3
+    
+    test = make_enc(x, y)
+    
+    assert len(test) == 5
+    assert test[0] == "     1     1"
+    assert test[1] == "    13     1"
+    assert test[2] == "    13     4"
+    assert test[3] == "     1     4"
+    assert test[4] == test[0]
