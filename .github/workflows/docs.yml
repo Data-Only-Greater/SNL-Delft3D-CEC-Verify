@@ -1,36 +1,36 @@
 name: Documentation
 on: [push, pull_request]
 jobs:
-  doctest:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ['3.9']
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          lfs: 'true'
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: _snld3d
-          environment-file: .conda/environment.yml
-          python-version: ${{ matrix.python-version }}
-          auto-activate-base: false
-      - run: |
-          conda info
-      - name: Install package
-        run: |
-          pip install --no-deps -e .
-      - name: Run tests
-        run: |
-          pytest --doctest-modules src
+  # doctest:
+    # runs-on: ${{ matrix.os }}
+    # strategy:
+      # matrix:
+        # os: [windows-latest, ubuntu-latest]
+        # python-version: ['3.9']
+    # defaults:
+      # run:
+        # shell: bash -l {0}
+    # steps:
+      # - uses: actions/checkout@v2
+        # with:
+          # lfs: 'true'
+      # - uses: conda-incubator/setup-miniconda@v2
+        # with:
+          # activate-environment: _snld3d
+          # environment-file: .conda/environment.yml
+          # python-version: ${{ matrix.python-version }}
+          # auto-activate-base: false
+      # - run: |
+          # conda info
+      # - name: Install package
+        # run: |
+          # pip install --no-deps -e .
+      # - name: Run tests
+        # run: |
+          # pytest --doctest-modules src
   build:
     runs-on: ubuntu-latest
-    needs: doctest
+#    needs: doctest
     defaults:
       run:
         shell: bash -l {0}
@@ -60,7 +60,7 @@ jobs:
           cp docs/_assets/gh-pages-redirect.html ${{ env.BUILD_DIR }}/index.html
           cp docs/_assets/gh-pages-readme.md ${{ env.BUILD_DIR }}/README.md
       - name: Deploy
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/sphinx_multiversion' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
