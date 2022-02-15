@@ -30,7 +30,7 @@ jobs:
           pytest --doctest-modules src
   build:
     runs-on: ubuntu-latest
-   needs: doctest
+    needs: doctest
     defaults:
       run:
         shell: bash -l {0}
