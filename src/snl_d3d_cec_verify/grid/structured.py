@@ -25,7 +25,7 @@ def write_rectangle(path: StrOrPath,
     """Create a rectangular Delft3D structured mesh grid, in a rectangular 
     domain (``x0``, ``y0``, ``x1``, ``y1``), with discharge and water level 
     boundaries, and save to the given path as``D3D.grd``, ``D3D.enc`` and 
-    ``D3D.bnd``.
+    ``D3D.d3d``.
     
     :param path: destination path for the grid file
     :param dx: grid spacing in the x-direction, in metres
