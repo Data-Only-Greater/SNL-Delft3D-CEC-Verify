@@ -4,21 +4,25 @@ from __future__ import annotations
 
 import os
 import tempfile
+import platform
+from abc import ABCMeta, abstractmethod
 from typing import cast, List, Optional
 from pathlib import Path
+from datetime import datetime
 from dataclasses import dataclass, field, InitVar
 from distutils.dir_util import copy_tree
+from importlib.metadata import version
 
 from .cases import CaseStudy
 from .copier import copy
-from .grid import write_fm_rectangle
-from .types import Num, StrOrPath
+from .grid import write_fm_rectangle, write_structured_rectangle
+from .types import AnyByStrDict, Num, StrOrPath
 from ._docs import docstringtemplate
 
 
-def package_fm_template_path() -> Path:
+def package_template_path(template_type) -> Path:
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    return Path(this_dir) / "templates" / "fm"
+    return Path(this_dir) / "templates" / template_type
 
 
 @docstringtemplate
@@ -65,6 +69,7 @@ class Template:
     
     """
     
+    template_type: InitVar[str] = "fm"
     template_path: InitVar[StrOrPath] = None
     
     #: if True, allow an existing path to be overwritten
@@ -78,11 +83,23 @@ class Template:
                                                          "simulate_turbines"])
     
     _template_tmp: tempfile.TemporaryDirectory = field(init=False, repr=False)
+    _extras: _BaseTemplateExtras = field(init=False, repr=False)
     
-    def __post_init__(self, template_path: StrOrPath):
+    def __post_init__(self, template_type: str,
+                            template_path: StrOrPath):
+        
+        template_extras_map = {"fm": _FMTemplateExtras,
+                               "structured": _StructuredTemplateExtras}
+        
+        if template_type not in template_extras_map:
+            valid_types = ", ".join(template_extras_map)
+            msg = f"Template type not recognised. Must be one of {valid_types}"
+            raise ValueError(msg)
+        
+        self._extras = template_extras_map[template_type]()
         
         if template_path is None:
-            template_path = package_fm_template_path()
+            template_path = package_template_path(template_type)
         
         self._template_tmp = tempfile.TemporaryDirectory()
         copy_tree(str(template_path), self._template_tmp.name)
@@ -128,6 +145,59 @@ class Template:
         data = {field: "" if value is None else value
                                         for field, value in data.items()}
         
+        # Apply template specific updates to the data dictionary
+        self._extras.data_hook(case, data)
+        
+        # Inform the type checker that we have Num for single value cases
+        dx = cast(Num, case.dx)
+        dy = cast(Num, case.dy)
+        x0 = cast(Num, case.x0)
+        x1 = cast(Num, case.x1)
+        y0 = cast(Num, case.y0)
+        y1 = cast(Num, case.y1)
+        
+        template_path = Path(self._template_tmp.name)
+        project_path = Path(project_path)
+        
+        with copy(template_path,
+                  project_path,
+                  data=data,
+                  exist_ok=exist_ok) as data:
+            
+            grid_data = self._extras.write_grid(project_path,
+                                                dx,
+                                                dy,
+                                                x0,
+                                                x1,
+                                                y0,
+                                                y1)
+            data.update(grid_data)
+            data["mock"] = "MOCK"
+
+
+class _BaseTemplateExtras(metaclass=ABCMeta):
+    
+    @abstractmethod
+    def data_hook(self, case: CaseStudy,
+                        data: AnyByStrDict):
+        pass
+    
+    @abstractmethod
+    def write_grid(self, project_path: StrOrPath,
+                         dx: Num,
+                         dy: Num,
+                         x0: Num,
+                         x1: Num,
+                         y0: Num,
+                         y1: Num) -> AnyByStrDict:
+        pass
+
+
+class _FMTemplateExtras(_BaseTemplateExtras):
+    
+    def data_hook(self, case: CaseStudy,
+                        data: AnyByStrDict):
+        
         # Add Turbines section if requested
         if case.simulate_turbines:
             simulate_turbines = (
@@ -139,23 +209,39 @@ class Template:
             simulate_turbines = ""
         
         data["simulate_turbines"] = simulate_turbines
+    
+    def write_grid(self, project_path: StrOrPath,
+                         dx: Num,
+                         dy: Num,
+                         x0: Num,
+                         x1: Num,
+                         y0: Num,
+                         y1: Num) -> AnyByStrDict:
+        net_path = Path(project_path) / "input" / "FlowFM_net.nc"
+        return write_fm_rectangle(net_path, dx, dy, x0, x1, y0, y1)
+
+
+class _StructuredTemplateExtras(_BaseTemplateExtras):
+    
+    def data_hook(self, case: CaseStudy,
+                        data: AnyByStrDict):
         
-        template_path = Path(self._template_tmp.name)
-        project_path = Path(project_path)
+        # Add Turbines section if requested
+        if case.simulate_turbines:
+            simulate_turbines = "Filtrb = #turbines.ini#"
+        else:
+            simulate_turbines = ""
         
-        # Inform the type checker that we have Num for single value cases
-        dx = cast(Num, case.dx)
-        dy = cast(Num, case.dy)
-        x0 = cast(Num, case.x0)
-        x1 = cast(Num, case.x1)
-        y0 = cast(Num, case.y0)
-        y1 = cast(Num, case.y1)
-        
-        copy(template_path, project_path, data=data, exist_ok=exist_ok)
-        write_fm_rectangle(Path(project_path) / "input" / "FlowFM_net.nc",
-                           dx,
-                           dy,
-                           x0,
-                           x1,
-                           y0,
-                           y1)
+        data["simulate_turbines"] = simulate_turbines
+        data["date"] = f"{datetime.today().strftime('%Y-%m-%d, %H:%M:%S')}"
+        data["version"] = f"{version('SNL-Delft3D-CEC-Verify')}"
+        data["os"] = f"{platform.system()}"
+    
+    def write_grid(self, project_path: StrOrPath,
+                         dx: Num,
+                         dy: Num,
+                         x0: Num,
+                         x1: Num,
+                         y0: Num,
+                         y1: Num) -> AnyByStrDict:
+        return write_structured_rectangle(project_path, dx, dy, x0, x1, y0, y1)
