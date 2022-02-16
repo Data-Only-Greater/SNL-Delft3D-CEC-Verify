@@ -8,7 +8,7 @@ from shapely.geometry import box # type: ignore
 from .fm import Rectangular as RectangularFM
 from .fm import write as writeFM
 from .structured import write_rectangle as write_structured_rectangle
-from ..types import Num, StrOrPath
+from ..types import AnyByStrDict, Num, StrOrPath
 from .._docs import docstringtemplate
 
 __all__ = ["write_fm_rectangle", "write_structured_rectangle"]
@@ -21,7 +21,7 @@ def write_fm_rectangle(path: StrOrPath,
                        x0: Num = 0,
                        x1: Num = 18,
                        y0: Num = 1,
-                       y1: Num = 5):
+                       y1: Num = 5) -> AnyByStrDict:
     """Create a rectangular Delft3D flexible mesh grid, in a rectangular 
     domain (``x0``, ``y0``, ``x1``, ``y1``), and save to the given path, in
     netCDF format.
@@ -41,3 +41,5 @@ def write_fm_rectangle(path: StrOrPath,
     mesh.generate_within_polygon(poly, dx, dy)
     mesh.altitude_constant(np.nan)
     writeFM(mesh, str(path))
+    
+    return {}

@@ -146,10 +146,12 @@ def test_make_eta_y(x, y):
 
 def test_make_enc():
     
-    x = [0] * 12
-    y = [0] * 3
+    m0 = 1
+    m1 = 12
+    n0 = 1
+    n1 = 3
     
-    test = make_enc(x, y)
+    test = make_enc(m0, m1, n0, n1)
     
     assert len(test) == 5
     assert test[0] == "     1     1"
@@ -158,30 +160,6 @@ def test_make_enc():
     assert test[3] == "     1     3"
     assert test[4] == test[0]
 
-
-def test_make_bnd():
-    
-    x = [0] * 12
-    y = [0] * 3
-    
-    test = make_bnd(x, y)
-    
-    assert len(test) == 2
-    
-    assert "     1     1     1     3" in test[0]
-    upstream = test[0].split()
-    
-    assert upstream[1] == "T"
-    assert upstream[2] == "T"
-    assert float(upstream[7]) == 0.0
-    assert upstream[8] == "Logarithmic"
-    
-    assert "    12     1    12     3" in test[1]
-    downstream = test[1].split()
-    
-    assert downstream[1] == "Z"
-    assert downstream[2] == "T"
-    assert float(upstream[7]) == 0.0
 
 
 def test_make_d3d():

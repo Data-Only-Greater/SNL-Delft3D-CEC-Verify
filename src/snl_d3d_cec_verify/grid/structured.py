@@ -10,7 +10,7 @@ from datetime import datetime
 from importlib.metadata import version
 
 from .shared import generate_grid_xy
-from ..types import Num, StrOrPath
+from ..types import AnyByStrDict, Num, StrOrPath
 from .._docs import docstringtemplate
 
 
@@ -21,7 +21,7 @@ def write_rectangle(path: StrOrPath,
                     x0: Num = 0,
                     x1: Num = 18,
                     y0: Num = 1,
-                    y1: Num = 5):
+                    y1: Num = 5) -> AnyByStrDict:
     """Create a rectangular Delft3D structured mesh grid, in a rectangular 
     domain (``x0``, ``y0``, ``x1``, ``y1``), with discharge and water level 
     boundaries, and save to the given path as``D3D.grd``, ``D3D.enc`` and 
@@ -40,6 +40,10 @@ def write_rectangle(path: StrOrPath,
     xsize = x1 - x0
     ysize = y1 - y0
     x, y = [tuple(v) for v in generate_grid_xy(x0, y0, xsize, ysize, dx, dy)]
+    m0 = 1
+    m1 = x0 + len(x) - 1
+    n0 = 1
+    n1 = y0 + len(y) - 1
     
     msgs = make_header(x, y) + make_eta_x(x, y) + make_eta_y(x, y)
     msgs = [v + "\n" for v in msgs]
@@ -49,7 +53,7 @@ def write_rectangle(path: StrOrPath,
     with open(grd_path, "w") as f:
         f.writelines(msgs)
     
-    msgs = make_enc(x, y)
+    msgs = make_enc(m0, m1, n0, n1)
     msgs = [v + "\n" for v in msgs]
     
     enc_path = Path(path) / "D3D.enc"
@@ -57,13 +61,18 @@ def write_rectangle(path: StrOrPath,
     with open(enc_path, "w") as f:
         f.writelines(msgs)
     
-    msgs = make_bnd(x, y)
+    msgs = make_d3d()
     msgs = [v + "\n" for v in msgs]
     
-    bnd_path = Path(path) / "D3D.bnd"
+    d3d_path = Path(path) / "D3D.d3d"
     
-    with open(bnd_path, "w") as f:
+    with open(d3d_path, "w") as f:
         f.writelines(msgs)
+    
+    return {"m0": m0,
+            "m1": m1,
+            "n0": n0,
+            "n1": n1}
 
 
 def make_header(x: Sequence[Num],
@@ -124,36 +133,18 @@ def _make_eta(x: Sequence[Num],
     return msgs
 
 
-def make_enc(x: Sequence[Num],
-             y: Sequence[Num]) -> List[str]:
+def make_enc(m0: Num,
+             m1: Num,
+             n0: Num,
+             n1: Num) -> List[str]:
     
-    x0 = 1
-    x1 = x0 + len(x) - 1
-    y0 = 1
-    y1 = y0 + len(y) - 1
     template = " {:>5} {:>5}"
     
-    return [template.format(x0, y0),
-            template.format(x1, y0),
-            template.format(x1, y1),
-            template.format(x0, y1),
-            template.format(x0, y0)]
-
-
-def make_bnd(x: Sequence[Num],
-             y: Sequence[Num]) -> List[str]:
-    
-    x0 = 1
-    x1 = x0 + len(x) - 1
-    y0 = 1
-    y1 = y0 + len(y) - 1
-    
-    up_msg = (f"Upstream             T T {x0:>5} {y0:>5} {x0:>5} {y1:>5}  "
-              "0.0000000e+000 Logarithmic")
-    down_msg = (f"Downstream           Z T {x1:>5} {y0:>5} {x1:>5} {y1:>5}  "
-                "0.0000000e+000")
-    
-    return [up_msg, down_msg]
+    return [template.format(m0, n0),
+            template.format(m1, n0),
+            template.format(m1, n1),
+            template.format(m0, n1),
+            template.format(m0, n0)]
 
 
 def make_d3d() -> List[str]:
