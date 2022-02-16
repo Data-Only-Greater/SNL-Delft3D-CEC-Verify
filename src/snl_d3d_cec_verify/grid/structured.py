@@ -24,8 +24,8 @@ def write_rectangle(path: StrOrPath,
                     y1: Num = 5) -> AnyByStrDict:
     """Create a rectangular Delft3D structured mesh grid, in a rectangular 
     domain (``x0``, ``y0``, ``x1``, ``y1``), with discharge and water level 
-    boundaries, and save to the given path as``D3D.grd``, ``D3D.enc`` and 
-    ``D3D.d3d``.
+    boundaries, save to the given path as ``D3D.grd`` and ``D3D.enc``, and 
+    and return the range of the grid indices (``m`` x ``n``).
     
     :param path: destination path for the grid file
     :param dx: grid spacing in the x-direction, in metres
@@ -34,6 +34,13 @@ def write_rectangle(path: StrOrPath,
     :param x1: maximum x-value, in metres, defaults to {x1}
     :param y0: minimum y-value, in metres, defaults to {y0}
     :param y1: maximum y-value, in metres, defaults to {y1}
+    
+    :return: Returns a dictionary with the following keys:
+        
+        - ``"m0"``: lowest index in the ``m`` direction
+        - ``"m1"``: highest index in the ``m`` direction
+        - ``"n0"``: lowest index in the ``n`` direction
+        - ``"n1"``: highest index in the ``n`` direction
     
     """
     
