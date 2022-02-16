@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import platform
-from typing import Callable, List, Sequence
+from typing import Callable, List, Sequence, Tuple
 from pathlib import Path
 from datetime import datetime
 from importlib.metadata import version
@@ -40,10 +40,7 @@ def write_rectangle(path: StrOrPath,
     xsize = x1 - x0
     ysize = y1 - y0
     x, y = [tuple(v) for v in generate_grid_xy(x0, y0, xsize, ysize, dx, dy)]
-    m0 = 1
-    m1 = x0 + len(x) - 1
-    n0 = 1
-    n1 = y0 + len(y) - 1
+    m0, m1, n0, n1 = get_mn(x, y)
     
     msgs = make_header(x, y) + make_eta_x(x, y) + make_eta_y(x, y)
     msgs = [v + "\n" for v in msgs]
@@ -59,14 +56,6 @@ def write_rectangle(path: StrOrPath,
     enc_path = Path(path) / "D3D.enc"
     
     with open(enc_path, "w") as f:
-        f.writelines(msgs)
-    
-    msgs = make_d3d()
-    msgs = [v + "\n" for v in msgs]
-    
-    d3d_path = Path(path) / "D3D.d3d"
-    
-    with open(d3d_path, "w") as f:
         f.writelines(msgs)
     
     return {"m0": m0,
@@ -133,6 +122,16 @@ def _make_eta(x: Sequence[Num],
     return msgs
 
 
+def get_mn(x: Sequence[Num],
+           y: Sequence[Num]) -> Tuple[int, int, int, int]:
+    
+    m0 = n0 = 1
+    m1 = m0 + len(x)
+    n1 = n0 + len(y)
+    
+    return (m0, m1, n0, n1)
+
+
 def make_enc(m0: Num,
              m1: Num,
              n0: Num,
@@ -145,20 +144,3 @@ def make_enc(m0: Num,
             template.format(m1, n1),
             template.format(m0, n1),
             template.format(m0, n0)]
-
-
-def make_d3d() -> List[str]:
-    
-    msgs = [
-        "[FileInformation]",
-        "  FileGeneratedBy  = Data Only Greater, SNL-Delft3D-CEC-Verify "
-       f"Version {version('SNL-Delft3D-CEC-Verify')} ({platform.system()})",
-        "  FileCreationDate = "
-       f"{datetime.today().strftime('%Y-%m-%d, %H:%M:%S')}",
-        "  FileVersion      = 0.02",
-        "[Grid]",
-        "  Type        = RGF",
-        "  FileName    = D3D.grd"
-        ]
-    
-    return msgs
