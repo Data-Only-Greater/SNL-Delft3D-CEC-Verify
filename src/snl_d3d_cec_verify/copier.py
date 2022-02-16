@@ -3,8 +3,9 @@
 import os
 import shutil
 import posixpath
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from pathlib import Path
+from contextlib import contextmanager
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
@@ -13,6 +14,7 @@ from ._docs import docstringtemplate
 
 
 @docstringtemplate
+@contextmanager
 def copy(src_path: StrOrPath,
          dst_path: StrOrPath,
          data: Optional[AnyByStrDict] = None,
@@ -77,21 +79,31 @@ def copy(src_path: StrOrPath,
         
         to_copy.mkdir(parents=True)
     
-    relative_paths = _get_posix_relative_paths(src_path)
-    env = Environment(loader=FileSystemLoader(str(src_path)),
-                      keep_trailing_newline=True)
+    (relative_dir_paths,
+     relative_file_paths) = _get_posix_relative_paths(src_path)
+    
+    for rel_path in relative_dir_paths:
+        _dir_copy(dst_path, rel_path)
+    
     if data is None: data = {}
     
-    for rel_path in relative_paths:
+    yield data
+    
+    env = Environment(loader=FileSystemLoader(str(src_path)),
+                      keep_trailing_newline=True)
+    
+    for rel_path in relative_file_paths:
         try:
             _template_copy(env, dst_path, rel_path, data)
         except (UnicodeDecodeError, TemplateNotFound):
             _basic_copy(src_path, dst_path, rel_path)
 
 
-def _get_posix_relative_paths(root: StrOrPath) -> List[str]:
+def _get_posix_relative_paths(root: StrOrPath) -> Tuple[List[str],
+                                                        List[str]]:
     
-    all_paths = []
+    file_paths = []
+    dir_paths = []
     
     for abs_dir, _, files in os.walk(root):
         
@@ -101,20 +113,27 @@ def _get_posix_relative_paths(root: StrOrPath) -> List[str]:
             rel_dir = ""
         else:
             posix_dir = rel_dir.replace(os.sep, posixpath.sep)
-            all_paths.append(posix_dir)
+            dir_paths.append(posix_dir)
         
         for file_name in files:
             rel_file = os.path.join(rel_dir, file_name)
             posix_file = rel_file.replace(os.sep, posixpath.sep)
-            all_paths.append(posix_file)
+            file_paths.append(posix_file)
     
-    return sorted(all_paths)
+    return sorted(dir_paths), sorted(file_paths)
+
+
+def _dir_copy(dst_path: StrOrPath,
+              rel_path: str):
+    
+    to_copy = Path(dst_path).joinpath(rel_path)
+    to_copy.mkdir()
 
 
 def _template_copy(env: Environment,
-                  dst_path: StrOrPath,
-                  rel_path: str,
-                  data: AnyByStrDict):
+                   dst_path: StrOrPath,
+                   rel_path: str,
+                   data: AnyByStrDict):
     
     to_copy = Path(dst_path).joinpath(rel_path)
     template = env.get_template(rel_path)
@@ -125,14 +144,9 @@ def _template_copy(env: Environment,
 
 
 def _basic_copy(src_path: StrOrPath,
-               dst_path: StrOrPath,
-               rel_path: str):
+                dst_path: StrOrPath,
+                rel_path: str):
     
     from_copy = Path(src_path).joinpath(rel_path)
     to_copy = Path(dst_path).joinpath(rel_path)
-    
-    if from_copy.is_dir():
-        to_copy.mkdir()
-        return
-    
     shutil.copy(from_copy, to_copy)
