@@ -227,16 +227,42 @@ class _StructuredTemplateExtras(_BaseTemplateExtras):
     def data_hook(self, case: CaseStudy,
                         data: AnyByStrDict):
         
-        # Add Turbines section if requested
-        if case.simulate_turbines:
-            simulate_turbines = "Filtrb = #turbines.ini#"
-        else:
-            simulate_turbines = ""
-        
-        data["simulate_turbines"] = simulate_turbines
         data["date"] = f"{datetime.today().strftime('%Y-%m-%d, %H:%M:%S')}"
         data["version"] = f"{version('SNL-Delft3D-CEC-Verify')}"
         data["os"] = f"{platform.system()}"
+        
+        if not case.simulate_turbines:
+            data["simulate_turbines"] = ""
+            return
+        
+        data["simulate_turbines"] = "Filtrb = #turbines.ini#"
+        
+        # Inform the type checker that we have Num for single value cases
+        dx = cast(Num, case.dx)
+        dy = cast(Num, case.dy)
+        x0 = cast(Num, case.x0)
+        x1 = cast(Num, case.x1)
+        y0 = cast(Num, case.y0)
+        y1 = cast(Num, case.y1)
+        
+        # If the turbine position lies on a grid line move it slightly
+        xsize = x1 - x0
+        ysize = y1 - y0
+        
+        x, y = generate_grid_xy(x0,
+                                y0,
+                                xsize,
+                                ysize,
+                                dx,
+                                dy)
+        
+        micrometre = 1e-6
+        
+        if np.isclose(case.turb_pos_x, x).any():
+            data["turb_pos_x"] += micrometre
+        
+        if np.isclose(case.turb_pos_y, y).any():
+            data["turb_pos_y"] += micrometre
     
     def write_grid(self, project_path: StrOrPath,
                          dx: Num,
