@@ -213,8 +213,10 @@ class MycekStudy(CaseStudy):
     :param dx: grid spacing in x-directions, in meters. Defaults to {dx}
     :param dy: grid spacing in y-directions, in meters. Defaults to {dy}
     :param sigma: number of vertical layers, defaults to {sigma}
-    :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
-    :param dt_init: initial time step, in seconds. Defaults to {dt_init}
+    :param dt_max: maximum time step, in seconds. Applies to the ``'fm'``
+        model only. Defaults to {dt_max}
+    :param dt_init: initial time step, in seconds. For the ``'structured'``
+        model, this is the fixed time step. Defaults to {dt_init}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
     :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
@@ -228,9 +230,11 @@ class MycekStudy(CaseStudy):
     :param simulate_turbines: simulate turbines, defaults to
         {simulate_turbines}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
-        filter. Defaults to {horizontal_momentum_filter}
+        filter. Applies to the ``'fm'`` model only. Defaults to 
+        {horizontal_momentum_filter}
     :param stats_interval: interval for simulation progress output, in seconds
-        of simulation time. Defaults to {stats_interval}
+        of simulation time. Applies to the ``'fm'`` model only. Defaults to 
+        {stats_interval}
     :param restart_interval: interval for restart file output, in seconds of
         simulation time. Defaults to {restart_interval}
     
