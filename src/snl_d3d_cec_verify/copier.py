@@ -76,6 +76,8 @@ def copy_after(src_path: StrOrPath,
     template files. The template files are then written when the context is 
     closed. For example:
     
+    >>> import tempfile
+    >>> from pathlib import Path
     >>> with tempfile.TemporaryDirectory() as tmpdirname:
     ...     template = Path(tmpdirname) / "input"
     ...     template.mkdir()

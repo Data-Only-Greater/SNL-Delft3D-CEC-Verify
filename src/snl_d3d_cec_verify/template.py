@@ -28,14 +28,13 @@ from ._docs import docstringtemplate
 class Template:
     """Class for creating Delft3D projects from templates
     
-    Utilises the :func:`.copier.copy_after` context manager to fill the
-    template and the :func:`.grid.write_fm_rectangle` function to create the 
-    flexible mesh grid. Note that the template files are copied on 
-    initialization, therefore changes to the template source will not affect 
-    the object's output.
+    Utilises the :mod:`.copier` and :mod:`.grid` subpackages to generate 
+    Delft3D models from templates and type-specific grid generation routines. 
+    Note that the template files are copied on initialization, therefore 
+    changes to the template source will not affect the object's output.
     
     Call a Template object with a length one :class:`.CaseStudy` object and
-    a path at which to create a Delft3D project. For example:
+    a path at which to create a flexible-mesh Delft3D project. For example:
     
     >>> import pprint
     >>> import tempfile
@@ -56,13 +55,25 @@ class Template:
      'turbines.ini']
     
     
-    :param template_path: path to the Delft3D project template, defaults to
-        ``Path("./templates/fm")``
+    Note that for the ``'structured'`` model, if the turbine is located on
+    a grid line then it will be shifted very slightly in order to avoid a bug 
+    in SNL-Delft3D-CEC.
+    
+    :param template_type: type of Delft3D project to generate. Valid options
+        are:
+        
+        - ``'fm'``: create a flexible mesh model
+        - ``'structured'``: create a structured mesh model
+        
+        Defaults to {template_type}
+    :param template_path: optional path to the Delft3D project template
     :param exist_ok: if True, allow an existing path to be overwritten,
         defaults to {exist_ok}
     :param no_template: variables to ignore in the given
         :class:`.CaseStudy` objects when filling templates, defaults to
         ``["dx", "dy"]``
+    
+    :raises ValueError: if :attr:`~template_type` has an invalid value
     
     .. automethod:: __call__
     
@@ -179,7 +190,7 @@ class _BaseTemplateExtras(metaclass=ABCMeta):
     @abstractmethod
     def data_hook(self, case: CaseStudy,
                         data: AnyByStrDict):
-        pass
+        pass    # pragma: no cover
     
     @abstractmethod
     def write_grid(self, project_path: StrOrPath,
@@ -189,7 +200,7 @@ class _BaseTemplateExtras(metaclass=ABCMeta):
                          x1: Num,
                          y0: Num,
                          y1: Num) -> AnyByStrDict:
-        pass
+        pass    # pragma: no cover
 
 
 class _FMTemplateExtras(_BaseTemplateExtras):

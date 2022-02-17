@@ -47,8 +47,10 @@ class CaseStudy:
     :param y0: minimum y-value, in metres, defaults to {y0}
     :param y1: maximum y-value, in metres, defaults to {y1}
     :param bed_level: uniform bed level, in metres, defaults to {bed_level}
-    :param dt_max: maximum time step, in seconds. Defaults to {dt_max}
-    :param dt_init: initial time step, in seconds. Defaults to {dt_init}
+    :param dt_max: maximum time step, in seconds. Applies to the ``'fm'``
+        model only. Defaults to {dt_max}
+    :param dt_init: initial time step, in seconds. For the ``'structured'``
+        model, this is the fixed time step. Defaults to {dt_init}
     :param turb_pos_x: turbine x-position, in meters. Defaults to {turb_pos_x}
     :param turb_pos_y: turbine y-position, in meters. Defaults to {turb_pos_y}
     :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
@@ -65,9 +67,11 @@ class CaseStudy:
     :param simulate_turbines: simulate turbines, defaults to
         {simulate_turbines}
     :param horizontal_momentum_filter: use high-order horizontal momentum 
-        filter. Defaults to {horizontal_momentum_filter}
+        filter. Applies to the ``'fm'`` model only. Defaults to 
+        {horizontal_momentum_filter}
     :param stats_interval: interval for simulation progress output, in seconds
-        of simulation time. Defaults to {stats_interval}
+        of simulation time. Applies to the ``'fm'`` model only. Defaults to 
+        {stats_interval}
     :param restart_interval: interval for restart file output, in seconds of
         simulation time. Defaults to {restart_interval}
     
@@ -84,8 +88,14 @@ class CaseStudy:
     y0: OneOrMany[Num] = 1 #: minimum y-value, in metres
     y1: OneOrMany[Num] = 5 #: maximum y-value, in metres
     bed_level: OneOrMany[Num] = -2 #: uniform bed level, in metres
-    dt_max: OneOrMany[Num] = 1 #: maximum time step, in seconds
-    dt_init: OneOrMany[Num] = 1 #: initial time step, in seconds
+    
+    #: maximum time step, in seconds. Applies to the ``'fm'`` model only
+    dt_max: OneOrMany[Num] = 1
+    
+    #: initial time step, in seconds. For the ``'structured'`` model, this 
+    # is the fixed time step
+    dt_init: OneOrMany[Num] = 1
+    
     turb_pos_x: OneOrMany[Num] = 6 #: turbine x-position, in meters
     turb_pos_y: OneOrMany[Num] = 3 #: turbine y-position, in meters
     turb_pos_z: OneOrMany[Num] = -1 #: turbine z-position, in meters
@@ -108,10 +118,12 @@ class CaseStudy:
     #: simulate turbines
     simulate_turbines: OneOrMany[bool] = True
     
-    #: use high-order horizontal momentum filter
+    #: use high-order horizontal momentum filter. Applies to the ``'fm'`` 
+    # model only
     horizontal_momentum_filter: OneOrMany[bool] = True
     
-    #: interval for simulation progress output, in seconds
+    #: interval for simulation progress output, in seconds. Applies to the 
+    # ``'fm'`` model only
     stats_interval: OneOrManyOptional[Num] = None
     
     #:interval for restart file output, in seconds

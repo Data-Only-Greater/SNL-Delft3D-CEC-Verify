@@ -37,10 +37,10 @@ def write_rectangle(path: StrOrPath,
     
     :return: Returns a dictionary with the following keys:
         
-        - ``"m0"``: lowest index in the ``m`` direction
-        - ``"m1"``: highest index in the ``m`` direction
-        - ``"n0"``: lowest index in the ``n`` direction
-        - ``"n1"``: highest index in the ``n`` direction
+        - ``'m0'``: lowest index in the ``m`` direction
+        - ``'m1'``: highest index in the ``m`` direction
+        - ``'n0'``: lowest index in the ``n`` direction
+        - ``'n1'``: highest index in the ``n`` direction
     
     """
     
