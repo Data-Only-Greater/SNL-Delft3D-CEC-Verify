@@ -14,7 +14,7 @@ from distutils.dir_util import copy_tree
 from importlib.metadata import version
 
 from .cases import CaseStudy
-from .copier import copy
+from .copier import copy_after
 from .grid import write_fm_rectangle, write_structured_rectangle
 from .types import AnyByStrDict, Num, StrOrPath
 from ._docs import docstringtemplate
@@ -30,10 +30,11 @@ def package_template_path(template_type) -> Path:
 class Template:
     """Class for creating Delft3D projects from templates
     
-    Utilises the :func:`.copier.copy` function to fill the template and the
-    :func:`.grid.write_fm_rectangle` function to create the flexible mesh 
-    grid. Note that the template files are copied on initialization, therefore 
-    changes to the template source will not affect the object's output.
+    Utilises the :func:`.copier.copy_after` context manager to fill the
+    template and the :func:`.grid.write_fm_rectangle` function to create the 
+    flexible mesh grid. Note that the template files are copied on 
+    initialization, therefore changes to the template source will not affect 
+    the object's output.
     
     Call a Template object with a length one :class:`.CaseStudy` object and
     a path at which to create a Delft3D project. For example:
@@ -159,10 +160,10 @@ class Template:
         template_path = Path(self._template_tmp.name)
         project_path = Path(project_path)
         
-        with copy(template_path,
-                  project_path,
-                  data=data,
-                  exist_ok=exist_ok) as data:
+        with copy_after(template_path,
+                        project_path,
+                        data=data,
+                        exist_ok=exist_ok) as data:
             
             grid_data = self._extras.write_grid(project_path,
                                                 dx,
