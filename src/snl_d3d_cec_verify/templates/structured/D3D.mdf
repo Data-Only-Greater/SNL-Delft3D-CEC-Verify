@@ -1,5 +1,5 @@
 Ident  = #Delft3D-FLOW 3.56.29165#
-Runtxt = #SNL-Delft3D-CEC-Verify Simulation#
+Runtxt = #SNL-Delft3D-CEC-Verify#
 Filcco = #D3D.grd#
 Anglat = 0.0000000e+000
 Grdang = 0.0000000e+000
@@ -73,10 +73,12 @@ PHhydr = #NNNNNN#
 PHderv = #NNN#       
 PHproc = #NNNNNNNNNN#
 PHflux = #NNNN#      
-Prhis  = 0.0000000e+000 0.0000000e+000 3.6000000e+003
+Prhis  = 0.0000000e+000 0.0000000e+000 0.0000000e+000
 Flmap  = 0.0000000e+000 3.6000000e+003 3.6000000e+003
-Flhis  = 0.0000000e+000 0.0000000e+000 3.6000000e+003
-Flpp   = 0.0000000e+000 0.0000000e+000 3.6000000e+003
+Flhis  = 0.0000000e+000 0.0000000e+000 0.0000000e+000
+Flpp   = 0.0000000e+000 0.0000000e+000 0.0000000e+000
 Flrst  = {{ '{:<13.7E}'.format(restart_interval) }}
+FlNcdf = #map#
+ncFormat = 4
 Online = #N#
 {{ simulate_turbines }}
