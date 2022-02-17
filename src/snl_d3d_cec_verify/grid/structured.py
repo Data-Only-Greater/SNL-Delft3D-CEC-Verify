@@ -47,9 +47,9 @@ def write_rectangle(path: StrOrPath,
     xsize = x1 - x0
     ysize = y1 - y0
     x, y = [tuple(v) for v in generate_grid_xy(x0, y0, xsize, ysize, dx, dy)]
-    m0, m1, n0, n1 = get_mn(x, y)
+    m0, m1, n0, n1 = _get_mn(x, y)
     
-    msgs = make_header(x, y) + make_eta_x(x, y) + make_eta_y(x, y)
+    msgs = _make_header(x, y) + _make_eta_x(x, y) + _make_eta_y(x, y)
     msgs = [v + "\n" for v in msgs]
     
     grd_path = Path(path) / "D3D.grd"
@@ -57,7 +57,7 @@ def write_rectangle(path: StrOrPath,
     with open(grd_path, "w") as f:
         f.writelines(msgs)
     
-    msgs = make_enc(m0, m1, n0, n1)
+    msgs = _make_enc(m0, m1, n0, n1)
     msgs = [v + "\n" for v in msgs]
     
     enc_path = Path(path) / "D3D.enc"
@@ -71,8 +71,18 @@ def write_rectangle(path: StrOrPath,
             "n1": n1}
 
 
-def make_header(x: Sequence[Num],
-                y: Sequence[Num]) -> List[str]:
+def _get_mn(x: Sequence[Num],
+            y: Sequence[Num]) -> Tuple[int, int, int, int]:
+    
+    m0 = n0 = 1
+    m1 = m0 + len(x)
+    n1 = n0 + len(y)
+    
+    return (m0, m1, n0, n1)
+
+
+def _make_header(x: Sequence[Num],
+                 y: Sequence[Num]) -> List[str]:
     
     msgs = [
          "*",
@@ -90,14 +100,14 @@ def make_header(x: Sequence[Num],
     return msgs
 
 
-def make_eta_x(x: Sequence[Num],
-               y: Sequence[Num]) -> List[str]:
+def _make_eta_x(x: Sequence[Num],
+                y: Sequence[Num]) -> List[str]:
     makex = lambda x, y, i, j, nnums: x[5 * j:5 * (j + 1)]
     return _make_eta(x, y, makex)
 
 
-def make_eta_y(x: Sequence[Num],
-               y: Sequence[Num]) -> List[str]:
+def _make_eta_y(x: Sequence[Num],
+                y: Sequence[Num]) -> List[str]:
     makey = lambda x, y, i, j, nnums: [y[i]] * nnums
     return _make_eta(x, y, makey)
 
@@ -129,20 +139,10 @@ def _make_eta(x: Sequence[Num],
     return msgs
 
 
-def get_mn(x: Sequence[Num],
-           y: Sequence[Num]) -> Tuple[int, int, int, int]:
-    
-    m0 = n0 = 1
-    m1 = m0 + len(x)
-    n1 = n0 + len(y)
-    
-    return (m0, m1, n0, n1)
-
-
-def make_enc(m0: Num,
-             m1: Num,
-             n0: Num,
-             n1: Num) -> List[str]:
+def _make_enc(m0: Num,
+              m1: Num,
+              n0: Num,
+              n1: Num) -> List[str]:
     
     template = " {:>5} {:>5}"
     
