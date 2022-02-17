@@ -6,6 +6,7 @@ import posixpath
 from typing import List, Optional, Tuple
 from pathlib import Path
 from contextlib import contextmanager
+from collections.abc import Generator
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
@@ -14,7 +15,6 @@ from ._docs import docstringtemplate
 
 
 @docstringtemplate
-@contextmanager
 def copy(src_path: StrOrPath,
          dst_path: StrOrPath,
          data: Optional[AnyByStrDict] = None,
@@ -44,6 +44,58 @@ def copy(src_path: StrOrPath,
         values being the replacement values.
     :param exist_ok:  if True, allow an existing path to be overwritten,
         defaults to {exist_ok}
+    
+    :raises ValueError: if the given :class:`.CaseStudy` object is not length
+        one or if :attr:`~template_path` does not exist
+    :raises FileExistsError: if the project path exists, but :attr:`~exist_ok`
+        is False
+    :raises RuntimeError: if trying to remove a non-basic file or folder
+    
+    """
+    
+    with copy_after(src_path, dst_path, data, exist_ok):
+        pass
+    
+    return
+
+
+@docstringtemplate
+@contextmanager
+def copy_after(src_path: StrOrPath,
+               dst_path: StrOrPath,
+               data: Optional[AnyByStrDict] = None,
+               exist_ok: bool = False) -> Generator[AnyByStrDict, None, None]:
+    """Context manaager for recursively copying and populating a source folder 
+    containing templated or non-templated files to the given destination
+    folder.
+    
+    Templates are rendered using the :meth:`jinja2.Template.render` method. 
+    The template's directory structure is created on entering the context and 
+    the template data dictionary is yielded. This allows generation of data, 
+    which requires the directory structure to exist, before writing to the 
+    template files. The template files are then written when the context is 
+    closed. For example:
+    
+    >>> with tempfile.TemporaryDirectory() as tmpdirname:
+    ...     template = Path(tmpdirname) / "input"
+    ...     template.mkdir()
+    ...     p = template / "hello.txt"
+    ...     _ = p.write_text("{{{{ x }}}}\\n")
+    ...     result = Path(tmpdirname) / "output"
+    ...     with copy_after(template, result) as data:
+    ...          data["x"] = "Hello!"
+    ...     print((result / "hello.txt").read_text())
+    Hello!
+    
+    :param src_path: path to the folder containing the source files
+    :param dst_path: path to the destination folder
+    :param data: dictionary containing the data used to populate the template
+        files. The keys are the variable names used in the template with the
+        values being the replacement values.
+    :param exist_ok:  if True, allow an existing path to be overwritten,
+        defaults to {exist_ok}
+    
+    :yields: template data dictionary
     
     :raises ValueError: if the given :class:`.CaseStudy` object is not length
         one or if :attr:`~template_path` does not exist
