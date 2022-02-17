@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from .types import StrOrPath
 from ._docs import docstringtemplate
 
-__all__ = ["run_dflowfm"]
+__all__ = ["run_dflowfm", "run_dflow2d3d"]
 
 
 @docstringtemplate
@@ -209,10 +209,54 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
         could not be found
     :raises RuntimeError: if the Delft3D simulation outputs to stderr, for any
         reason
-
+    
     """
     
-    dflowfm_entry_point = _get_dflowfm_entry_point(d3d_bin_path)
+    return _run_script("dflowfm",
+                       d3d_bin_path,
+                       model_path,
+                       omp_num_threads,
+                       "FlowFM.mdu")
+
+
+@docstringtemplate
+def run_dflow2d3d(d3d_bin_path: StrOrPath,
+                  model_path: StrOrPath,
+                  omp_num_threads: int = 1) -> subprocess.Popen:
+    """Run a Delft3D structured mesh simulation, given an existing Delft3D
+    installation and a prepared model.
+    
+    Currently only available for Windows and Linux.
+    
+    :param d3d_bin_path: path to the ``bin`` folder generated when compiling
+        Delft3D
+    :param model_path: path to folder containing the Delft3D model files
+    :param omp_num_threads: The number of CPU threads to use, defaults to
+        {omp_num_threads}
+    
+    :raises OSError: if function is called on an unsupported operating system
+    :raises FileNotFoundError: if the Delft3D entry point or model folder
+        could not be found
+    :raises RuntimeError: if the Delft3D simulation outputs to stderr, for any
+        reason
+    
+    """
+    
+    return _run_script("dflow2d3d",
+                       d3d_bin_path,
+                       model_path,
+                       omp_num_threads)
+
+
+def _run_script(name: str,
+                d3d_bin_path: StrOrPath,
+                model_path: StrOrPath,
+                omp_num_threads: int = 1,
+                *args: str) -> subprocess.Popen:
+    
+    if args is None: args = []
+    
+    entry_point = _get_entry_point(d3d_bin_path, name)
     model_path = Path(model_path)
     
     if not model_path.is_dir():
@@ -221,7 +265,9 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     
     env = dict(os.environ)
     env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
-    sp = subprocess.Popen([dflowfm_entry_point, "FlowFM.mdu"],
+    args = [entry_point] + list(args)
+    
+    sp = subprocess.Popen(args,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,
                           cwd=model_path,
@@ -230,26 +276,28 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     return sp
 
 
-def _get_dflowfm_entry_point(d3d_bin_path: StrOrPath) -> Path:
+def _get_entry_point(d3d_bin_path: StrOrPath,
+                     name: str) -> Path:
     
     os_name = platform.system()
     
-    # TODO: convert to match-case when 3.10 is supported by deps
     if os_name == 'Windows':
-        dflowfm_entry_point = Path(d3d_bin_path).joinpath("x64",
-                                                          "dflowfm",
-                                                          "scripts",
-                                                          "run_dflowfm.bat")
+        script = "run_" + name + '.bat'
+        entry_point = Path(d3d_bin_path).joinpath("x64",
+                                                  name,
+                                                  "scripts",
+                                                  script)
     elif os_name == 'Linux':
-        dflowfm_entry_point = Path(d3d_bin_path) / "run_dflowfm.sh"
+        script = "run_" + name + '.sh'
+        entry_point = Path(d3d_bin_path) / script
     else:
         raise OSError(f"Operating system '{os_name}' not supported")
     
-    if not dflowfm_entry_point.is_file():
+    if not entry_point.is_file():
         raise FileNotFoundError("Delft3D script could not be found at "
-                                f"{dflowfm_entry_point}")
+                                f"{entry_point}")
     
-    return dflowfm_entry_point
+    return entry_point
 
 
 def _pipe_reader(pipe: IO,
