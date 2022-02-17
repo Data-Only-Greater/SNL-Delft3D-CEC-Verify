@@ -13,16 +13,14 @@ from dataclasses import dataclass, field, InitVar
 from distutils.dir_util import copy_tree
 from importlib.metadata import version
 
+import numpy as np
+
 from .cases import CaseStudy
 from .copier import copy_after
 from .grid import write_fm_rectangle, write_structured_rectangle
+from .grid.shared import generate_grid_xy
 from .types import AnyByStrDict, Num, StrOrPath
 from ._docs import docstringtemplate
-
-
-def package_template_path(template_type) -> Path:
-    this_dir = os.path.dirname(os.path.realpath(__file__))
-    return Path(this_dir) / "templates" / template_type
 
 
 @docstringtemplate
@@ -100,7 +98,7 @@ class Template:
         self._extras = template_extras_map[template_type]()
         
         if template_path is None:
-            template_path = package_template_path(template_type)
+            template_path = _package_template_path(template_type)
         
         self._template_tmp = tempfile.TemporaryDirectory()
         copy_tree(str(template_path), self._template_tmp.name)
@@ -272,3 +270,8 @@ class _StructuredTemplateExtras(_BaseTemplateExtras):
                          y0: Num,
                          y1: Num) -> AnyByStrDict:
         return write_structured_rectangle(project_path, dx, dy, x0, x1, y0, y1)
+
+
+def _package_template_path(template_type) -> Path:
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    return Path(this_dir) / "templates" / template_type
