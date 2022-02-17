@@ -1,0 +1,26 @@
+table-name           'Boundary Section : 1'
+contents             'Logarithmic         '
+location             'Upstream            '
+time-function        'non-equidistant'
+reference-time       20010101
+time-unit            'seconds'
+interpolation        'linear'
+parameter            'time                '                     unit '[min]'
+parameter            'total discharge (t)  end A'               unit '[m3/s]'
+parameter            'total discharge (t)  end B'               unit '[m3/s]'
+records-in-table     2
+ 0.0000000e+000  {{ '{:<13.7E}'.format(discharge) }}  {{ '{:<13.7E}'.format(discharge) }}
+ 3.6000000e+003  {{ '{:<13.7E}'.format(discharge) }}  {{ '{:<13.7E}'.format(discharge) }}
+table-name           'Boundary Section : 2'
+contents             'Uniform             '
+location             'Downstream          '
+time-function        'non-equidistant'
+reference-time       20010101
+time-unit            'seconds'
+interpolation        'linear'
+parameter            'time                '                     unit '[min]'
+parameter            'water elevation (z)  end A'               unit '[m]'
+parameter            'water elevation (z)  end B'               unit '[m]'
+records-in-table     2
+ 0.0000000e+000  0.0000000e+000  0.0000000e+000
+ 3.6000000e+003  0.0000000e+000  0.0000000e+000

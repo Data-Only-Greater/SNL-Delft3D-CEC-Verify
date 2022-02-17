@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import math
 import platform
-from typing import Callable, List, Sequence
+from typing import Callable, List, Sequence, Tuple
 from pathlib import Path
 from datetime import datetime
 from importlib.metadata import version
 
 from .shared import generate_grid_xy
-from ..types import Num, StrOrPath
+from ..types import AnyByStrDict, Num, StrOrPath
 from .._docs import docstringtemplate
 
 
@@ -21,10 +21,11 @@ def write_rectangle(path: StrOrPath,
                     x0: Num = 0,
                     x1: Num = 18,
                     y0: Num = 1,
-                    y1: Num = 5):
+                    y1: Num = 5) -> AnyByStrDict:
     """Create a rectangular Delft3D structured mesh grid, in a rectangular 
-    domain (``x0``, ``y0``, ``x1``, ``y1``), and save to the given path as
-    ``D3D.grd``.
+    domain (``x0``, ``y0``, ``x1``, ``y1``), with discharge and water level 
+    boundaries, save to the given path as ``D3D.grd`` and ``D3D.enc``, and 
+    and return the range of the grid indices (``m`` x ``n``).
     
     :param path: destination path for the grid file
     :param dx: grid spacing in the x-direction, in metres
@@ -34,23 +35,54 @@ def write_rectangle(path: StrOrPath,
     :param y0: minimum y-value, in metres, defaults to {y0}
     :param y1: maximum y-value, in metres, defaults to {y1}
     
+    :return: Returns a dictionary with the following keys:
+        
+        - ``'m0'``: lowest index in the ``m`` direction
+        - ``'m1'``: highest index in the ``m`` direction
+        - ``'n0'``: lowest index in the ``n`` direction
+        - ``'n1'``: highest index in the ``n`` direction
+    
     """
     
     xsize = x1 - x0
     ysize = y1 - y0
     x, y = [tuple(v) for v in generate_grid_xy(x0, y0, xsize, ysize, dx, dy)]
+    m0, m1, n0, n1 = _get_mn(x, y)
     
-    msgs = make_header(x, y) + make_eta_x(x, y) + make_eta_y(x, y)
+    msgs = _make_header(x, y) + _make_eta_x(x, y) + _make_eta_y(x, y)
     msgs = [v + "\n" for v in msgs]
     
-    file_path = Path(path) / "D3D.grd"
+    grd_path = Path(path) / "D3D.grd"
     
-    with open(file_path, "w") as f:
+    with open(grd_path, "w") as f:
         f.writelines(msgs)
+    
+    msgs = _make_enc(m0, m1, n0, n1)
+    msgs = [v + "\n" for v in msgs]
+    
+    enc_path = Path(path) / "D3D.enc"
+    
+    with open(enc_path, "w") as f:
+        f.writelines(msgs)
+    
+    return {"m0": m0,
+            "m1": m1,
+            "n0": n0,
+            "n1": n1}
 
 
-def make_header(x: Sequence[Num],
-                y: Sequence[Num]) -> List[str]:
+def _get_mn(x: Sequence[Num],
+            y: Sequence[Num]) -> Tuple[int, int, int, int]:
+    
+    m0 = n0 = 1
+    m1 = m0 + len(x)
+    n1 = n0 + len(y)
+    
+    return (m0, m1, n0, n1)
+
+
+def _make_header(x: Sequence[Num],
+                 y: Sequence[Num]) -> List[str]:
     
     msgs = [
          "*",
@@ -68,14 +100,14 @@ def make_header(x: Sequence[Num],
     return msgs
 
 
-def make_eta_x(x: Sequence[Num],
-               y: Sequence[Num]) -> List[str]:
+def _make_eta_x(x: Sequence[Num],
+                y: Sequence[Num]) -> List[str]:
     makex = lambda x, y, i, j, nnums: x[5 * j:5 * (j + 1)]
     return _make_eta(x, y, makex)
 
 
-def make_eta_y(x: Sequence[Num],
-               y: Sequence[Num]) -> List[str]:
+def _make_eta_y(x: Sequence[Num],
+                y: Sequence[Num]) -> List[str]:
     makey = lambda x, y, i, j, nnums: [y[i]] * nnums
     return _make_eta(x, y, makey)
 
@@ -105,3 +137,17 @@ def _make_eta(x: Sequence[Num],
             msg = ' ' * 13
     
     return msgs
+
+
+def _make_enc(m0: Num,
+              m1: Num,
+              n0: Num,
+              n1: Num) -> List[str]:
+    
+    template = " {:>5} {:>5}"
+    
+    return [template.format(m0, n0),
+            template.format(m1, n0),
+            template.format(m1, n1),
+            template.format(m0, n1),
+            template.format(m0, n0)]

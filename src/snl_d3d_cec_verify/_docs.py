@@ -13,7 +13,7 @@ def docstringtemplate(func):
         f = func.__func__
         spec = signature(f)
     
-    defaults = {key: f"``{param.default}``"
+    defaults = {key: f"``{repr(param.default)}``"
                     if not param.default == param.empty
                         else None
                             for key, param in spec.parameters.items()}

@@ -7,9 +7,11 @@ import pytest
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 from snl_d3d_cec_verify.copier import (_get_posix_relative_paths,
+                                       _dir_copy,
                                        _template_copy,
                                        _basic_copy,
-                                       copy)
+                                       copy,
+                                       copy_after)
 
 
 def test_get_posix_relative_paths(tmp_path):
@@ -27,8 +29,34 @@ def test_get_posix_relative_paths(tmp_path):
     p.write_text(content)
     
     # Run the test
-    test = _get_posix_relative_paths(tmp_path)
-    assert test == ['hello.txt', 'sub', 'sub/subhello.txt']
+    (relative_dir_paths,
+     relative_file_paths) = _get_posix_relative_paths(tmp_path)
+    
+    assert relative_dir_paths == ['sub']
+    assert relative_file_paths == ['hello.txt', 'sub/subhello.txt']
+
+
+def test_dir_copy(tmp_path):
+    
+    # Fake a src and destination
+    src_path = tmp_path / "src_path"
+    src_path.mkdir()
+    
+    sub_d = src_path / "sub" / "sub"
+    sub_d.mkdir(parents=True)
+    
+    dst_path = tmp_path / "dst_path"
+    dst_path.mkdir()
+    
+    sub_d = dst_path / "sub"
+    sub_d.mkdir()
+    
+    # Run the test
+    _dir_copy(dst_path, "sub/sub")
+    expected_d = dst_path / "sub" / "sub"
+    
+    assert expected_d.exists()
+    assert expected_d.is_dir()
 
 
 def test_template_copy(tmp_path):
@@ -154,30 +182,7 @@ def test_template_copy_template_not_found(tmp_path):
     assert "sub" in str(excinfo)
 
 
-def test_basic_copy_dir(tmp_path):
-    
-    # Fake a src and destination
-    src_path = tmp_path / "src_path"
-    src_path.mkdir()
-    
-    sub_d = src_path / "sub" / "sub"
-    sub_d.mkdir(parents=True)
-    
-    dst_path = tmp_path / "dst_path"
-    dst_path.mkdir()
-    
-    sub_d = dst_path / "sub"
-    sub_d.mkdir()
-    
-    # Run the test
-    _basic_copy(src_path, dst_path, "sub/sub")
-    expected_d = dst_path / "sub" / "sub"
-    
-    assert expected_d.exists()
-    assert expected_d.is_dir()
-
-
-def test_basic_copy_file(tmp_path):
+def test_basic_copy(tmp_path):
     
     # Fake a src and destination
     src_path = tmp_path / "src_path"
@@ -322,3 +327,33 @@ def test_copy_dst_path_contains_unknown_file(test_path, mocker):
         copy(src_path, dst_path, exist_ok=True)
     
     assert "unhandled file type" in str(excinfo)
+
+
+def test_copy_after(tmp_path):
+    
+    # Fake a src and destination
+    src_path = tmp_path / "src_path"
+    src_path.mkdir()
+    
+    sub_d = src_path / "sub"
+    sub_d.mkdir()
+    
+    p = sub_d / "hello.txt"
+    p.write_text("{{ x }}\n")
+    
+    dst_path = tmp_path / "dst_path"
+    sub_d = dst_path / "sub"
+    
+    # Set the content value
+    expected_text = "content"
+    
+    # Run the test
+    with copy_after(src_path, dst_path) as data:
+        data["x"] = expected_text
+    
+    expected_p = sub_d / "hello.txt"
+    
+    assert expected_p.exists()
+    
+    text = expected_p.read_text()
+    assert text == expected_text + "\n"
