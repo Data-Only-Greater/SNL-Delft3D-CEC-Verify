@@ -265,9 +265,9 @@ def _run_script(name: str,
     
     env = dict(os.environ)
     env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
-    args = [entry_point] + list(args)
+    popen_args = [str(entry_point.resolve())] + list(args)
     
-    sp = subprocess.Popen(args,
+    sp = subprocess.Popen(popen_args,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,
                           cwd=model_path,

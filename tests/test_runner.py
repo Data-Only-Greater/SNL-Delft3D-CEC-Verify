@@ -6,13 +6,14 @@ from subprocess import Popen
 
 import pytest
 
-from snl_d3d_cec_verify.runner import (_get_dflowfm_entry_point,
+from snl_d3d_cec_verify.runner import (_get_entry_point,
+                                       _run_script,
                                        run_dflowfm,
                                        Runner,
                                        LiveRunner)
 
 
-def test_get_dflowfm_entry_point(data_dir):
+def test_get_entry_point(data_dir):
     
     os_name = platform.system()
     
@@ -29,33 +30,50 @@ def test_get_dflowfm_entry_point(data_dir):
     else:
         expected_entry_point = Path(d3d_bin_path) / "run_dflowfm.sh"
     
-    assert _get_dflowfm_entry_point(d3d_bin_path) == expected_entry_point
+    assert _get_entry_point(d3d_bin_path,
+                            "dflowfm") == expected_entry_point
 
 
-def test_get_dflowfm_entry_point_unsupported_os(mocker):
+def test_get_entry_point_unsupported_os(mocker):
     
     os_name = "DOS"
     mocker.patch('snl_d3d_cec_verify.runner.platform.system',
                  return_value=os_name)
     
     with pytest.raises(OSError) as excinfo:
-        _get_dflowfm_entry_point("mock")
+        _get_entry_point("mock", "mock")
     
     assert f"'{os_name}' not supported" in str(excinfo)
 
 
-def test_get_dflowfm_entry_point_missing_script(tmp_path):
+def test_get_entry_point_missing_script(tmp_path):
     
     d3d_bin_path = "mock_bin"
+    name = "mock_name"
     
     with pytest.raises(FileNotFoundError) as excinfo:
-        _get_dflowfm_entry_point(d3d_bin_path)
+        _get_entry_point(d3d_bin_path, name)
     
     assert "script could not be found" in str(excinfo)
     assert d3d_bin_path in str(excinfo)
+    assert name in str(excinfo)
 
 
-def test_run_dflowfm( mocker, tmp_path, data_dir):
+def test_run_script_missing_input_folder(mocker):
+    
+    mocker.patch("snl_d3d_cec_verify.runner._get_entry_point")
+    d3d_bin_path = "mock_bin"
+    model_path = "mock_project"
+    
+    with pytest.raises(FileNotFoundError) as excinfo:
+        _run_script("mock", d3d_bin_path, model_path)
+    
+    assert "Model folder could not be found" in str(excinfo)
+    assert model_path in str(excinfo)
+
+
+@pytest.mark.parametrize("name", ["dflowfm"])
+def test_run_script(mocker, tmp_path, data_dir, name):
     
     from snl_d3d_cec_verify.runner import subprocess
     
@@ -69,7 +87,8 @@ def test_run_dflowfm( mocker, tmp_path, data_dir):
     
     omp_num_threads = 99
     
-    sp = run_dflowfm(d3d_bin_path,
+    sp = _run_script(name,
+                     d3d_bin_path,
                      tmp_path,
                      omp_num_threads)
     
@@ -80,21 +99,6 @@ def test_run_dflowfm( mocker, tmp_path, data_dir):
     
     assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
-
-
-def test_run_dflowfm_missing_input_folder(mocker):
-    
-    mocker.patch("snl_d3d_cec_verify.runner._get_dflowfm_entry_point")
-    d3d_bin_path = "mock_bin"
-    project_path = "mock_project"
-    
-    with pytest.raises(FileNotFoundError) as excinfo:
-        for _ in run_dflowfm(d3d_bin_path,
-                             project_path):
-            pass
-    
-    assert "Model folder could not be found" in str(excinfo)
-    assert project_path in str(excinfo)
 
 
 def test_runner_call(capsys, tmp_path, data_dir):
@@ -148,7 +152,7 @@ def test_runner_call_error(capsys, tmp_path, mocker, data_dir):
     
     run_path = Path(data_dir) / "error" / script
     
-    mocker.patch('snl_d3d_cec_verify.runner._get_dflowfm_entry_point',
+    mocker.patch('snl_d3d_cec_verify.runner._get_entry_point',
                   return_value=run_path)
     
     runner = Runner(d3d_bin_path, show_stdout=True)
@@ -219,7 +223,7 @@ def test_liverunner_call_error(tmp_path, mocker, data_dir):
     
     run_path = Path(data_dir) / "error" / script
     
-    mocker.patch('snl_d3d_cec_verify.runner._get_dflowfm_entry_point',
+    mocker.patch('snl_d3d_cec_verify.runner._get_entry_point',
                   return_value=run_path)
     
     runner = LiveRunner(d3d_bin_path)
