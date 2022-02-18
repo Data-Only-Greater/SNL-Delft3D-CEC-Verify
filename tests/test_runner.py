@@ -108,7 +108,7 @@ def test_run_script(mocker, tmp_path, data_dir):
     cwd = mock_popen.call_args.kwargs['cwd']
     env = mock_popen.call_args.kwargs['env']
     
-    assert popen_args[0] == expected_entry
+    assert Path(popen_args[0]).name == expected_entry
     assert popen_args[1:] == expected_args
     assert cwd == tmp_path
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
@@ -244,9 +244,9 @@ class MockModelRunner(_BaseModelRunner):
 @pytest.mark.parametrize("project_path, expected", [
                             (None, False),
                             (0, True)])
-def test_BaseModelRunner_has_model(project_path, expected):
+def test_BaseModelRunner_is_model(project_path, expected):
     test = MockModelRunner(project_path)
-    assert test.has_model() is expected
+    assert test.is_model() is expected
 
 
 def test_FMModelRunner_get_model_path(mocker):
