@@ -22,8 +22,9 @@ __all__ = ["run_dflowfm", "run_dflow2d3d"]
 @dataclass
 class Runner:
     """A class for running Delft3D models which allow reuse of settings across 
-    multiple projects. Automatically detects if the models uses a flexible or
-    structured mesh.
+    multiple projects. Automatically detects if the model uses a flexible or
+    structured mesh and then calls the appropriate function from the 
+    :mod:`.runner` package.
     
     Call the Runner object with the project path to execute the Delft3D model
     
@@ -85,7 +86,8 @@ class Runner:
 class LiveRunner:
     """A class for running Delft3D models which allow reuse of settings across 
     multiple projects with real time output. Automatically detects if the 
-    models uses a flexible or structured mesh.
+    model uses a flexible or structured mesh and then calls the appropriate 
+    function from the :mod:`.runner` package.
     
     Call the LiveRunner object with the project path to execute the Delft3D
     model and read the output line by line, like a generator
