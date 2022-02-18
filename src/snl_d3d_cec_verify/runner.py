@@ -162,22 +162,22 @@ def _run_model(project_path: StrOrPath,
                d3d_bin_path: StrOrPath,
                omp_num_threads: int = 1) -> subprocess.Popen:
     
-    extra_classes = [_FMModelRunner,
-                     _StructuredModelRunner]
-    extra = None
+    model_runner_classes = [_FMModelRunner,
+                            _StructuredModelRunner]
+    model_runner = None
     
-    for Extra in extra_classes:
-        test_extra = Extra(project_path)
-        if test_extra.has_model():
-            extra = test_extra
+    for ModelRunner in model_runner_classes:
+        test_runner = ModelRunner(project_path)
+        if test_runner.is_model():
+            model_runner = test_runner
             break
     
-    if extra is None:
+    if model_runner is None:
         msg = "No valid model files detected"
         raise FileNotFoundError(msg)
     
-    return extra.run_model(d3d_bin_path,
-                           omp_num_threads)
+    return model_runner.run_model(d3d_bin_path,
+                                  omp_num_threads)
 
 
 @dataclass(frozen=True)
@@ -187,7 +187,7 @@ class _BaseModelRunnerDataclassMixin:
 
 class _BaseModelRunner(ABC, _BaseModelRunnerDataclassMixin):
     
-    def has_model(self) -> bool:
+    def is_model(self) -> bool:
         model_path = self._get_model_path()
         if model_path is None: return False
         return True
