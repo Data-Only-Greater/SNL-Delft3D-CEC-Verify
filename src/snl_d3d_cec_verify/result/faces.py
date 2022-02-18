@@ -494,7 +494,7 @@ def _check_case_study(case: CaseStudy):
 
 
 def _map_to_faces_frame(map_path: StrOrPath,
-                       t_step: int = None) -> pd.DataFrame:
+                        t_step: int = None) -> pd.DataFrame:
     
     data = collections.defaultdict(list)
     
