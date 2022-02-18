@@ -7,10 +7,10 @@ import platform
 import subprocess
 from abc import ABC, abstractmethod
 from queue import Queue
-from typing import Iterator, IO, List, Optional
+from typing import Iterator, IO, Optional
 from pathlib import Path
 from threading import Thread
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .types import StrOrPath
 from ._docs import docstringtemplate
@@ -21,8 +21,9 @@ __all__ = ["run_dflowfm", "run_dflow2d3d"]
 @docstringtemplate
 @dataclass
 class Runner:
-    """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
-    settings across many Delft3D projects.
+    """A class for running Delft3D models which allow reuse of settings across 
+    multiple projects. Automatically detects if the models uses a flexible or
+    structured mesh.
     
     Call the Runner object with the project path to execute the Delft3D model
     
@@ -39,10 +40,6 @@ class Runner:
         {omp_num_threads}
     :param show_stdout: show Delft3D logging to stdout in console, defaults
         to {show_stdout}
-    :param relative_input_parts: list of components representing the
-        relative path to folder containing the delft3D model files, from the
-        project folder. Set to None to use given path directly. Defaults to
-        :code:`["input"]`
     
     .. automethod:: __call__
     
@@ -62,14 +59,14 @@ class Runner:
         
         :raises OSError: if function is called on an unsupported operating
             system
-        :raises FileNotFoundError: if the Delft3D entry point or model folder
-            could not be found
+        :raises FileNotFoundError: if the Delft3D entry point or model file
+            could not be found (or is not unique)
         :raises RuntimeError: if the Delft3D simulation outputs to stderr, for
             any reason
         
         """
         
-        sp = _run_extra(project_path,
+        sp = _run_model(project_path,
                         self.d3d_bin_path,
                         self.omp_num_threads)
         
@@ -86,8 +83,9 @@ class Runner:
 @docstringtemplate
 @dataclass
 class LiveRunner:
-    """A wrapper around the :func:`.run_dflowfm` function to allow reuse of
-    settings across many Delft3D projects with real time output.
+    """A class for running Delft3D models which allow reuse of settings across 
+    multiple projects with real time output. Automatically detects if the 
+    models uses a flexible or structured mesh.
     
     Call the LiveRunner object with the project path to execute the Delft3D
     model and read the output line by line, like a generator
@@ -104,10 +102,6 @@ class LiveRunner:
         Delft3D
     :param omp_num_threads: The number of CPU threads to use, defaults to
         {omp_num_threads}
-    :param relative_input_parts: list of components representing the
-        relative path to folder containing the delft3D model files, from the
-        project folder. Set to None to use given path directly. Defaults to
-        :code:`["input"]`
     
     .. automethod:: __call__
     
@@ -127,14 +121,14 @@ class LiveRunner:
         
         :raises OSError: if function is called on an unsupported operating
             system
-        :raises FileNotFoundError: if the Delft3D entry point or model folder
-            could not be found
+        :raises FileNotFoundError: if the Delft3D entry point or model file
+            could not be found (or is not unique)
         :raises RuntimeError: if the Delft3D simulation outputs to stderr, for
             any reason
         
         """
         
-        sp = _run_extra(project_path,
+        sp = _run_model(project_path,
                         self.d3d_bin_path,
                         self.omp_num_threads)
         
@@ -164,11 +158,12 @@ class LiveRunner:
             raise RuntimeError("Delft3D simulation failure")
 
 
-def _run_extra(project_path: StrOrPath,
+def _run_model(project_path: StrOrPath,
                d3d_bin_path: StrOrPath,
                omp_num_threads: int = 1) -> subprocess.Popen:
     
-    extra_classes = [_FMRunnerExtras]
+    extra_classes = [_FMModelRunner,
+                     _StructuredModelRunner]
     extra = None
     
     for Extra in extra_classes:
@@ -179,18 +174,18 @@ def _run_extra(project_path: StrOrPath,
     
     if extra is None:
         msg = "No valid model files detected"
-        raise RuntimeError(msg)
+        raise FileNotFoundError(msg)
     
     return extra.run_model(d3d_bin_path,
                            omp_num_threads)
 
 
 @dataclass(frozen=True)
-class _BaseRunnerDataclassMixin:
+class _BaseModelRunnerDataclassMixin:
     project_path: StrOrPath
 
 
-class _BaseRunnerExtras(ABC, _BaseRunnerDataclassMixin):
+class _BaseModelRunner(ABC, _BaseModelRunnerDataclassMixin):
     
     def has_model(self) -> bool:
         model_path = self._get_model_path()
@@ -207,19 +202,10 @@ class _BaseRunnerExtras(ABC, _BaseRunnerDataclassMixin):
         pass    # pragma: no cover
 
 
-class _FMRunnerExtras(_BaseRunnerExtras):
+class _FMModelRunner(_BaseModelRunner):
     
     def _get_model_path(self) -> Optional[Path]:
-        
-        mdu_files = list(Path(self.project_path).glob("**/*.mdu"))
-        
-        if len(mdu_files) > 1:
-            msg = "Multiple .mdu files detected"
-            raise RuntimeError(msg)
-        
-        if not mdu_files: return None
-        
-        return mdu_files[0]
+        return _find_path(self.project_path, ".mdu")
     
     def run_model(self, d3d_bin_path: StrOrPath,
                         omp_num_threads: int = 1) -> subprocess.Popen:
@@ -227,12 +213,46 @@ class _FMRunnerExtras(_BaseRunnerExtras):
         model_path = self._get_model_path()
         
         if model_path is None:
-            raise RuntimeError("No .mdu file detected")
+            raise FileNotFoundError("No .mdu file detected")
         
         return run_dflowfm(d3d_bin_path,
                            model_path.parent,
                            model_path.name,
                            omp_num_threads)
+
+
+class _StructuredModelRunner(_BaseModelRunner):
+    
+    def _get_model_path(self) -> Optional[Path]:
+        return _find_path(self.project_path, ".xml", "config_d_hydro")
+    
+    def run_model(self, d3d_bin_path: StrOrPath,
+                        omp_num_threads: int = 1) -> subprocess.Popen:
+        
+        model_path = self._get_model_path()
+        
+        if model_path is None:
+            raise FileNotFoundError("No config_d_hydro.xml file detected")
+        
+        return run_dflow2d3d(d3d_bin_path,
+                             model_path.parent,
+                             omp_num_threads)
+
+
+def _find_path(project_path: StrOrPath,
+               ext: str,
+               file_root: Optional[str] = None) -> Optional[Path]:
+    
+    if file_root is None: file_root = "*"
+    files = list(Path(project_path).glob(f"**/{file_root}{ext}"))
+    
+    if len(files) > 1:
+        msg = f"Multiple files detected with signature '{file_root}{ext}'"
+        raise FileNotFoundError(msg)
+    
+    if not files: return None
+    
+    return files[0]
 
 
 @docstringtemplate
