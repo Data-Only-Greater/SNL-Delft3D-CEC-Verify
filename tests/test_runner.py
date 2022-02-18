@@ -72,7 +72,7 @@ def test_run_script_missing_input_folder(mocker):
     assert model_path in str(excinfo)
 
 
-@pytest.mark.parametrize("name", ["dflowfm"])
+@pytest.mark.parametrize("name", ["dflowfm", "dflow2d3d"])
 def test_run_script(mocker, tmp_path, data_dir, name):
     
     from snl_d3d_cec_verify.runner import subprocess
