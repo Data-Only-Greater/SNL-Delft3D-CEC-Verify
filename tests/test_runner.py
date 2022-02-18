@@ -443,7 +443,8 @@ def test_liverunner_call(tmp_path, data_dir):
     for line in runner(tmp_path):
         out += line
     
-    assert "Configfile:config_d_hydro.xml" in out
+    assert "Configfile" in out
+    assert "config_d_hydro.xml" in out
 
 
 def test_liverunner_call_error(tmp_path, mocker, data_dir):
