@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import platform
 import subprocess
+from abc import ABC, abstractmethod
 from queue import Queue
 from typing import Iterator, IO, List, Optional
 from pathlib import Path
@@ -53,12 +54,6 @@ class Runner:
     omp_num_threads: int = 1  #: The number of CPU threads to use
     show_stdout: bool = False #: show Delft3D logging to stdout in console
     
-    #: list of components representing the relative path to folder containing
-    #: the delft3D model files, from the project folder. Set to None to given
-    #: path directly
-    relative_input_parts: Optional[List[str]] = field(
-                                            default_factory=lambda: ["input"])
-    
     def __call__(self, project_path: StrOrPath):
         """
         Run a simulation, given a prepared model.
@@ -74,16 +69,9 @@ class Runner:
         
         """
         
-        if self.relative_input_parts is None:
-            relative_input_parts = []
-        else:
-            relative_input_parts = self.relative_input_parts
-        
-        model_path = Path(project_path).joinpath(*relative_input_parts)
-        
-        sp = run_dflowfm(self.d3d_bin_path,
-                         model_path,
-                         self.omp_num_threads)
+        sp = _run_extra(project_path,
+                        self.d3d_bin_path,
+                        self.omp_num_threads)
         
         out, err = sp.communicate()
         
@@ -130,12 +118,6 @@ class LiveRunner:
     
     omp_num_threads: int = 1  #: The number of CPU threads to use
     
-    #: list of components representing the relative path to folder containing
-    #: the delft3D model files, from the project folder. Set to None to given
-    #: path directly
-    relative_input_parts: Optional[List[str]] = field(
-                                            default_factory=lambda: ["input"])
-    
     def __call__(self, project_path: StrOrPath) -> Iterator[str]:
         """
         Run a simulation, given a prepared model, and yield stdout and stdin
@@ -152,16 +134,9 @@ class LiveRunner:
         
         """
         
-        if self.relative_input_parts is None:
-            relative_input_parts = []
-        else:
-            relative_input_parts = self.relative_input_parts
-        
-        model_path = Path(project_path).joinpath(*relative_input_parts)
-        
-        sp = run_dflowfm(self.d3d_bin_path,
-                         model_path,
-                         self.omp_num_threads)
+        sp = _run_extra(project_path,
+                        self.d3d_bin_path,
+                        self.omp_num_threads)
         
         q: Queue = Queue()
         Thread(target=_pipe_reader, args=[sp.stderr, q]).start()
@@ -189,9 +164,81 @@ class LiveRunner:
             raise RuntimeError("Delft3D simulation failure")
 
 
+def _run_extra(project_path: StrOrPath,
+               d3d_bin_path: StrOrPath,
+               omp_num_threads: int = 1) -> subprocess.Popen:
+    
+    extra_classes = [_FMRunnerExtras]
+    extra = None
+    
+    for Extra in extra_classes:
+        test_extra = Extra(project_path)
+        if test_extra.has_model():
+            extra = test_extra
+            break
+    
+    if extra is None:
+        msg = "No valid model files detected"
+        raise RuntimeError(msg)
+    
+    return extra.run_model(d3d_bin_path,
+                           omp_num_threads)
+
+
+@dataclass(frozen=True)
+class _BaseRunnerDataclassMixin:
+    project_path: StrOrPath
+
+
+class _BaseRunnerExtras(ABC, _BaseRunnerDataclassMixin):
+    
+    def has_model(self) -> bool:
+        model_path = self._get_model_path()
+        if model_path is None: return False
+        return True
+    
+    @abstractmethod
+    def _get_model_path(self) -> Optional[Path]:
+        pass    # pragma: no cover
+    
+    @abstractmethod
+    def run_model(self, d3d_bin_path: StrOrPath,
+                        omp_num_threads: int = 1) -> subprocess.Popen:
+        pass    # pragma: no cover
+
+
+class _FMRunnerExtras(_BaseRunnerExtras):
+    
+    def _get_model_path(self) -> Optional[Path]:
+        
+        mdu_files = list(Path(self.project_path).glob("**/*.mdu"))
+        
+        if len(mdu_files) > 1:
+            msg = "Multiple .mdu files detected"
+            raise RuntimeError(msg)
+        
+        if not mdu_files: return None
+        
+        return mdu_files[0]
+    
+    def run_model(self, d3d_bin_path: StrOrPath,
+                        omp_num_threads: int = 1) -> subprocess.Popen:
+        
+        model_path = self._get_model_path()
+        
+        if model_path is None:
+            raise RuntimeError("No .mdu file detected")
+        
+        return run_dflowfm(d3d_bin_path,
+                           model_path.parent,
+                           model_path.name,
+                           omp_num_threads)
+
+
 @docstringtemplate
 def run_dflowfm(d3d_bin_path: StrOrPath,
                 model_path: StrOrPath,
+                model_file: str,
                 omp_num_threads: int = 1) -> subprocess.Popen:
     """Run a Delft3D flexible mesh simulation, given an existing Delft3D
     installation and a prepared model.
@@ -216,7 +263,7 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
                        d3d_bin_path,
                        model_path,
                        omp_num_threads,
-                       "FlowFM.mdu")
+                       model_file)
 
 
 @docstringtemplate
