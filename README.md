@@ -349,10 +349,10 @@ Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial
 [104]: https://pandoc.org/
 [105]: https://github.com/openearth/delft3dfmpy
 [106]: https://git-lfs.github.com/
-[107]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/api/snl_d3d_cec_verify.html
+[107]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/main/api/snl_d3d_cec_verify.html
 [108]: https://www.intel.com/content/www/us/en/products/sku/80806/intel-core-i74790-processor-8m-cache-up-to-4-00-ghz/specifications.html
 [109]: https://github.com/Data-Only-Greater/convergence
-[110]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/validation/index.html
+[110]: https://data-only-greater.github.io/SNL-Delft3D-CEC-Verify/main/validation/index.html
 [111]: https://www.sphinx-doc.org/en/master/
 [112]: https://github.com/tox-dev/sphinx-autodoc-typehints
 [113]: https://insipid-sphinx-theme.readthedocs.io/
