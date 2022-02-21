@@ -5,9 +5,12 @@ from __future__ import annotations
 import collections
 from abc import ABC, abstractmethod
 from typing import (cast,
+                    Any,
+                    Callable,
                     Dict,
                     Optional,
-                    Sequence)
+                    Sequence,
+                    TypeVar)
 from functools import wraps
 from dataclasses import dataclass, field
 
@@ -20,15 +23,17 @@ from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
 
+# Generic for decorators
+F = TypeVar('F', bound=Callable[..., Any])
 
-# TODO: I'd like to type check this, but I can't get it to work.
-def _extract(method):
+
+def _extract(func: F) -> F:
     
-    @wraps(method)
-    def magic(self, t_step: int,
-                    kz: Num,
-                    x: Optional[Sequence[Num]] = None,
-                    y: Optional[Sequence[Num]] = None) -> xr.Dataset:
+    @wraps(func)
+    def wrapper(self, t_step: int,
+                      kz: Num,
+                      x: Optional[Sequence[Num]] = None,
+                      y: Optional[Sequence[Num]] = None) -> xr.Dataset:
         
         do_interp = sum((bool(x is not None),
                          bool(y is not None)))
@@ -41,14 +46,14 @@ def _extract(method):
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
         
-        ds = method(self, t_step, kz)
+        ds = func(self, t_step, kz, x, y)
         
         if not do_interp: return ds
         
         return ds.interp({"$x$": xr.DataArray(x),
                           "$y$": xr.DataArray(y)})
         
-    return magic
+    return cast(F, wrapper)
 
 
 @dataclass
@@ -228,7 +233,7 @@ class Faces(ABC, _FacesDataClassMixin):
         if np.isclose(x[-1] + x_step, self.xmax): x = np.append(x, self.xmax)
         y = [turb_pos_y + offset_y] * len(x)
         
-        return self.extract_z(t_step, turb_pos_z + offset_z, x, y)
+        return self.extract_z(t_step, turb_pos_z + offset_z, list(x), y)
     
     def extract_turbine_z(self, t_step: int,
                                 case: CaseStudy,
@@ -285,7 +290,9 @@ class Faces(ABC, _FacesDataClassMixin):
     
     @_extract
     def extract_z(self, t_step: int,
-                        z: Num) -> xr.Dataset:
+                        z: Num,
+                        x: Optional[Sequence[Num]] = None,
+                        y: Optional[Sequence[Num]] = None) -> xr.Dataset:
         """Extract data on the plane at the given z-level. Available data is:
         
         * :code:`k`: sigma layer
@@ -337,9 +344,7 @@ class Faces(ABC, _FacesDataClassMixin):
         :param t_step: Time step index
         :param z: z-level at which to extract data
         :param x: x-coordinates on which to interpolate data
-        :type x: Optional[Sequence[Union[int, float]]]
         :param y: y-coordinates on which to interpolate data
-        :type y: Optional[Sequence[Union[int, float]]]
         
         :raises IndexError: if the time-step index (``t_step``) is out of
             range
@@ -355,7 +360,9 @@ class Faces(ABC, _FacesDataClassMixin):
     
     @_extract
     def extract_k(self, t_step: int,
-                        k: int) -> xr.Dataset:
+                        k: int,
+                        x: Optional[Sequence[Num]] = None,
+                        y: Optional[Sequence[Num]] = None) -> xr.Dataset:
         """Extract data on the plane at the given sigma-level (k). Available
         data is:
         
@@ -408,9 +415,7 @@ class Faces(ABC, _FacesDataClassMixin):
         :param t_step: Time step index
         :param k: k-level (sigma) at which to extract data
         :param x: x-coordinates on which to interpolate data
-        :type x: Optional[Sequence[Union[int, float]]]
         :param y: y-coordinates on which to interpolate data
-        :type y: Optional[Sequence[Union[int, float]]]
         
         :raises IndexError: if the time-step index (``t_step``) is out of
             range

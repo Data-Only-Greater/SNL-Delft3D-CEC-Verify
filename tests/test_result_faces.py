@@ -296,8 +296,8 @@ def test_faces_extract_turbine_centreline(mocker, faces):
     x = mock.call_args.args[2]
     y = mock.call_args.args[3]
     
-    assert x.min() == case.turb_pos_x + offset_x
-    assert x.max() <= faces.xmax
+    assert min(x) == case.turb_pos_x + offset_x
+    assert max(x) <= faces.xmax
     assert np.unique(np.diff(x)).take(0) == x_step
     assert set(y) == set([case.turb_pos_y + offset_y])
 
@@ -328,7 +328,6 @@ def test_faces_extract_turbine_centre(mocker, faces):
     assert len(y) == 1
     assert x[0] == case.turb_pos_x + offset_x
     assert y[0] == case.turb_pos_y + offset_y
-
 
 
 def test_map_to_faces_frame(data_dir):
