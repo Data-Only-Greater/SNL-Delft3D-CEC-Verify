@@ -153,7 +153,7 @@ class Result:
         return result
     
     def __repr__(self):
-        return f"Result(map_path={repr(self._map_path)})"
+        return f"Result(map_path={repr(self._model_result.path)})"
 
 
 class _BaseModelResults(_BaseModelFinder):
@@ -188,7 +188,7 @@ class _FMModelResults(_BaseModelResults):
     
     @property
     def path(self) -> Optional[Path]:
-        return find_path(self.project_path, "_map", ".nc")
+        return find_path(self.project_path, ".nc", "_map")
     
     @property
     def x_lim(self) -> Optional[Tuple[float, float]]:

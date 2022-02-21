@@ -5,9 +5,7 @@ import pandas as pd
 import pytest
 
 from snl_d3d_cec_verify import MycekStudy
-from snl_d3d_cec_verify.result import (_get_x_lim,
-                                       _get_y_lim,
-                                       _get_step_times,
+from snl_d3d_cec_verify.result import (_FMModelResults,
                                        Result,
                                        Transect,
                                        Validate,
@@ -20,29 +18,30 @@ from snl_d3d_cec_verify.result.edges import Edges
 from snl_d3d_cec_verify.result.faces import Faces
 
 
-def test_get_x_lim(data_dir):
-    
-    map_path = data_dir / "output" / "FlowFM_map.nc"
-    x_low, x_high = _get_x_lim(map_path)
-    
+@pytest.fixture
+def fmresult(data_dir):
+    return _FMModelResults(data_dir)
+
+
+def test_fmresult_path(data_dir, fmresult):
+    expected = data_dir / "output" / "FlowFM_map.nc"
+    assert fmresult.path == expected
+
+
+def test_fmresult_x_lim(fmresult):
+    x_low, x_high = fmresult.x_lim
     assert np.isclose(x_low, 0)
     assert np.isclose(x_high, 18)
 
 
-def test_get_y_lim(data_dir):
-    
-    map_path = data_dir / "output" / "FlowFM_map.nc"
-    y_low, y_high = _get_y_lim(map_path)
-    
+def test_fmresult_y_lim(fmresult):
+    y_low, y_high = fmresult.y_lim
     assert np.isclose(y_low, 1)
     assert np.isclose(y_high, 5)
 
 
-def test_get_step_times(data_dir):
-    
-    map_path = data_dir / "output" / "FlowFM_map.nc"
-    times = _get_step_times(map_path)
-    
+def test_fmresult_times(fmresult):
+    times = fmresult.times
     assert len(times) == 2
     assert times[0] == pd.Timestamp('2001-01-01')
 
