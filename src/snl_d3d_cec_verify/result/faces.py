@@ -89,14 +89,6 @@ class Faces(ABC, _FacesDataClassMixin):
     
     """
     
-    xmax: Num #: Maximum of x-direction range, in metres
-    _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
-                                              init=False,
-                                              repr=False)
-    _frame: Optional[pd.DataFrame] = field(default=None,
-                                           init=False,
-                                           repr=False)
-    
     @docstringtemplate
     def extract_turbine_centre(self, t_step: int,
                                      case: CaseStudy,
@@ -500,7 +492,7 @@ class Faces(ABC, _FacesDataClassMixin):
     
     @abstractmethod
     def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
-        pass
+        pass    # pragma: no cover
 
 
 def _check_case_study(case: CaseStudy):
