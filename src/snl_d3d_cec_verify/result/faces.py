@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+from abc import ABC, abstractmethod
 from typing import (cast,
                     Dict,
                     Optional,
@@ -51,7 +52,17 @@ def _extract(method):
 
 
 @dataclass
-class Faces(TimeStepResolver):
+class _FacesDataClassMixin(TimeStepResolver):
+    xmax: Num #: Maximum of x-direction range, in metres
+    _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
+                                              init=False,
+                                              repr=False)
+    _frame: Optional[pd.DataFrame] = field(default=None,
+                                           init=False,
+                                           repr=False)
+
+
+class Faces(ABC, _FacesDataClassMixin):
     """Class for extracting results on the faces of the simulation grid. Use in
     conjunction with the :class:`.Result` class.
     
@@ -72,7 +83,7 @@ class Faces(TimeStepResolver):
         $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
         
-    :param map_path: path to the :code:`FlowFM_map.nc` file
+    :param nc_path: path to the `.nc` file containing results
     :param n_steps: number of time steps in the simulation
     :param xmax: Maximum of x-direction range, in metres
     
@@ -476,7 +487,7 @@ class Faces(TimeStepResolver):
         t_step = self._resolve_t_step(t_step)
         if t_step in self._t_steps: return
         
-        frame = _map_to_faces_frame(self.map_path, t_step)
+        frame = self._get_faces_frame(t_step)
         
         if self._frame is None:
             self._frame = frame
@@ -486,53 +497,15 @@ class Faces(TimeStepResolver):
                                              sort=False)
         
         self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
+    
+    @abstractmethod
+    def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
+        pass
 
 
 def _check_case_study(case: CaseStudy):
     if len(case) != 1:
         raise ValueError("case study must have length one")
-
-
-def _map_to_faces_frame(map_path: StrOrPath,
-                        t_step: int = None) -> pd.DataFrame:
-    
-    data = collections.defaultdict(list)
-    
-    with xr.open_dataset(map_path) as ds:
-        
-        time = ds.time[t_step].values.take(0)
-        x_values = ds.mesh2d_face_x.values
-        y_values = ds.mesh2d_face_y.values
-        depth_values = ds.mesh2d_waterdepth.values
-        sigma_values = ds.mesh2d_layer_sigma.values
-        u_values = ds.mesh2d_ucx.values
-        v_values = ds.mesh2d_ucy.values
-        w_values = ds.mesh2d_ucz.values
-        
-        for iface in ds.mesh2d_nFaces.values:
-            
-            x = x_values[iface]
-            y = y_values[iface]
-            depth = depth_values[t_step, iface]
-            
-            for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
-                
-                z = sigma_values[ilayer] * depth
-                u = u_values[t_step, iface, ilayer]
-                v = v_values[t_step, iface, ilayer]
-                w = w_values[t_step, iface, ilayer]
-                
-                data["x"].append(x)
-                data["y"].append(y)
-                data["z"].append(z)
-                data["k"].append(k)
-                data["time"].append(time)
-                data["depth"].append(depth)
-                data["u"].append(u)
-                data["v"].append(v)
-                data["w"].append(w)
-    
-    return pd.DataFrame(data)
 
 
 def _faces_frame_to_slice(frame: pd.DataFrame,
@@ -599,3 +572,115 @@ def _faces_frame_to_depth(frame: pd.DataFrame,
                     "y": "$y$"})
     
     return ds.depth
+
+
+class _FMFaces(Faces):
+    def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
+        return  _map_to_faces_frame(self.nc_path, t_step)
+
+
+def _map_to_faces_frame(map_path: StrOrPath,
+                        t_step: int = None) -> pd.DataFrame:
+    
+    data = collections.defaultdict(list)
+    
+    with xr.open_dataset(map_path) as ds:
+        
+        time = ds.time[t_step].values.take(0)
+        x_values = ds.mesh2d_face_x.values
+        y_values = ds.mesh2d_face_y.values
+        depth_values = ds.mesh2d_waterdepth.values
+        sigma_values = ds.mesh2d_layer_sigma.values
+        u_values = ds.mesh2d_ucx.values
+        v_values = ds.mesh2d_ucy.values
+        w_values = ds.mesh2d_ucz.values
+        
+        for iface in ds.mesh2d_nFaces.values:
+            
+            x = x_values[iface]
+            y = y_values[iface]
+            depth = depth_values[t_step, iface]
+            
+            for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
+                
+                z = sigma_values[ilayer] * depth
+                u = u_values[t_step, iface, ilayer]
+                v = v_values[t_step, iface, ilayer]
+                w = w_values[t_step, iface, ilayer]
+                
+                data["x"].append(x)
+                data["y"].append(y)
+                data["z"].append(z)
+                data["k"].append(k)
+                data["time"].append(time)
+                data["depth"].append(depth)
+                data["u"].append(u)
+                data["v"].append(v)
+                data["w"].append(w)
+    
+    return pd.DataFrame(data)
+
+
+class _StructuredFaces(Faces):
+    def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
+        return  _trim_to_faces_frame(self.nc_path, t_step)
+
+
+def _trim_to_faces_frame(trim_path: StrOrPath,
+                         t_step: int = None) -> pd.DataFrame:
+    
+    with xr.open_dataset(trim_path) as ds:
+        
+        time = ds.time[t_step].values
+        ds_step = ds.isel(time=t_step)
+        
+        x = ds_step.XZ.values
+        y = ds_step.YZ.values
+        dp0 = ds_step.DP0.values
+        s1 = ds_step.S1.values
+        sig_lyr = ds_step.SIG_LYR.values
+        ik = ds_step.KMAXOUT_RESTR.values
+        u1 = ds_step.U1.values
+        v1 = ds_step.V1.values
+        w = ds_step.W.values
+    
+    x = x[1:-1, 1:-1]
+    x = np.repeat(x[np.newaxis, :, :], 3, axis=0)
+    
+    y = y[1:-1, 1:-1]
+    y = np.repeat(y[np.newaxis, :, :], 3, axis=0)
+    
+    h = dp0 + s1
+    z = h[...,None] * sig_lyr
+    z = np.rollaxis(z, 2)
+    z = z[:, 1:-1, 1:-1]
+    
+    ik = np.flip(ik).reshape(3, 1, 1)
+    k = np.ones(x.shape, dtype=int) * ik
+    
+    time = np.tile(time, x.shape)
+    
+    depth = dp0[1:-1, 1:-1]
+    depth = np.repeat(depth[np.newaxis, :, :], 3, axis=0)
+    
+    u1 = u1[:, :-1, 1:-1]
+    u = np.nansum([u1[:,:-1,:], u1[:,1:,:]], axis=0) / 2
+    
+    v1 = v1[:,1:-1,:-1]
+    v = np.nansum([v1[:,:,:-1], v1[:,:,1:]], axis=0) / 2
+    
+    w = np.nansum([w[1:,:,:], w[:-1,:,:]], axis=0) / 2
+    w = w[:, 1:-1, 1:-1]
+    
+    data = {}
+    data["x"] = np.ravel(x)
+    data["y"] = np.ravel(y)
+    data["z"] = np.ravel(z)
+    data["k"] = np.ravel(k)
+    data["time"] = np.ravel(time)
+    data["depth"] = np.ravel(depth)
+    data["u"] = np.ravel(u)
+    data["v"] = np.ravel(v)
+    data["w"] = np.ravel(w)
+    
+    return pd.DataFrame(data)

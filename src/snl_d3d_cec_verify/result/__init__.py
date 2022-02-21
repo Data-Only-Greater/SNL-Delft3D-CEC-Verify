@@ -31,7 +31,7 @@ except ImportError: # pragma: no cover
 
 from .base import TimeStepResolver
 from .edges import Edges
-from .faces import Faces
+from .faces import Faces, _FMFaces
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
@@ -81,9 +81,9 @@ class Result:
         self._times: npt.NDArray[np.datetime64] = _get_step_times(
                                                                 self._map_path)
         self._edges: Edges = Edges(self._map_path, len(self._times))
-        self._faces: Faces = Faces(self._map_path,
-                                   len(self._times),
-                                   self._x_lim[1])
+        self._faces: Faces = _FMFaces(self._map_path,
+                                      len(self._times),
+                                      self._x_lim[1])
     
     @property
     def x_lim(self):

@@ -30,7 +30,7 @@ class Edges(TimeStepResolver):
     0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
     ...
     
-    :param map_path: path to the :code:`FlowFM_map.nc` file
+    :param nc_path: path to the :code:`FlowFM_map.nc` file
     :param n_steps: number of time steps in the simulation
     """
     
@@ -116,7 +116,7 @@ class Edges(TimeStepResolver):
         t_step = self._resolve_t_step(t_step)
         if t_step in self._t_steps: return
         
-        frame = _map_to_edges_geoframe(self.map_path, t_step)
+        frame = _map_to_edges_geoframe(self.nc_path, t_step)
         
         if self._frame is None:
             self._frame = frame
