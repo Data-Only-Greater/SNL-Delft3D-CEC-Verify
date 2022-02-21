@@ -642,8 +642,8 @@ def _trim_to_faces_frame(trim_path: StrOrPath,
     y = y[1:-1, 1:-1]
     y = np.repeat(y[np.newaxis, :, :], 3, axis=0)
     
-    h = dp0 + s1
-    z = h[...,None] * sig_lyr
+    depth = dp0 + s1
+    z = depth[..., None] * sig_lyr
     z = np.rollaxis(z, 2)
     z = z[:, 1:-1, 1:-1]
     
@@ -652,16 +652,16 @@ def _trim_to_faces_frame(trim_path: StrOrPath,
     
     time = np.tile(time, x.shape)
     
-    depth = dp0[1:-1, 1:-1]
+    depth = depth[1:-1, 1:-1]
     depth = np.repeat(depth[np.newaxis, :, :], 3, axis=0)
     
     u1 = u1[:, :-1, 1:-1]
-    u = np.nansum([u1[:,:-1,:], u1[:,1:,:]], axis=0) / 2
+    u = np.nansum([u1[:, :-1, :], u1[:, 1:, :]], axis=0) / 2
     
     v1 = v1[:,1:-1,:-1]
-    v = np.nansum([v1[:,:,:-1], v1[:,:,1:]], axis=0) / 2
+    v = np.nansum([v1[:, :, :-1], v1[:, :, 1:]], axis=0) / 2
     
-    w = np.nansum([w[1:,:,:], w[:-1,:,:]], axis=0) / 2
+    w = np.nansum([w[1:, :, :], w[:-1, :, :]], axis=0) / 2
     w = w[:, 1:-1, 1:-1]
     
     data = {}
