@@ -19,8 +19,9 @@ from ..types import StrOrPath
 
 @dataclass
 class Edges(TimeStepResolver):
-    """Class for extracting results on the edges of the simulation grid. Use in
-    conjunction with the :class:`.Result` class.
+    """Class for extracting results on the edges of the simulation grid for 
+    flexible mesh (``'fm'``) models. Use in conjunction with the 
+    :class:`.Result` class.
     
     >>> from snl_d3d_cec_verify import Result
     >>> data_dir = getfixture('data_dir')
