@@ -6,7 +6,7 @@ from ..types import StrOrPath
 
 
 @dataclass
-class TimeStepResolver:
+class _TimeStepResolver:
     nc_path: StrOrPath #: Path to the `.nc` file containing results
     n_steps: int #: Number of time steps in the simulation
     

@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd # type: ignore
 import xarray as xr
 
-from .base import TimeStepResolver
+from .base import _TimeStepResolver
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
@@ -57,7 +57,7 @@ def _extract(func: F) -> F:
 
 
 @dataclass
-class _FacesDataClassMixin(TimeStepResolver):
+class _FacesDataClassMixin(_TimeStepResolver):
     xmax: Num #: Maximum of x-direction range, in metres
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,

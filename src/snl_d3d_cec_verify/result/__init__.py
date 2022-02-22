@@ -30,7 +30,6 @@ try:
 except ImportError: # pragma: no cover
     from yaml import SafeLoader as Loader # type: ignore
 
-from .base import TimeStepResolver
 from .edges import Edges
 from .faces import Faces, _FMFaces, _StructuredFaces
 from ..cases import CaseStudy
@@ -38,9 +37,7 @@ from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
 from .._paths import _BaseModelFinder, find_path, get_model
 
-
-__all__ = ["TimeStepResolver",
-           "Edges",
+__all__ = ["Edges",
            "Faces",
            "Transect",
            "get_reset_origin",

@@ -13,12 +13,12 @@ import xarray as xr
 from shapely.geometry import LineString # type: ignore
 from shapely.geometry.base import BaseGeometry # type: ignore
 
-from .base import TimeStepResolver
+from .base import _TimeStepResolver
 from ..types import StrOrPath
 
 
 @dataclass
-class Edges(TimeStepResolver):
+class Edges(_TimeStepResolver):
     """Class for extracting results on the edges of the simulation grid for 
     flexible mesh (``'fm'``) models. Use in conjunction with the 
     :class:`.Result` class.
