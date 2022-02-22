@@ -173,8 +173,7 @@ def result(data_dir):
 
 
 def test_result_path(data_dir, result):
-    expected = data_dir / "output" / "FlowFM_map.nc"
-    assert result.path == expected
+    assert result.path == data_dir
 
 
 def test_result_x_lim(result):
@@ -198,9 +197,8 @@ def test_result_faces(result):
 
 
 def test_result__repr__(result, data_dir):
-    map_path = data_dir / "output" / "FlowFM_map.nc"
     assert "Result" in repr(result)
-    assert repr(map_path) in repr(result)
+    assert repr(data_dir) in repr(result)
 
 
 def test_transect_xy_length_mismatch():

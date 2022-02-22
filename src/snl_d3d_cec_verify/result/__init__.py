@@ -79,9 +79,10 @@ class Result:
     
     @property
     def path(self) -> Path:
-        result = self._model_result.path
-        assert result is not None
-        return result
+        """Path to the Delft3D project directory
+        """
+        result = self._model_result.project_path
+        return Path(result)
     
     @property
     def x_lim(self) -> Tuple[float, float]:
@@ -155,7 +156,7 @@ class Result:
         return result
     
     def __repr__(self):
-        return f"Result(map_path={repr(self._model_result.path)})"
+        return f"Result(path={repr(self.path)})"
 
 
 class _BaseModelResults(_BaseModelFinder):
