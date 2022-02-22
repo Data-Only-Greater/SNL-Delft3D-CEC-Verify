@@ -58,7 +58,7 @@ def _extract(func: F) -> F:
 
 @dataclass
 class _FacesDataClassMixin(_TimeStepResolver):
-    xmax: Num #: Maximum of x-direction range, in metres
+    xmax: Num #: maximum range in x-direction, in metres
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
                                               init=False,
                                               repr=False)
@@ -90,7 +90,7 @@ class Faces(ABC, _FacesDataClassMixin):
         
     :param nc_path: path to the `.nc` file containing results
     :param n_steps: number of time steps in the simulation
-    :param xmax: Maximum of x-direction range, in metres
+    :param xmax: maximum range in x-direction, in metres
     
     """
     

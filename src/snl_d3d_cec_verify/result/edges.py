@@ -31,8 +31,9 @@ class Edges(_TimeStepResolver):
     0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
     ...
     
-    :param nc_path: path to the :code:`FlowFM_map.nc` file
+    :param nc_path: path to the `.nc` file containing results
     :param n_steps: number of time steps in the simulation
+    
     """
     
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,

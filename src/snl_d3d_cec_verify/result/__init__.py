@@ -48,8 +48,9 @@ __all__ = ["Edges",
 
 class Result:
     """Class for capturing the results of executed case studies. Contains
-    metadata from the simulation. Data generated on the grid edges and 
-    faces are accessible from the :attr:`edges` and :attr:`faces` attributes.
+    metadata from the simulation. Automatically detects if the model uses a 
+    flexible or structured mesh and then populates edge and face data in the 
+    :attr:`edges` and :attr:`faces` attributes, where appropriate.
     
     >>> data_dir = getfixture('data_dir')
     >>> result = Result(data_dir)
@@ -88,8 +89,6 @@ class Result:
     def x_lim(self) -> Tuple[float, float]:
         """Domain limits in the x-direction, in metres
         
-        :type: Tuple[float, float]
-        
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> result.x_lim
@@ -103,8 +102,6 @@ class Result:
     @property
     def y_lim(self) -> Tuple[float, float]:
         """Domain limits in the y-direction, in metres
-        
-        :type: Tuple[float, float]
         
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
@@ -120,8 +117,6 @@ class Result:
     def times(self) -> npt.NDArray[np.datetime64]:
         """Time steps of the Delft3D simulation
         
-        :type: numpy.typing.NDArray[numpy.datetime64]
-        
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> result.times
@@ -134,11 +129,9 @@ class Result:
         return result
     
     @property
-    def edges(self) -> Edges:
-        """Results on the grid edges. See the :class:`.Edges` documentation
-        for usage
-        
-        :type: Edges
+    def edges(self) -> Optional[Edges]:
+        """Results on the grid edges for flexible mesh (``'fm'``) models . See 
+        the :class:`.Edges` documentation for usage.
         """
         result = self._model_result.edges
         assert result is not None
@@ -147,9 +140,7 @@ class Result:
     @property
     def faces(self) -> Faces:
         """Results on the grid faces. See the :class:`.Faces` documentation
-        for usage
-        
-        :type: Faces
+        for usage.
         """
         result = self._model_result.faces
         assert result is not None
