@@ -21,4 +21,4 @@ snl\_d3d\_cec\_verify package
 .. automodule:: snl_d3d_cec_verify
    :members:
    :undoc-members:
-   :show-inheritance:
+   :inherited-members:

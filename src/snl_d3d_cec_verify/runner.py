@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import platform
 import subprocess
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from queue import Queue
 from typing import Iterator, IO, Optional
 from pathlib import Path
@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from .types import StrOrPath
 from ._docs import docstringtemplate
+from ._paths import _BaseModelFinder, find_path, get_model
 
 __all__ = ["run_dflowfm", "run_dflow2d3d"]
 
@@ -164,15 +165,9 @@ def _run_model(project_path: StrOrPath,
                d3d_bin_path: StrOrPath,
                omp_num_threads: int = 1) -> subprocess.Popen:
     
-    model_runner_classes = [_FMModelRunner,
-                            _StructuredModelRunner]
-    model_runner = None
-    
-    for ModelRunner in model_runner_classes:
-        test_runner = ModelRunner(project_path)
-        if test_runner.is_model():
-            model_runner = test_runner
-            break
+    model_runner = get_model(project_path,
+                             _FMModelRunner,
+                             _StructuredModelRunner)
     
     if model_runner is None:
         msg = "No valid model files detected"
@@ -182,21 +177,7 @@ def _run_model(project_path: StrOrPath,
                                   omp_num_threads)
 
 
-@dataclass(frozen=True)
-class _BaseModelRunnerDataclassMixin:
-    project_path: StrOrPath
-
-
-class _BaseModelRunner(ABC, _BaseModelRunnerDataclassMixin):
-    
-    def is_model(self) -> bool:
-        model_path = self._get_model_path()
-        if model_path is None: return False
-        return True
-    
-    @abstractmethod
-    def _get_model_path(self) -> Optional[Path]:
-        pass    # pragma: no cover
+class _BaseModelRunner(_BaseModelFinder):
     
     @abstractmethod
     def run_model(self, d3d_bin_path: StrOrPath,
@@ -206,55 +187,37 @@ class _BaseModelRunner(ABC, _BaseModelRunnerDataclassMixin):
 
 class _FMModelRunner(_BaseModelRunner):
     
-    def _get_model_path(self) -> Optional[Path]:
-        return _find_path(self.project_path, ".mdu")
+    @property
+    def path(self) -> Optional[Path]:
+        return find_path(self.project_path, ".mdu")
     
     def run_model(self, d3d_bin_path: StrOrPath,
                         omp_num_threads: int = 1) -> subprocess.Popen:
         
-        model_path = self._get_model_path()
-        
-        if model_path is None:
+        if self.path is None:
             raise FileNotFoundError("No .mdu file detected")
         
         return run_dflowfm(d3d_bin_path,
-                           model_path.parent,
-                           model_path.name,
+                           self.path.parent,
+                           self.path.name,
                            omp_num_threads)
 
 
 class _StructuredModelRunner(_BaseModelRunner):
     
-    def _get_model_path(self) -> Optional[Path]:
-        return _find_path(self.project_path, ".xml", "config_d_hydro")
+    @property
+    def path(self) -> Optional[Path]:
+        return find_path(self.project_path, ".xml", "config_d_hydro")
     
     def run_model(self, d3d_bin_path: StrOrPath,
                         omp_num_threads: int = 1) -> subprocess.Popen:
         
-        model_path = self._get_model_path()
-        
-        if model_path is None:
+        if self.path is None:
             raise FileNotFoundError("No config_d_hydro.xml file detected")
         
         return run_dflow2d3d(d3d_bin_path,
-                             model_path.parent,
+                             self.path.parent,
                              omp_num_threads)
-
-
-def _find_path(project_path: StrOrPath,
-               ext: str,
-               file_root: Optional[str] = None) -> Optional[Path]:
-    
-    if file_root is None: file_root = "*"
-    files = list(Path(project_path).glob(f"**/{file_root}{ext}"))
-    
-    if len(files) > 1:
-        msg = f"Multiple files detected with signature '{file_root}{ext}'"
-        raise FileNotFoundError(msg)
-    
-    if not files: return None
-    
-    return files[0]
 
 
 @docstringtemplate

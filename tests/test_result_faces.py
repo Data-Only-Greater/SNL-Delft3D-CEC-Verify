@@ -6,52 +6,32 @@ import xarray as xr
 import pytest
 
 from snl_d3d_cec_verify.cases import CaseStudy
-from snl_d3d_cec_verify.result.faces import (_map_to_faces_frame,
+from snl_d3d_cec_verify.result.faces import (_check_case_study,
                                              _faces_frame_to_slice,
                                              _faces_frame_to_depth,
                                              Faces,
-                                             _check_case_study)
+                                             _map_to_faces_frame,
+                                             _FMFaces,
+                                             _trim_to_faces_frame,
+                                             _StructuredFaces)
+
+
+def test_check_case_study_error():
+    
+    case = CaseStudy(dx=[1, 2, 3])
+    
+    with pytest.raises(ValueError) as excinfo:
+        _check_case_study(case)
+    
+    assert "case study must have length one" in str(excinfo)
 
 
 @pytest.fixture
 def faces_frame(data_dir):
-    map_path = data_dir / "output" / "FlowFM_map.nc"
-    return _map_to_faces_frame(map_path, -1)
-
-
-def test_map_to_faces_frame(faces_frame):
-    
-    assert isinstance(faces_frame, pd.DataFrame)
-    assert len(faces_frame) == 216
-    assert faces_frame.columns.to_list() == ["x",
-                                             "y",
-                                             "z",
-                                             "k",
-                                             "time",
-                                             "depth",
-                                             "u",
-                                             "v",
-                                             "w"]
-    
-    assert np.isclose(faces_frame["x"].min(), 0.5)
-    assert np.isclose(faces_frame["x"].max(), 17.5)
-    assert np.isclose(faces_frame["y"].min(), 1.5)
-    assert np.isclose(faces_frame["y"].max(), 4.5)
-    assert -2 < faces_frame["z"].min() < -4 / 3
-    assert -2 / 3 < faces_frame["z"].max() < 0
-    
-    assert set(faces_frame["k"]) == set([0, 1, 2])
-    assert set(faces_frame["time"]) == set([
-                                        pd.Timestamp('2001-01-01 01:00:00')])
-    assert faces_frame["depth"].min() > 2
-    assert faces_frame["depth"].max() < 2.003
-    
-    assert faces_frame["u"].min() > 0.6
-    assert faces_frame["u"].max() < 0.9
-    assert faces_frame["v"].min() > -1e-15
-    assert faces_frame["v"].max() < 1e-15
-    assert faces_frame["w"].min() > -0.02
-    assert faces_frame["w"].max() < 0.02
+    csv_path = data_dir / "output" / "faces_frame.csv"
+    frame = pd.read_csv(csv_path, parse_dates=["time"])
+    times = frame.time.unique()
+    return frame[frame.time == times[-1]]
 
 
 def test_faces_frame_to_slice_k(faces_frame):
@@ -143,10 +123,17 @@ def test_faces_frame_to_depth(faces_frame):
     assert da.max() <= faces_frame["depth"].max()
 
 
+class MockFaces(Faces):
+    def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
+        frame = pd.read_csv(self.nc_path, parse_dates=["time"])
+        times = frame.time.unique()
+        return frame[frame.time == times[t_step]]
+
+
 @pytest.fixture
 def faces(data_dir):
-    map_path = data_dir / "output" / "FlowFM_map.nc"
-    return Faces(map_path, 2, 18)
+    csv_path = data_dir / "output" / "faces_frame.csv"
+    return MockFaces(csv_path, 2, 18)
 
 
 def test_faces_load_t_step_first(faces):
@@ -274,16 +261,6 @@ def test_faces_extract_interp_error(faces, x, y):
     assert "x and y must both be set" in str(excinfo)
 
 
-def test_check_case_study_error():
-    
-    case = CaseStudy(dx=[1, 2, 3])
-    
-    with pytest.raises(ValueError) as excinfo:
-        _check_case_study(case)
-    
-    assert "case study must have length one" in str(excinfo)
-
-
 def test_faces_extract_turbine_z(mocker, faces):
     
     case = CaseStudy()
@@ -319,8 +296,8 @@ def test_faces_extract_turbine_centreline(mocker, faces):
     x = mock.call_args.args[2]
     y = mock.call_args.args[3]
     
-    assert x.min() == case.turb_pos_x + offset_x
-    assert x.max() <= faces.xmax
+    assert min(x) == case.turb_pos_x + offset_x
+    assert max(x) <= faces.xmax
     assert np.unique(np.diff(x)).take(0) == x_step
     assert set(y) == set([case.turb_pos_y + offset_y])
 
@@ -351,3 +328,107 @@ def test_faces_extract_turbine_centre(mocker, faces):
     assert len(y) == 1
     assert x[0] == case.turb_pos_x + offset_x
     assert y[0] == case.turb_pos_y + offset_y
+
+
+def test_map_to_faces_frame(data_dir):
+    
+    map_path = data_dir / "output" / "FlowFM_map.nc"
+    faces_frame = _map_to_faces_frame(map_path, -1)
+    
+    assert isinstance(faces_frame, pd.DataFrame)
+    assert len(faces_frame) == 216
+    assert faces_frame.columns.to_list() == ["x",
+                                             "y",
+                                             "z",
+                                             "k",
+                                             "time",
+                                             "depth",
+                                             "u",
+                                             "v",
+                                             "w"]
+    
+    assert np.isclose(faces_frame["x"].min(), 0.5)
+    assert np.isclose(faces_frame["x"].max(), 17.5)
+    assert np.isclose(faces_frame["y"].min(), 1.5)
+    assert np.isclose(faces_frame["y"].max(), 4.5)
+    assert -2 < faces_frame["z"].min() < -4 / 3
+    assert -2 / 3 < faces_frame["z"].max() < 0
+    
+    assert set(faces_frame["k"]) == set([0, 1, 2])
+    assert set(faces_frame["time"]) == set([
+                                        pd.Timestamp('2001-01-01 01:00:00')])
+    assert faces_frame["depth"].min() > 2
+    assert faces_frame["depth"].max() < 2.003
+    
+    assert faces_frame["u"].min() > 0.6
+    assert faces_frame["u"].max() < 0.9
+    assert faces_frame["v"].min() > -1e-15
+    assert faces_frame["v"].max() < 1e-15
+    assert faces_frame["w"].min() > -0.02
+    assert faces_frame["w"].max() < 0.02
+
+
+def test_FMFaces(mocker):
+    
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces._map_to_faces_frame',
+                        autospec=True)
+    
+    path = "mock"
+    tstep = 0
+    
+    test = _FMFaces(path, 2, 18)
+    test._get_faces_frame(tstep)
+    
+    mock.assert_called_with(path, tstep)
+
+
+def test_trim_to_faces_frame(data_dir):
+    
+    trim_path = data_dir / "output" / "trim-D3D.nc"
+    faces_frame = _trim_to_faces_frame(trim_path, -1)
+    
+    assert isinstance(faces_frame, pd.DataFrame)
+    assert len(faces_frame) == 216
+    assert faces_frame.columns.to_list() == ["x",
+                                             "y",
+                                             "z",
+                                             "k",
+                                             "time",
+                                             "depth",
+                                             "u",
+                                             "v",
+                                             "w"]
+    
+    assert np.isclose(faces_frame["x"].min(), 0.5)
+    assert np.isclose(faces_frame["x"].max(), 17.5)
+    assert np.isclose(faces_frame["y"].min(), 1.5)
+    assert np.isclose(faces_frame["y"].max(), 4.5)
+    assert -2 < faces_frame["z"].min() < -4 / 3
+    assert -2 / 3 < faces_frame["z"].max() < 0
+    
+    assert set(faces_frame["k"]) == set([0, 1, 2])
+    assert set(faces_frame["time"]) == set([
+                                        pd.Timestamp('2001-01-01 01:00:00')])
+    assert faces_frame["depth"].min() > 2
+    assert faces_frame["depth"].max() < 2.005
+    
+    assert faces_frame["u"].min() > 0.6
+    assert faces_frame["u"].max() < 0.9
+    assert faces_frame["v"].min() > -1e-2
+    assert faces_frame["v"].max() < 1e-2
+    assert faces_frame["w"].min() > -0.03
+    assert faces_frame["w"].max() < 0.02
+
+
+def test_StructuredFaces(mocker):
+    
+    mock = mocker.patch('snl_d3d_cec_verify.result.faces._trim_to_faces_frame',
+                        autospec=True)
+    
+    path = "mock"
+    tstep = 0
+    
+    test = _StructuredFaces(path, 2, 18)
+    test._get_faces_frame(tstep)
+    
+    mock.assert_called_with(path, tstep)

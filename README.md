@@ -11,10 +11,11 @@
 # SNL-Delft3D-CEC-Verify
 
 SNL-Delft3D-CEC-Verify is a python package for automated testing of 
-[SNL-Delft3D-FM-CEC][101] which adds current energy converter (CEC) support to 
-the [Delft3D Flexible Mesh Suite][102]. This package is used to verify the 
-performance of SNL-Delft3D-FM-CEC by comparing against the 2014 flume 
-experiment conducted by Mycek et al.[[1]](#1).
+[SNL-Delft3D-CEC][116] and [SNL-Delft3D-FM-CEC][101] which adds current energy 
+converter (CEC) support to the [Delft3D 4 (structured)][117] and [Delft3D 
+Flexible Mesh][102] suites, respectively. This package  is used to verify the 
+performance of SNL-Delft3D-CEC and SNL-Delft3D-FM-CEC by comparing against the 
+2014 flume experiment conducted by Mycek et al.[[1]](#1).
 
 ## Quick Start
 
@@ -31,7 +32,7 @@ From a conda prompt create a named environment in which to install the
 for future updates:
 
 ```
-(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.4.3
+(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.5.0
 (base) > conda activate snld3d
 (snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
 (snld3d) > conda config --env --set channel_priority strict
@@ -56,10 +57,10 @@ environment, type:
 
 ### Minimal Working Example
 
-The following presents an example of running a case study, based on the Mycek
-experiment, and collecting results at the turbine centre. Note that the token
-`<D3D_BIN>`, should be replaced with the path to the `bin` directory of the
-compiled Delft3D source code.
+The following presents an example of running a case study using a flexible mesh
+ (`"fm"`) model, based on the Mycek experiment, and collecting results at the 
+turbine centre. Note that the token `<D3D_BIN>`, should be replaced with the 
+path to the `bin` directory of the compiled Delft3D source code.
 
 ```pycon
 >>> import tempfile
@@ -87,6 +88,12 @@ Data variables:
 
 ```
 
+To use a structured model in the above example, change line 3 to:
+
+```
+>>> template = Template("structured")
+```
+
 More detailed examples are provided in the section below.
 
 ## Examples
@@ -109,16 +116,16 @@ installed. To install it, type:
 (snld3d) > conda install -y pypandoc pandoc=2.12
 ```
 
-Currently, a compiled copy of SNL-Delft3D-FM-CEC must be available for the 
-examples to run. If the binaries are installed in the standard location in the 
-Delft3D source code (i.e. in the `src/bin` folder), simply copy the required 
-files for each example to the source code's  `examples` directory. A list of 
-files required to run each example is provided at the top of the subsections 
-below.
+Currently, a compiled copy of SNL-Delft3D-CEC or SNL-Delft3D-FM-CEC must be 
+available for the examples to run. If the binaries are installed in the 
+standard location in the Delft3D source code (i.e. in the `src/bin` folder), 
+simply copy the required files for each example to the source code's 
+`examples` directory. A list of files required to run each example is provided 
+at the top of the subsections below.
 
-Alternatively, the location of SNL-Delft3D-FM-CEC binaries can specified by 
-setting the `D3D_BIN` environment variable, instead of copying the example 
-files. To set `D3D_BIN`, for example, using PowerShell:
+Alternatively, the location of Delft3D binaries can specified by setting the 
+`D3D_BIN` environment variable, instead of copying the example files. To set 
+`D3D_BIN`, for example, using PowerShell:
 
 ```
 (snld3d) > $env:D3D_BIN = "\path\to\SNL-Delft3D-FM-CEC\src\bin"
@@ -130,8 +137,8 @@ Required files:
 +   `basic.py`
 +   `reference.docx` (for conversion to Word format)
 
-The basic example shows how to define a set of simulations with varying
-parameters, run the simulations and then analyse the results.
+The basic example shows how to define a set of flexible mesh models with 
+varying parameters, run the models and then analyse the results.
 
 To run the example, move to the directory containing `basic.py` and then 
 call Python:
@@ -143,6 +150,23 @@ call Python:
 If successful, the report files (and images) will be placed in a sub-directory
 called `basic_report`.
 
+### Basic Example (Structured)
+
+Required files:
++   `basic_structured.py`
++   `reference.docx` (for conversion to Word format)
+
+This example is identical to the [Basic Example](#basic-example), except using 
+a structured mesh rather than flexible. To run the example, move to the 
+directory containing `basic_structured.py` and then call Python:
+
+```
+(snld3d) > python basic_structured.py
+```
+
+If successful, the report files (and images) will be placed in a sub-directory
+called `basic_structured_report`.
+
 ### Validation Example
 
 Required files:
@@ -150,8 +174,8 @@ Required files:
 +   `validation.bib` (for conversion to Word format)
 +   `reference.docx` (for conversion to Word format)
 
-The validation example demonstrates comparison of Delft3D with the experimental
-results of Mycek et al.[[1]](#1)
+The validation example demonstrates comparison of a flexible mesh Delft3D model
+with the experimental results of Mycek et al.[[1]](#1)
 
 To run the example, move to the directory containing `validation.py` and then 
 call Python:
@@ -170,10 +194,10 @@ Required files:
 +   `validation.bib` (for conversion to Word format)
 +   `reference.docx` (for conversion to Word format)
 
-This is the first "production" example, designed to generate meaningful results.
-A grid convergence study (see e.g. [[2]](#2)) is conducted for the turbine 
-simulation to determine the free stream and wake velocities at infinite grid
-resolution. The results are then compared to the results of 
+This is the first "production" example, designed to generate meaningful 
+results. A grid convergence study (see e.g. [[2]](#2)) is conducted for a 
+flexible mesh model to determine the free stream and turbine wake velocities 
+at infinite grid resolution. The results are then compared to the results of 
 Mycek et al.[[1]](#1).
 
 Note that this study takes a considerable amount of wall-clock time to 
@@ -358,3 +382,5 @@ Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial
 [113]: https://insipid-sphinx-theme.readthedocs.io/
 [114]: https://github.com/conda-forge/miniforge
 [115]: https://python-semantic-release.readthedocs.io/en/latest/
+[116]: https://github.com/SNL-WaterPower/SNL-Delft3D-CEC
+[117]: https://www.deltares.nl/en/software/delft3d-4-suite/

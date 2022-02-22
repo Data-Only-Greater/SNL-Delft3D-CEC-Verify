@@ -182,7 +182,6 @@ class Template:
                                                 y0,
                                                 y1)
             data.update(grid_data)
-            data["mock"] = "MOCK"
 
 
 class _BaseTemplateExtras(metaclass=ABCMeta):

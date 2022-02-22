@@ -10,8 +10,6 @@ from snl_d3d_cec_verify.runner import (_get_entry_point,
                                        _run_script,
                                        run_dflowfm,
                                        run_dflow2d3d,
-                                       _find_path,
-                                       _BaseModelRunner,
                                        _FMModelRunner,
                                        _StructuredModelRunner,
                                        _run_model,
@@ -176,87 +174,15 @@ def test_run_dflow2d3d(mocker, tmp_path, data_dir):
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
 
 
-def test_find_path_multiple_files(tmp_path):
-    
-    ext = ".mdu"
-    p = tmp_path / f"mock1{ext}"
-    p.write_text('Mock')
-    p = tmp_path / f"mock2{ext}"
-    p.write_text('Mock')
-    
-    with pytest.raises(FileNotFoundError) as excinfo:
-        _find_path(tmp_path, ext)
-    
-    assert f"Multiple files detected with signature '*{ext}'" in str(excinfo)
 
-
-def test_find_path_multiple_named_files(tmp_path):
+def test_FMModelRunner_path(mocker):
     
-    file_root = "mock"
-    ext = ".mdu"
-    p = tmp_path / f"{file_root}{ext}"
-    p.write_text('Mock')
-    
-    sub_dir = tmp_path / "input"
-    sub_dir.mkdir()
-    p = sub_dir / f"{file_root}{ext}"
-    p.write_text('Mock')
-    
-    with pytest.raises(FileNotFoundError) as excinfo:
-        _find_path(tmp_path, ext, file_root)
-    
-    assert f"signature '{file_root}{ext}'" in str(excinfo)
-
-
-@pytest.mark.parametrize("file_name, root, valid", [
-                                ("mock.mdu", None, True),
-                                ("", None, False),
-                                ("mock.mdf", None, False),
-                                ("mock.mdu", "mock", True),
-                                ("mock.mdu", "not_mock", False)])
-def test_find_path(tmp_path, file_name, root, valid):
-    
-    ext = ".mdu"
-    
-    if file_name:
-        p = tmp_path / file_name
-        p.write_text('Mock')
-    
-    if valid:
-        expected = p
-    else:
-        expected = None
-    
-    test = _find_path(tmp_path, ext, root)
-    
-    assert test == expected
-
-
-class MockModelRunner(_BaseModelRunner):
-    
-    def _get_model_path(self):
-        return self.project_path
-    
-    def run_model(self):
-        pass
-
-
-@pytest.mark.parametrize("project_path, expected", [
-                            (None, False),
-                            (0, True)])
-def test_BaseModelRunner_is_model(project_path, expected):
-    test = MockModelRunner(project_path)
-    assert test.is_model() is expected
-
-
-def test_FMModelRunner_get_model_path(mocker):
-    
-    mock_find_path = mocker.patch('snl_d3d_cec_verify.runner._find_path',
+    mock_find_path = mocker.patch('snl_d3d_cec_verify.runner.find_path',
                                   autospec=True)
     
     project_path = "mock"
     test = _FMModelRunner(project_path)
-    test._get_model_path()
+    test.path
     
     mock_find_path.assert_called_once_with(project_path, ".mdu")
 
@@ -292,14 +218,14 @@ def test_FMModelRunner_run_model(mocker, tmp_path):
                                              omp_num_threads)
 
 
-def test_StructuredModelRunner_get_model_path(mocker):
+def test_StructuredModelRunner_path(mocker):
     
-    mock_find_path = mocker.patch('snl_d3d_cec_verify.runner._find_path',
+    mock_find_path = mocker.patch('snl_d3d_cec_verify.runner.find_path',
                                   autospec=True)
     
     project_path = "mock"
     test = _StructuredModelRunner(project_path)
-    test._get_model_path()
+    test.path
     
     mock_find_path.assert_called_once_with(project_path,
                                           '.xml',

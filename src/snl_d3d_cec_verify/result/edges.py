@@ -13,14 +13,15 @@ import xarray as xr
 from shapely.geometry import LineString # type: ignore
 from shapely.geometry.base import BaseGeometry # type: ignore
 
-from .base import TimeStepResolver
+from .base import _TimeStepResolver
 from ..types import StrOrPath
 
 
 @dataclass
-class Edges(TimeStepResolver):
-    """Class for extracting results on the edges of the simulation grid. Use in
-    conjunction with the :class:`.Result` class.
+class Edges(_TimeStepResolver):
+    """Class for extracting results on the edges of the simulation grid for 
+    flexible mesh (``'fm'``) models. Use in conjunction with the 
+    :class:`.Result` class.
     
     >>> from snl_d3d_cec_verify import Result
     >>> data_dir = getfixture('data_dir')
@@ -30,8 +31,9 @@ class Edges(TimeStepResolver):
     0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
     ...
     
-    :param map_path: path to the :code:`FlowFM_map.nc` file
+    :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
+    
     """
     
     _t_steps: Dict[int, pd.Timestamp] = field(default_factory=dict,
@@ -116,7 +118,7 @@ class Edges(TimeStepResolver):
         t_step = self._resolve_t_step(t_step)
         if t_step in self._t_steps: return
         
-        frame = _map_to_edges_geoframe(self.map_path, t_step)
+        frame = _map_to_edges_geoframe(self.nc_path, t_step)
         
         if self._frame is None:
             self._frame = frame
