@@ -2,7 +2,49 @@
 
 import pytest
 
-from snl_d3d_cec_verify._paths import find_path
+from snl_d3d_cec_verify._paths import (_BaseModelFinder,
+                                       get_model,
+                                       find_path)
+
+
+class MockModelFinder(_BaseModelFinder):
+    
+    @property
+    def path(self):
+        return self.project_path
+    
+    def run_model(self):
+        pass
+
+
+class MockNegModelFinder(_BaseModelFinder):
+    
+    @property
+    def path(self):
+        if self.project_path is None:
+            return 0
+        return None
+    
+    def run_model(self):
+        pass
+
+
+@pytest.mark.parametrize("project_path, expected", [
+                            (None, False),
+                            (0, True)])
+def test_BaseModelRunner_is_model(project_path, expected):
+    test = MockModelFinder(project_path)
+    assert test.is_model() is expected
+
+
+def test_get_model():
+    test = get_model(0, MockNegModelFinder, MockModelFinder)
+    assert isinstance(test, MockModelFinder)
+
+
+def test_get_model_none():
+    test = get_model(0, MockNegModelFinder, MockNegModelFinder)
+    assert test is None
 
 
 def test_find_path_multiple_files(tmp_path):

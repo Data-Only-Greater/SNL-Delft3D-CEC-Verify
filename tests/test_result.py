@@ -6,6 +6,7 @@ import pytest
 
 from snl_d3d_cec_verify import MycekStudy
 from snl_d3d_cec_verify.result import (_FMModelResults,
+                                       _StructuredModelResults,
                                        Result,
                                        Transect,
                                        Validate,
@@ -15,7 +16,7 @@ from snl_d3d_cec_verify.result import (_FMModelResults,
                                        get_normalised_data_deficit,
                                        _get_axes_coords)
 from snl_d3d_cec_verify.result.edges import Edges
-from snl_d3d_cec_verify.result.faces import Faces
+from snl_d3d_cec_verify.result.faces import Faces, _FMFaces, _StructuredFaces
 
 
 @pytest.fixture
@@ -46,9 +47,134 @@ def test_fmresult_times(fmresult):
     assert times[0] == pd.Timestamp('2001-01-01')
 
 
+def test_fmresult_edges(fmresult):
+    assert isinstance(fmresult.edges, Edges)
+
+
+def test_fmresult_faces(fmresult):
+    assert isinstance(fmresult.faces, _FMFaces)
+
+
+@pytest.fixture
+def fmresultnone(tmp_path):
+    return _FMModelResults(tmp_path)
+
+
+def test_fmresultnone_path(fmresultnone):
+    assert fmresultnone.path is None
+
+
+def test_fmresultnone_x_lim(fmresultnone):
+    assert fmresultnone.x_lim is None
+
+
+def test_fmresultnone_y_lim(fmresultnone):
+    assert fmresultnone.y_lim is None
+
+
+def test_fmresultnone_times(fmresultnone):
+    assert fmresultnone.times is None
+
+
+def test_fmresultnone_edges(fmresultnone):
+    assert fmresultnone.edges is None
+
+
+def test_fmresultnone_faces(fmresultnone):
+    assert fmresultnone.faces is None
+
+
+@pytest.fixture
+def structuredresult(data_dir):
+    return _StructuredModelResults(data_dir)
+
+
+def test_structuredresult_path(data_dir, structuredresult):
+    expected = data_dir / "output" / "trim-D3D.nc"
+    assert structuredresult.path == expected
+
+
+def test_structuredresult_x_lim(structuredresult):
+    x_low, x_high = structuredresult.x_lim
+    assert np.isclose(x_low, 0)
+    assert np.isclose(x_high, 18)
+
+
+def test_structuredresult_y_lim(structuredresult):
+    y_low, y_high = structuredresult.y_lim
+    assert np.isclose(y_low, 1)
+    assert np.isclose(y_high, 5)
+
+
+def test_structuredresult_times(structuredresult):
+    times = structuredresult.times
+    assert len(times) == 2
+    assert times[0] == pd.Timestamp('2001-01-01')
+
+
+def test_structuredresult_edges(structuredresult):
+    assert structuredresult.edges is None
+
+
+def test_structuredresult_faces(structuredresult):
+    assert isinstance(structuredresult.faces, _StructuredFaces)
+
+
+@pytest.fixture
+def structuredresultnone(tmp_path):
+    return _StructuredModelResults(tmp_path)
+
+
+def test_structuredresultnone_path(structuredresultnone):
+    assert structuredresultnone.path is None
+
+
+def test_structuredresultnone_x_lim(structuredresultnone):
+    assert structuredresultnone.x_lim is None
+
+
+def test_structuredresultnone_y_lim(structuredresultnone):
+    assert structuredresultnone.y_lim is None
+
+
+def test_structuredresultnone_times(structuredresultnone):
+    assert structuredresultnone.times is None
+
+
+def test_structuredresultnone_faces(structuredresultnone):
+    assert structuredresultnone.faces is None
+
+
+def test_Result_missing_files(tmp_path):
+    
+    with pytest.raises(FileNotFoundError) as excinfo:
+        Result(tmp_path)
+    
+    assert "No valid model result files detected" in str(excinfo)
+
+
+def test_Result_FM(data_dir):
+    test = Result(data_dir)
+    assert isinstance(test._model_result, _FMModelResults)
+
+
+def test_Result_structured(mocker, data_dir):
+    
+    mocker.patch('snl_d3d_cec_verify.result._FMModelResults.is_model',
+                 return_value=False)
+    test = Result(data_dir)
+    
+    assert isinstance(test._model_result, _StructuredModelResults)
+
+
 @pytest.fixture
 def result(data_dir):
     return Result(data_dir)
+
+
+def test_result_path(data_dir, result):
+    expected = data_dir / "output" / "FlowFM_map.nc"
+    assert result.path == expected
 
 
 def test_result_x_lim(result):

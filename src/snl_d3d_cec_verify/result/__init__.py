@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import csv
 import itertools
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import (Any,
                     Hashable,
                     List,
@@ -32,7 +32,7 @@ except ImportError: # pragma: no cover
 
 from .base import TimeStepResolver
 from .edges import Edges
-from .faces import Faces, _FMFaces
+from .faces import Faces, _FMFaces, _StructuredFaces
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
@@ -65,15 +65,20 @@ class Result:
     ...
     
     :param project_path: path to the Delft3D project directory
-    :param relative_map_parts: list of components representing the relative
-        path to the :code:`FlowFM_map.nc` file, from the project directory. 
-        Defaults to :code:`["output", "FlowFM_map.nc"]`
     
     """
     
-    def __init__(self, project_path: StrOrPath,
-                       relative_map_parts: Optional[List[str]] = None):
-        self._model_result = _FMModelResults(project_path)
+    def __init__(self, project_path: StrOrPath):
+        
+        model_result = get_model(project_path,
+                                 _FMModelResults,
+                                 _StructuredModelResults)
+        
+        if model_result is None:
+            msg = "No valid model result files detected"
+            raise FileNotFoundError(msg)
+        
+        self._model_result = model_result
     
     @property
     def path(self) -> Path:
@@ -234,6 +239,60 @@ class _FMModelResults(_BaseModelResults):
         return _FMFaces(self.path,
                         len(self.times),
                         self.x_lim[1])
+
+
+class _StructuredModelResults(_BaseModelResults):
+    
+    @property
+    def path(self) -> Optional[Path]:
+        return find_path(self.project_path, ".nc", "trim-")
+    
+    @property
+    def x_lim(self) -> Optional[Tuple[float, float]]:
+        
+        if self.path is None: return None
+        
+        with xr.open_dataset(self.path) as ds:
+            x = ds.XCOR.values
+        
+        x = x[:-1, :-1]
+        
+        return (x.min(), x.max())
+    
+    @property
+    def y_lim(self) -> Optional[Tuple[float, float]]:
+        
+        if self.path is None: return None
+        
+        with xr.open_dataset(self.path) as ds:
+            y = ds.YCOR.values
+        
+        y = y[:-1, :-1]
+        
+        return (y.min(), y.max())
+    
+    @property
+    def times(self) -> Optional[npt.NDArray[np.datetime64]]:
+        
+        if self.path is None: return None
+        
+        with xr.open_dataset(self.path) as ds:
+            time = ds.time.values
+        
+        return time
+    
+    @property
+    def edges(self) -> Optional[Edges]:
+        return None
+    
+    @property
+    def faces(self) -> Optional[Faces]:
+        if self.path is None: return None
+        assert self.times is not None
+        assert self.x_lim is not None
+        return _StructuredFaces(self.path,
+                                len(self.times),
+                                self.x_lim[1])
 
 
 @dataclass(frozen=True, repr=False)

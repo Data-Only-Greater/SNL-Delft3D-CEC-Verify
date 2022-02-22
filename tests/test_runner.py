@@ -10,7 +10,6 @@ from snl_d3d_cec_verify.runner import (_get_entry_point,
                                        _run_script,
                                        run_dflowfm,
                                        run_dflow2d3d,
-                                       _BaseModelRunner,
                                        _FMModelRunner,
                                        _StructuredModelRunner,
                                        _run_model,
@@ -175,34 +174,17 @@ def test_run_dflow2d3d(mocker, tmp_path, data_dir):
     assert int(env['OMP_NUM_THREADS']) == omp_num_threads
 
 
-class MockModelRunner(_BaseModelRunner):
-    
-    @property
-    def path(self):
-        return self.project_path
-    
-    def run_model(self):
-        pass
 
-
-@pytest.mark.parametrize("project_path, expected", [
-                            (None, False),
-                            (0, True)])
-def test_BaseModelRunner_is_model(project_path, expected):
-    test = MockModelRunner(project_path)
-    assert test.is_model() is expected
-
-
-# def test_FMModelRunner_get_model_path(mocker):
+def test_FMModelRunner_path(mocker):
     
-#     mock_find_path = mocker.patch('snl_d3d_cec_verify.runner.find_path',
-#                                   autospec=True)
+    mock_find_path = mocker.patch('snl_d3d_cec_verify.runner.find_path',
+                                  autospec=True)
     
-#     project_path = "mock"
-#     test = _FMModelRunner(project_path)
-#     test._get_model_path()
+    project_path = "mock"
+    test = _FMModelRunner(project_path)
+    test.path
     
-#     mock_find_path.assert_called_once_with(project_path, ".mdu")
+    mock_find_path.assert_called_once_with(project_path, ".mdu")
 
 
 def test_FMModelRunner_run_model_path_missing_mdu(tmp_path):
@@ -236,18 +218,18 @@ def test_FMModelRunner_run_model(mocker, tmp_path):
                                              omp_num_threads)
 
 
-# def test_StructuredModelRunner_get_model_path(mocker):
+def test_StructuredModelRunner_path(mocker):
     
-#     mock_find_path = mocker.patch('snl_d3d_cec_verify.runner.find_path',
-#                                   autospec=True)
+    mock_find_path = mocker.patch('snl_d3d_cec_verify.runner.find_path',
+                                  autospec=True)
     
-#     project_path = "mock"
-#     test = _StructuredModelRunner(project_path)
-#     test._get_model_path()
+    project_path = "mock"
+    test = _StructuredModelRunner(project_path)
+    test.path
     
-#     mock_find_path.assert_called_once_with(project_path,
-#                                           '.xml',
-#                                           'config_d_hydro')
+    mock_find_path.assert_called_once_with(project_path,
+                                          '.xml',
+                                          'config_d_hydro')
 
 
 def test_StructuredModelRunner_run_model_path_missing_mdu(tmp_path):
