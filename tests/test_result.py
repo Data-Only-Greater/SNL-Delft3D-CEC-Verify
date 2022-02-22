@@ -172,10 +172,6 @@ def result(data_dir):
     return Result(data_dir)
 
 
-def test_result_path(data_dir, result):
-    assert result.path == data_dir
-
-
 def test_result_x_lim(result):
     assert np.isclose(result.x_lim, [0, 18]).all()
 

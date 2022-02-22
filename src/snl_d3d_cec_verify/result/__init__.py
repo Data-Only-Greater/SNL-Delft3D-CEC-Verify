@@ -79,13 +79,6 @@ class Result:
         self._model_result = model_result
     
     @property
-    def path(self) -> Path:
-        """Path to the Delft3D project directory
-        """
-        result = self._model_result.project_path
-        return Path(result)
-    
-    @property
     def x_lim(self) -> Tuple[float, float]:
         """Domain limits in the x-direction, in metres
         
@@ -147,7 +140,7 @@ class Result:
         return result
     
     def __repr__(self):
-        return f"Result(path={repr(self.path)})"
+        return f"Result(path={repr(self._model_result.project_path)})"
 
 
 class _BaseModelResults(_BaseModelFinder):
