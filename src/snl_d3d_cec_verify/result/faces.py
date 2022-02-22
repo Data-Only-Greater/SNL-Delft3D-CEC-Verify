@@ -88,7 +88,7 @@ class Faces(ABC, _FacesDataClassMixin):
         $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
         
-    :param nc_path: path to the `.nc` file containing results
+    :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
     :param xmax: maximum range in x-direction, in metres
     
