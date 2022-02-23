@@ -39,6 +39,11 @@ jobs:
         with:
           lfs: 'true'
           fetch-depth: 0
+      - name: Get branch name
+        run: |
+         raw=$(git branch -r --contains ${{ github.ref }})
+         branch=${raw##*/}
+         echo "BRANCH=$branch" >> $GITHUB_ENV
       - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: _snld3d
@@ -57,7 +62,7 @@ jobs:
           cp docs/_assets/gh-pages-redirect.html ${{ env.BUILD_DIR }}/index.html
           cp docs/_assets/gh-pages-readme.md ${{ env.BUILD_DIR }}/README.md
       - name: Deploy
-        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published') }}
+        if: ${{ github.event_name == 'push' && env.BRANCH == 'main' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
