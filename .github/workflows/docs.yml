@@ -1,5 +1,5 @@
 name: Documentation
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 jobs:
   doctest:
     runs-on: ${{ matrix.os }}
