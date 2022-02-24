@@ -100,8 +100,12 @@ More detailed examples are provided in the section below.
 
 ### Prerequisites
 
-Examples are provided in the `examples` folder. As plots are generated in the
-examples, the `matplotlib` library is also required. To install it, type:
+Examples are provided in the `examples.zip` asset of the [latest 
+release][118]. Alternatively, they can be found in the `examples` folder of 
+the source code.
+
+As plots are generated in the examples, the `matplotlib` library is also 
+required. To install it, type:
 
 ```
 (snld3d) > conda install -y matplotlib
@@ -384,3 +388,4 @@ Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial
 [115]: https://python-semantic-release.readthedocs.io/en/latest/
 [116]: https://github.com/SNL-WaterPower/SNL-Delft3D-CEC
 [117]: https://www.deltares.nl/en/software/delft3d-4-suite/
+[118]: https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/releases/latest
