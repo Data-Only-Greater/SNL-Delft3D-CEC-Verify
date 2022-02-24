@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set GIT_DESCRIBE_TAG
+        run: echo "GIT_DESCRIBE_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
       - uses: papeloto/action-zip@v1
         with:
           files: examples/
@@ -47,4 +49,4 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: examples.zip
-          tag: ${{ github.ref }}
+          tag: ${{ env.GIT_DESCRIBE_TAG }}
