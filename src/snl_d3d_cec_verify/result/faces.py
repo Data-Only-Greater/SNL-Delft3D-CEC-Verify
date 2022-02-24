@@ -641,24 +641,26 @@ def _trim_to_faces_frame(trim_path: StrOrPath,
         v1 = ds_step.V1.values
         w = ds_step.W.values
     
+    n_layers = len(ik)
+    
     x = x[1:-1, 1:-1]
-    x = np.repeat(x[np.newaxis, :, :], 3, axis=0)
+    x = np.repeat(x[np.newaxis, :, :], n_layers, axis=0)
     
     y = y[1:-1, 1:-1]
-    y = np.repeat(y[np.newaxis, :, :], 3, axis=0)
+    y = np.repeat(y[np.newaxis, :, :], n_layers, axis=0)
     
     depth = dp0 + s1
     z = depth[..., None] * sig_lyr
     z = np.rollaxis(z, 2)
     z = z[:, 1:-1, 1:-1]
     
-    ik = np.flip(ik).reshape(3, 1, 1)
+    ik = np.flip(ik).reshape(n_layers, 1, 1)
     k = np.ones(x.shape, dtype=int) * ik
     
     time = np.tile(time, x.shape)
     
     depth = depth[1:-1, 1:-1]
-    depth = np.repeat(depth[np.newaxis, :, :], 3, axis=0)
+    depth = np.repeat(depth[np.newaxis, :, :], n_layers, axis=0)
     
     u1 = u1[:, :-1, 1:-1]
     u = np.nansum([u1[:, :-1, :], u1[:, 1:, :]], axis=0) / 2
