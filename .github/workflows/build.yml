@@ -16,28 +16,31 @@ jobs:
       conda-directory: ${{ github.workspace }}/.conda
     if: github.repository == 'Data-Only-Greater/SNL-Delft3D-CEC-Verify'
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        lfs: 'true'
-    - name: Set GIT_DESCRIBE_NUMBER
-      run: echo "GIT_DESCRIBE_NUMBER=$(git log $(git describe --tags --abbrev=0)..HEAD --oneline | wc -l)" >> $GITHUB_ENV
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        conda-build-version: "*"
-    - name: Build conda package
-      run: |
-        conda build --no-anaconda-upload --override-channels -c conda-forge recipe
-      working-directory: ${{env.conda-directory}}
-    - name: Upload conda package
-      run: |
-        conda install -y anaconda-client
-        anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          lfs: 'true'
+      - name: Set GIT_DESCRIBE_NUMBER
+        run: echo "GIT_DESCRIBE_NUMBER=$(git log $(git describe --tags --abbrev=0)..HEAD --oneline | wc -l)" >> $GITHUB_ENV
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          conda-build-version: "*"
+      - name: Build conda package
+        run: |
+          conda build --no-anaconda-upload --override-channels -c conda-forge recipe
+        working-directory: ${{env.conda-directory}}
+      - name: Upload conda package
+        run: |
+          conda install -y anaconda-client
+          anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
   zip_examples:
     name: Upload Examples
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          lfs: 'true'
       - name: Set GIT_DESCRIBE_TAG
         run: echo "GIT_DESCRIBE_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
       - uses: papeloto/action-zip@v1
