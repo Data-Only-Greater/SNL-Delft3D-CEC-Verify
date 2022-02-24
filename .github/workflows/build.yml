@@ -20,6 +20,8 @@ jobs:
       with:
         fetch-depth: 0
         lfs: 'true'
+    - name: Set GIT_DESCRIBE_NUMBER
+        run: echo "GIT_DESCRIBE_NUMBER=$(git log $(git describe --tags --abbrev=0)..HEAD --oneline | wc -l)" >> $GITHUB_ENV
     - uses: conda-incubator/setup-miniconda@v2
       with:
         conda-build-version: "*"
