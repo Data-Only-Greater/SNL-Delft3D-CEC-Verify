@@ -1,4 +1,4 @@
-name: Conda Build
+name: Build Release
 
 on:
   workflow_dispatch:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    name: Conda Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -19,6 +20,8 @@ jobs:
       with:
         fetch-depth: 0
         lfs: 'true'
+    - name: Set GIT_DESCRIBE_NUMBER
+        run: echo "GIT_DESCRIBE_NUMBER=$(git log $(git describe --tags --abbrev=0)..HEAD --oneline | wc -l)" >> $GITHUB_ENV
     - uses: conda-incubator/setup-miniconda@v2
       with:
         conda-build-version: "*"
@@ -30,3 +33,18 @@ jobs:
       run: |
         conda install -y anaconda-client
         anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+  zip_examples:
+    name: Upload Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: papeloto/action-zip@v1
+        with:
+          files: examples/
+          dest: examples.zip
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: examples.zip
+          tag: ${{ github.ref }}
