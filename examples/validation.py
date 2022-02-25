@@ -65,123 +65,139 @@ def get_rmse(estimated, observed):
     return np.sqrt(((estimated - observed) ** 2).mean())
 
 
-case = MycekStudy()
-template = Template()
-runner = Runner(get_d3d_bin_path())
-report = Report(79, "%d %B %Y")
-validate = Validate(case)
-
-report_dir = Path("validation_report")
-report_dir.mkdir(exist_ok=True)
-data = defaultdict(list)
-
-with tempfile.TemporaryDirectory() as tmpdirname:
+def main(template_type):
     
-    # Create the project and then run it
-    template(case, tmpdirname)
-    runner(tmpdirname)
+    case = MycekStudy()
+    template = Template(template_type)
+    runner = Runner(get_d3d_bin_path())
+    report = Report(79, "%d %B %Y")
+    validate = Validate(case)
     
-    # Pick up the results
-    result = Result(tmpdirname)
+    report_dir = Path(template_type) / "validation_report"
+    report_dir.mkdir(exist_ok=True, parents=True)
+    data = defaultdict(list)
     
-    for i, transect in enumerate(validate):
+    with tempfile.TemporaryDirectory() as tmpdirname:
         
-        # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
-        transect_true = transect.to_xarray()
+        # Create the project and then run it
+        template(case, tmpdirname)
+        runner(tmpdirname)
         
-        # Add report section with plot
-        report.content.add_heading(transect.attrs['description'],
-                                   level=2)
+        # Pick up the results
+        result = Result(tmpdirname)
         
-        # Determine plot x-axis
-        major_axis = f"${transect.attrs['major_axis']}^*$"
-        
-        # Create and save a u0 figure
-        transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
-        transect_true_u0 = get_u0(transect_true, case, transect_true)
-        
-        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-        transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
-        transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
-        ax.legend()
-        ax.grid()
-        ax.set_title("")
-        
-        plot_name = f"transect_u0_{i}.png"
-        plot_path = report_dir / plot_name
-        plt.savefig(plot_path, bbox_inches='tight')
-        
-        # Add figure with caption
-        caption = ("$u_0$ comparison (m/s). Experimental data reverse "
-                   "engineered  from [@mycek2014, fig. "
-                   f"{transect.attrs['figure']}].")
-        report.content.add_image(plot_name, caption, width="4in")
-        
-        # Calculate RMS error and store
-        rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
-        data["Transect"].append(transect.attrs['description'])
-        data["RMSE"].append(rmse)
-        
-        # Create and save a gamma0 figure
-        transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
-                                         case,
-                                         transect_true)
-        transect_true_gamma0 = get_gamma0(transect_true,
-                                          case,
-                                          transect_true)
-        
-        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-        transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
-        transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
-        ax.legend()
-        ax.grid()
-        ax.set_title("")
-        
-        plot_name = f"transect_gammm0_{i}.png"
-        plot_path = report_dir / plot_name
-        plt.savefig(plot_path, bbox_inches='tight')
-        
-        # Add figure with caption
-        caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
-                   "engineered from [@mycek2014, fig. "
-                   f"{transect.attrs['figure']}].")
-        report.content.add_image(plot_name, caption, width="4in")
-
-# Add table for errors
-df = pd.DataFrame(data)
-caption = "Root-mean-square errors in $u_0$."
-report.content.add_heading("Errors", level=2)
-report.content.add_table(df,
-                         index=False,
-                         caption=caption)
-
-# Add section for the references
-report.content.add_heading("References", level=2)
-
-# Add report metadata
-os_name = platform.system()
-report.title = f"Validation Example ({os_name})"
-report.date = "today"
-
-# Write the report to file
-with open(report_dir / "report.md", "wt") as f:
-    for line in report:
-        f.write(line)
-
-# Convert file to docx or print report to stdout
-try:
+        for i, transect in enumerate(validate):
+            
+            # Compare transect
+            transect_sim = result.faces.extract_z(-1, **transect)
+            transect_true = transect.to_xarray()
+            
+            # Add report section with plot
+            report.content.add_heading(transect.attrs['description'],
+                                       level=2)
+            
+            # Determine plot x-axis
+            major_axis = f"${transect.attrs['major_axis']}^*$"
+            
+            # Create and save a u0 figure
+            transect_sim_u0 = get_u0(transect_sim["$u$"], case, transect_true)
+            transect_true_u0 = get_u0(transect_true, case, transect_true)
+            
+            fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+            transect_sim_u0.plot(ax=ax, x=major_axis, label='Delft3D')
+            transect_true_u0.plot(ax=ax, x=major_axis, label='Experiment')
+            ax.legend()
+            ax.grid()
+            ax.set_title("")
+            
+            plot_name = f"transect_u0_{i}.png"
+            plot_path = report_dir / plot_name
+            plt.savefig(plot_path, bbox_inches='tight')
+            
+            # Add figure with caption
+            caption = ("$u_0$ comparison (m/s). Experimental data reverse "
+                       "engineered  from [@mycek2014, fig. "
+                       f"{transect.attrs['figure']}].")
+            report.content.add_image(plot_name, caption, width="4in")
+            
+            # Calculate RMS error and store
+            rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
+            data["Transect"].append(transect.attrs['description'])
+            data["RMSE"].append(rmse)
+            
+            # Create and save a gamma0 figure
+            transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
+                                             case,
+                                             transect_true)
+            transect_true_gamma0 = get_gamma0(transect_true,
+                                              case,
+                                              transect_true)
+            
+            fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+            transect_sim_gamma0.plot(ax=ax, x=major_axis, label='Delft3D')
+            transect_true_gamma0.plot(ax=ax, x=major_axis, label='Experiment')
+            ax.legend()
+            ax.grid()
+            ax.set_title("")
+            
+            plot_name = f"transect_gammm0_{i}.png"
+            plot_path = report_dir / plot_name
+            plt.savefig(plot_path, bbox_inches='tight')
+            
+            # Add figure with caption
+            caption = ("$\gamma_0$ comparison (%). Experimental data reverse "
+                       "engineered from [@mycek2014, fig. "
+                       f"{transect.attrs['figure']}].")
+            report.content.add_image(plot_name, caption, width="4in")
     
-    import pypandoc
+    # Add table for errors
+    df = pd.DataFrame(data)
+    caption = "Root-mean-square errors in $u_0$."
+    report.content.add_heading("Errors", level=2)
+    report.content.add_table(df,
+                             index=False,
+                             caption=caption)
     
-    pypandoc.convert_file(f"{report_dir / 'report.md'}",
-                          'docx',
-                          outputfile=f"{report_dir / 'report.docx'}",
-                          extra_args=['-C',
-                                      f'--resource-path={report_dir}',
-                                      '--bibliography=validation.bib',
-                                      '--reference-doc=reference.docx'])
+    # Add section for the references
+    report.content.add_heading("References", level=2)
+    
+    # Add report metadata
+    os_name = platform.system()
+    report.title = f"Validation Example ({os_name})"
+    report.date = "today"
+    
+    # Write the report to file
+    with open(report_dir / "report.md", "wt") as f:
+        for line in report:
+            f.write(line)
+    
+    # Convert file to docx or print report to stdout
+    try:
+        
+        import pypandoc
+        
+        pypandoc.convert_file(f"{report_dir / 'report.md'}",
+                              'docx',
+                              outputfile=f"{report_dir / 'report.docx'}",
+                              extra_args=['-C',
+                                          f'--resource-path={report_dir}',
+                                          '--bibliography=examples.bib',
+                                          '--reference-doc=reference.docx'])
+    
+    except ImportError:
+        
+        print(report)
 
-except ImportError:
+
+if __name__ == "__main__":
     
-    print(report)
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('MODEL',
+                        choices=['fm', 'structured'],
+                        help=("the type of model to be exectuted - choose "
+                              "'fm' or 'structured'"))
+    
+    args = parser.parse_args()
+    main(args.MODEL)
