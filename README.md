@@ -143,7 +143,7 @@ Required files:
 +   `reference.docx` (for conversion to Word format)
 
 The basic example shows how to define a flexible mesh or structured model with 
-varying parameters, run the models and then analyse the results.
+varying parameters, run the model and then analyse the results.
 
 To run the example, move to the directory containing `basic.py` and then call 
 the script using Python with the model type (either `fm` or `structured`) as 
@@ -187,13 +187,13 @@ Required files:
 +   `reference.docx` (for conversion to Word format)
 
 This is the first "production" example, designed to generate meaningful 
-results. A grid convergence study (see e.g. [[2]](#2)) is conducted for a to 
+results. A grid convergence study (see e.g. [[2]](#2)) is conducted to 
 determine the free stream and turbine wake velocities at infinite grid 
 resolution. The results are then compared to the results of Mycek et 
 al.[[1]](#1).
 
-This example also requires the [convergence][109] package to be installed, by
-issuing the following command in the conda environment:
+This example requires the [convergence][109] package to be installed. Issue 
+the following command in the conda environment:
 
 ```
 (snld3d) > pip install convergence
@@ -217,9 +217,9 @@ For the flexible mesh model, this is `structured/grid_convergence_runs`. If
 Delft3D is updated, ensure to delete or move this folder, so that new 
 simulations are conducted.
 
-By default, the study is conducted using one CPU thread. To reduce simulation
-time, assuming additional capacity is available, increase the number of utilised
-threads using the `--threads` optional argument:
+By default, the study is conducted using just one CPU thread. To reduce 
+simulation time, assuming additional capacity is available, increase the 
+number of utilised threads using the `--threads` optional argument:
 
 ```
 (snld3d) > python grid_convergence.py fm --threads 8
