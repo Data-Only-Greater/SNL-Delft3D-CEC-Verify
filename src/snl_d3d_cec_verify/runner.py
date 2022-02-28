@@ -106,8 +106,8 @@ class LiveRunner:
     
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
-    :param omp_num_threads: The number of CPU threads to use, defaults to
-        {omp_num_threads}
+    :param omp_num_threads: for ``'fm'`` models, activate parallel computation 
+        with the given number of CPU threads, optional
     
     .. automethod:: __call__
     
