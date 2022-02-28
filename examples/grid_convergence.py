@@ -590,6 +590,7 @@ if __name__ == "__main__":
                                       help='execute flexible mesh model')
     parser_fm.add_argument('--threads',
                            type=check_positive,
+                           default=1,
                            help=("number of CPU threads to utilise - defaults "
                                  "to 1"))
     
@@ -600,6 +601,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if "threads" not in args:
-        args.threads = None
+        args.threads = 1
     
     main(args.MODEL, args.experiments, args.threads)

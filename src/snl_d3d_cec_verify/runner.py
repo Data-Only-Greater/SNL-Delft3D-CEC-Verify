@@ -38,8 +38,8 @@ class Runner:
     
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
-    :param omp_num_threads: for ``'fm'`` models, activate parallel computation 
-        with the given number of CPU threads, optional
+    :param omp_num_threads: The number of computational threads to use for
+        ``'fm'`` models, defaults to 1
     :param show_stdout: show Delft3D logging to stdout in console, defaults
         to {show_stdout}
     
@@ -50,9 +50,8 @@ class Runner:
     #: path to the ``bin`` folder generated when compiling Delft3D
     d3d_bin_path: StrOrPath
     
-    #: The number of CPU threads to use for parallel computation of fm models.
-    #: Compuation is serial if None.
-    omp_num_threads: Optional[int] = None
+    #: The number of computational threads to use for fm models
+    omp_num_threads: int = 1
     
     show_stdout: bool = False #: show Delft3D logging to stdout in console
     
@@ -106,8 +105,8 @@ class LiveRunner:
     
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
-    :param omp_num_threads: for ``'fm'`` models, activate parallel computation 
-        with the given number of CPU threads, optional
+    :param omp_num_threads: The number of computational threads to use for
+        ``'fm'`` models, defaults to {omp_num_threads}
     
     .. automethod:: __call__
     
@@ -116,9 +115,8 @@ class LiveRunner:
     #: path to the ``bin`` folder generated when compiling Delft3D
     d3d_bin_path: StrOrPath
     
-    #: The number of CPU threads to use for parallel computation of fm models.
-    #: Compuation is serial if None.
-    omp_num_threads: Optional[int] = None
+    #: The number of computational threads to use for fm models
+    omp_num_threads: int = 1
     
     def __call__(self, project_path: StrOrPath) -> Iterator[str]:
         """
@@ -197,7 +195,7 @@ class _FMModelRunner(_BaseModelRunner):
         return find_path(self.project_path, ".mdu")
     
     def run_model(self, d3d_bin_path: StrOrPath,
-                        omp_num_threads: Optional[int] = None,
+                        omp_num_threads: int = 1,
                         **kwargs: Any) -> subprocess.Popen:
         
         if self.path is None:
@@ -229,7 +227,7 @@ class _StructuredModelRunner(_BaseModelRunner):
 def run_dflowfm(d3d_bin_path: StrOrPath,
                 model_path: StrOrPath,
                 model_file: str,
-                omp_num_threads: Optional[int] = None) -> subprocess.Popen:
+                omp_num_threads: int = 1) -> subprocess.Popen:
     """Run a Delft3D flexible mesh simulation, given an existing Delft3D
     installation and a prepared model.
     
@@ -238,8 +236,8 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
     :param model_path: path to folder containing the Delft3D model files
-    :param omp_num_threads: activate parallel computation with the given 
-        number of CPU threads, optional
+    :param omp_num_threads: The number of CPU threads to use, defaults to
+        {omp_num_threads}
     
     :raises OSError: if function is called on an unsupported operating system
     :raises FileNotFoundError: if the Delft3D entry point or model folder
@@ -249,11 +247,8 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     
     """
     
-    env = None
-    
-    if omp_num_threads is not None:
-        env = dict(os.environ)
-        env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
+    env = dict(os.environ)
+    env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
     
     return _run_script("dflowfm",
                        d3d_bin_path,
