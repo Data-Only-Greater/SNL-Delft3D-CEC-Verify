@@ -116,7 +116,9 @@ class LiveRunner:
     #: path to the ``bin`` folder generated when compiling Delft3D
     d3d_bin_path: StrOrPath
     
-    omp_num_threads: int = 1  #: The number of CPU threads to use
+    #: The number of CPU threads to use for parallel computation of fm models.
+    #: Compuation is serial if None.
+    omp_num_threads: Optional[int] = None
     
     def __call__(self, project_path: StrOrPath) -> Iterator[str]:
         """
