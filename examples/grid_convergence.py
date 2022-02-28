@@ -149,7 +149,7 @@ def get_cells(case):
     return top / bottom
 
 
-def main(template_type, omp_num_threads, max_experiments):
+def main(template_type, max_experiments, omp_num_threads):
     
     # Steps:
     #
@@ -574,20 +574,32 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('MODEL',
-                        choices=['fm', 'structured'],
-                        help=("the type of model to be exectuted - choose "
-                              "'fm' or 'structured'"))
-    parser.add_argument('--threads',
-                        type=check_positive,
-                        default=1,
-                        help=("number of CPU threads to utilise - defaults "
-                              "to 1"))
-    parser.add_argument('--experiments',
-                        type=check_positive,
-                        choices=range(3, 6),
-                        default=5,
-                        help=("number of experiments to run - defaults to 5"))
+    subparsers = parser.add_subparsers(help='Desired action to perform',
+                                       dest='MODEL')
+    
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('--experiments',
+                               type=check_positive,
+                               choices=range(3, 6),
+                               default=5,
+                               help=("number of experiments to run - defaults "
+                                     "to 5"))
+    
+    parser_fm = subparsers.add_parser('fm',
+                                      parents=[parent_parser],
+                                      help='execute flexible mesh model')
+    parser_fm.add_argument('--threads',
+                           type=check_positive,
+                           help=("number of CPU threads to utilise - defaults "
+                                 "to 1"))
+    
+    parser_structured = subparsers.add_parser('structured',
+                                              parents=[parent_parser],
+                                              help='execute structured model')
     
     args = parser.parse_args()
-    main(args.MODEL, args.threads, args.experiments)
+    
+    if "threads" not in args:
+        args.threads = None
+    
+    main(args.MODEL, args.experiments, args.threads)

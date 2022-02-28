@@ -218,8 +218,8 @@ Delft3D is updated, ensure to delete or move this folder, so that new
 simulations are conducted.
 
 By default, the study is conducted using just one CPU thread. To reduce 
-simulation time, assuming additional capacity is available, increase the 
-number of utilised threads using the `--threads` optional argument:
+simulation time of the `fm` model, assuming additional capacity is available, 
+increase the number of utilised threads using the `--threads` optional argument:
 
 ```
 (snld3d) > python grid_convergence.py fm --threads 8
