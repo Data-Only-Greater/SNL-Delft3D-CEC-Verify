@@ -7,7 +7,7 @@ import platform
 import subprocess
 from abc import abstractmethod
 from queue import Queue
-from typing import Iterator, IO, Optional
+from typing import Any, Dict, Iterator, IO, Optional
 from pathlib import Path
 from threading import Thread
 from dataclasses import dataclass
@@ -38,8 +38,8 @@ class Runner:
     
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
-    :param omp_num_threads: The number of CPU threads to use, defaults to
-        {omp_num_threads}
+    :param omp_num_threads: for ``'fm'`` models, activate parallel computation 
+        with the given number of CPU threads, optional
     :param show_stdout: show Delft3D logging to stdout in console, defaults
         to {show_stdout}
     
@@ -50,7 +50,10 @@ class Runner:
     #: path to the ``bin`` folder generated when compiling Delft3D
     d3d_bin_path: StrOrPath
     
-    omp_num_threads: int = 1  #: The number of CPU threads to use
+    #: The number of CPU threads to use for parallel computation of fm models.
+    #: Compuation is serial if None.
+    omp_num_threads: Optional[int] = None
+    
     show_stdout: bool = False #: show Delft3D logging to stdout in console
     
     def __call__(self, project_path: StrOrPath):
@@ -70,7 +73,7 @@ class Runner:
         
         sp = _run_model(project_path,
                         self.d3d_bin_path,
-                        self.omp_num_threads)
+                        omp_num_threads=self.omp_num_threads)
         
         out, err = sp.communicate()
         
@@ -133,7 +136,7 @@ class LiveRunner:
         
         sp = _run_model(project_path,
                         self.d3d_bin_path,
-                        self.omp_num_threads)
+                        omp_num_threads=self.omp_num_threads)
         
         q: Queue = Queue()
         Thread(target=_pipe_reader, args=[sp.stderr, q]).start()
@@ -163,7 +166,7 @@ class LiveRunner:
 
 def _run_model(project_path: StrOrPath,
                d3d_bin_path: StrOrPath,
-               omp_num_threads: int = 1) -> subprocess.Popen:
+               **kwargs: Any) -> subprocess.Popen:
     
     model_runner = get_model(project_path,
                              _FMModelRunner,
@@ -174,14 +177,14 @@ def _run_model(project_path: StrOrPath,
         raise FileNotFoundError(msg)
     
     return model_runner.run_model(d3d_bin_path,
-                                  omp_num_threads)
+                                  **kwargs)
 
 
 class _BaseModelRunner(_BaseModelFinder):
     
     @abstractmethod
     def run_model(self, d3d_bin_path: StrOrPath,
-                        omp_num_threads: int = 1) -> subprocess.Popen:
+                        **kwargs: Any) -> subprocess.Popen:
         pass    # pragma: no cover
 
 
@@ -192,7 +195,8 @@ class _FMModelRunner(_BaseModelRunner):
         return find_path(self.project_path, ".mdu")
     
     def run_model(self, d3d_bin_path: StrOrPath,
-                        omp_num_threads: int = 1) -> subprocess.Popen:
+                        omp_num_threads: Optional[int] = None,
+                        **kwargs: Any) -> subprocess.Popen:
         
         if self.path is None:
             raise FileNotFoundError("No .mdu file detected")
@@ -210,21 +214,20 @@ class _StructuredModelRunner(_BaseModelRunner):
         return find_path(self.project_path, ".xml", "config_d_hydro")
     
     def run_model(self, d3d_bin_path: StrOrPath,
-                        omp_num_threads: int = 1) -> subprocess.Popen:
+                        **kwargs: Any) -> subprocess.Popen:
         
         if self.path is None:
             raise FileNotFoundError("No config_d_hydro.xml file detected")
         
         return run_dflow2d3d(d3d_bin_path,
-                             self.path.parent,
-                             omp_num_threads)
+                             self.path.parent)
 
 
 @docstringtemplate
 def run_dflowfm(d3d_bin_path: StrOrPath,
                 model_path: StrOrPath,
                 model_file: str,
-                omp_num_threads: int = 1) -> subprocess.Popen:
+                omp_num_threads: Optional[int] = None) -> subprocess.Popen:
     """Run a Delft3D flexible mesh simulation, given an existing Delft3D
     installation and a prepared model.
     
@@ -233,8 +236,8 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
     :param model_path: path to folder containing the Delft3D model files
-    :param omp_num_threads: The number of CPU threads to use, defaults to
-        {omp_num_threads}
+    :param omp_num_threads: activate parallel computation with the given 
+        number of CPU threads, optional
     
     :raises OSError: if function is called on an unsupported operating system
     :raises FileNotFoundError: if the Delft3D entry point or model folder
@@ -244,17 +247,22 @@ def run_dflowfm(d3d_bin_path: StrOrPath,
     
     """
     
+    env = None
+    
+    if omp_num_threads is not None:
+        env = dict(os.environ)
+        env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
+    
     return _run_script("dflowfm",
                        d3d_bin_path,
                        model_path,
-                       omp_num_threads,
-                       model_file)
+                       model_file,
+                       env=env)
 
 
 @docstringtemplate
 def run_dflow2d3d(d3d_bin_path: StrOrPath,
-                  model_path: StrOrPath,
-                  omp_num_threads: int = 1) -> subprocess.Popen:
+                  model_path: StrOrPath) -> subprocess.Popen:
     """Run a Delft3D structured mesh simulation, given an existing Delft3D
     installation and a prepared model.
     
@@ -263,8 +271,6 @@ def run_dflow2d3d(d3d_bin_path: StrOrPath,
     :param d3d_bin_path: path to the ``bin`` folder generated when compiling
         Delft3D
     :param model_path: path to folder containing the Delft3D model files
-    :param omp_num_threads: The number of CPU threads to use, defaults to
-        {omp_num_threads}
     
     :raises OSError: if function is called on an unsupported operating system
     :raises FileNotFoundError: if the Delft3D entry point or model folder
@@ -276,15 +282,14 @@ def run_dflow2d3d(d3d_bin_path: StrOrPath,
     
     return _run_script("dflow2d3d",
                        d3d_bin_path,
-                       model_path,
-                       omp_num_threads)
+                       model_path)
 
 
 def _run_script(name: str,
                 d3d_bin_path: StrOrPath,
                 model_path: StrOrPath,
-                omp_num_threads: int = 1,
-                *args: str) -> subprocess.Popen:
+                *args: str,
+                env: Optional[Dict[str, str]] = None) -> subprocess.Popen:
     
     if args is None: args = []
     
@@ -295,10 +300,10 @@ def _run_script(name: str,
         raise FileNotFoundError("Model folder could not be found at "
                                 f"{model_path}")
     
-    env = dict(os.environ)
-    env['OMP_NUM_THREADS'] = f"{omp_num_threads}"
-    popen_args = [str(entry_point.resolve())] + list(args)
+    if env is None:
+        env = dict(os.environ)
     
+    popen_args = [str(entry_point.resolve())] + list(args)
     sp = subprocess.Popen(popen_args,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,

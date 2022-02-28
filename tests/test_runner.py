@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import platform
 from pathlib import Path
 from subprocess import Popen
@@ -78,7 +79,10 @@ def test_run_script_missing_input_folder(mocker):
     assert model_path in str(excinfo)
 
 
-def test_run_script(mocker, tmp_path, data_dir):
+@pytest.mark.parametrize("env, expected", [
+                            (None, dict(os.environ)),
+                            ({"mock": "mock"}, {"mock": "mock"})])
+def test_run_script(mocker, tmp_path, data_dir, env, expected):
     
     from snl_d3d_cec_verify.runner import subprocess
     
@@ -92,24 +96,25 @@ def test_run_script(mocker, tmp_path, data_dir):
                  return_value=Path(expected_entry),
                  autospec=True)
     
-    omp_num_threads = 99
-    
     sp = _run_script("mock",
                      "mock",
                      tmp_path,
-                     omp_num_threads,
-                     *expected_args)
+                     *expected_args,
+                     env=env)
     
     assert isinstance(sp, Popen)
     
     popen_args = mock_popen.call_args.args[0]
     cwd = mock_popen.call_args.kwargs['cwd']
-    env = mock_popen.call_args.kwargs['env']
+    popen_env = mock_popen.call_args.kwargs['env']
+    
+    if 'PYTEST_CURRENT_TEST' in popen_env:
+        popen_env.pop('PYTEST_CURRENT_TEST')
     
     assert Path(popen_args[0]).name == expected_entry
     assert popen_args[1:] == expected_args
     assert cwd == tmp_path
-    assert int(env['OMP_NUM_THREADS']) == omp_num_threads
+    assert popen_env == expected
 
 
 def test_run_dflowfm(mocker, tmp_path, data_dir):
@@ -157,11 +162,8 @@ def test_run_dflow2d3d(mocker, tmp_path, data_dir):
     else:
         d3d_bin_path = data_dir / "linux"
     
-    omp_num_threads = 99
-    
     sp = run_dflow2d3d(d3d_bin_path,
-                       tmp_path,
-                       omp_num_threads)
+                       tmp_path)
     
     assert isinstance(sp, Popen)
     
@@ -171,7 +173,7 @@ def test_run_dflow2d3d(mocker, tmp_path, data_dir):
     
     assert "dflow2d3d" in popen_args[0]
     assert cwd == tmp_path
-    assert int(env['OMP_NUM_THREADS']) == omp_num_threads
+    assert 'OMP_NUM_THREADS' not in env
 
 
 
@@ -237,7 +239,7 @@ def test_StructuredModelRunner_run_model_path_missing_mdu(tmp_path):
     test = _StructuredModelRunner(tmp_path)
     
     with pytest.raises(FileNotFoundError) as excinfo:
-        test.run_model("mock", "mock")
+        test.run_model("mock")
     
     assert 'No config_d_hydro.xml file detected' in str(excinfo)
 
@@ -253,20 +255,17 @@ def test_StructuredModelRunner_run_model(mocker, tmp_path):
     p.write_text('Mock')
     
     d3d_bin_path = "mock"
-    omp_num_threads = 99
-    
     test = _StructuredModelRunner(tmp_path)
-    test.run_model(d3d_bin_path, omp_num_threads)
+    test.run_model(d3d_bin_path, omp_num_threads="mock")
     
     mock_run_dflow2d3d.assert_called_once_with(d3d_bin_path,
-                                               tmp_path,
-                                               omp_num_threads)
+                                               tmp_path)
 
 
 def test_run_model_no_valid_files(tmp_path):
     
     with pytest.raises(FileNotFoundError) as excinfo:
-        _run_model(tmp_path, "mock", "mock")
+        _run_model(tmp_path, "mock")
     
     assert "No valid model files detected" in str(excinfo)
 
@@ -287,10 +286,10 @@ def test_run_model(mocker, tmp_path, extras_name, file_name):
     
     _run_model(tmp_path,
                d3d_bin_path,
-               omp_num_threads)
+               omp_num_threads=omp_num_threads)
     
     mock_fm_run.assert_called_once_with(d3d_bin_path,
-                                        omp_num_threads)
+                                        omp_num_threads=omp_num_threads)
 
 
 def test_runner_call(capsys, tmp_path, data_dir):
