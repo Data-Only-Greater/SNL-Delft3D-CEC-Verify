@@ -26,6 +26,7 @@ dependencies:
   - pytest-mock
   - tox-conda
   # Documentation
+  - git
   - sphinx
   - sphinx-autodoc-typehints
   - pip:
