@@ -32,7 +32,7 @@ From a conda prompt create a named environment in which to install the
 for future updates:
 
 ```
-(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.5.2
+(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.5.3
 (base) > conda activate snld3d
 (snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
 (snld3d) > conda config --env --set channel_priority strict
@@ -102,7 +102,8 @@ More detailed examples are provided in the section below.
 
 Examples are provided in the `examples.zip` asset of the [latest 
 release][118]. Alternatively, they can be found in the `examples` folder of 
-the source code.
+the source code. Each example can be run using either the flexible mesh or 
+structured grid models.
 
 As plots are generated in the examples, the `matplotlib` library is also 
 required. To install it, type:
@@ -141,95 +142,100 @@ Required files:
 +   `basic.py`
 +   `reference.docx` (for conversion to Word format)
 
-The basic example shows how to define a set of flexible mesh models with 
-varying parameters, run the models and then analyse the results.
+The basic example shows how to define a flexible mesh or structured model with 
+varying parameters, run the model and then analyse the results.
 
-To run the example, move to the directory containing `basic.py` and then 
-call Python:
-
-```
-(snld3d) > python basic.py
-```
-
-If successful, the report files (and images) will be placed in a sub-directory
-called `basic_report`.
-
-### Basic Example (Structured)
-
-Required files:
-+   `basic_structured.py`
-+   `reference.docx` (for conversion to Word format)
-
-This example is identical to the [Basic Example](#basic-example), except using 
-a structured mesh rather than flexible. To run the example, move to the 
-directory containing `basic_structured.py` and then call Python:
+To run the example, move to the directory containing `basic.py` and then call 
+the script using Python with the model type (either `fm` or `structured`) as 
+the second argument. For instance, for the flexible mesh model call:
 
 ```
-(snld3d) > python basic_structured.py
+(snld3d) > python basic.py fm
 ```
 
-If successful, the report files (and images) will be placed in a sub-directory
-called `basic_structured_report`.
+If successful, the report files (and images) will be placed into a 
+sub-directory based on the model type. For the flexible mesh model, this is 
+`fm/basic_report`.
 
 ### Validation Example
 
 Required files:
 +   `validation.py`
-+   `validation.bib` (for conversion to Word format)
++   `examples.bib` (for conversion to Word format)
 +   `reference.docx` (for conversion to Word format)
 
-The validation example demonstrates comparison of a flexible mesh Delft3D model
-with the experimental results of Mycek et al.[[1]](#1)
+The validation example demonstrates comparison of a flexible mesh or 
+structured model with the experimental results of Mycek et al.[[1]](#1)
 
 To run the example, move to the directory containing `validation.py` and then 
-call Python:
+call the script using Python with the model type (either `fm` or `structured`) 
+as the second argument. For instance, for the structured grid model call:
 
 ```
-(snld3d) > python validation.py
+(snld3d) > python validation.py structured
 ```
 
-If successful, the report files (and images) will be placed in a sub-directory
-called `validation_report`.
+If successful, the report files (and images) will be placed into a 
+sub-directory based on the model type. For the structured grid model, this is 
+`structured/validation_report`.
 
 ### Grid Convergence Study
 
 Required files:
 +   `grid_convergence.py`
-+   `validation.bib` (for conversion to Word format)
++   `examples.bib` (for conversion to Word format)
 +   `reference.docx` (for conversion to Word format)
 
 This is the first "production" example, designed to generate meaningful 
-results. A grid convergence study (see e.g. [[2]](#2)) is conducted for a 
-flexible mesh model to determine the free stream and turbine wake velocities 
-at infinite grid resolution. The results are then compared to the results of 
-Mycek et al.[[1]](#1).
+results. A grid convergence study (see e.g. [[2]](#2)) is conducted to 
+determine the free stream and turbine wake velocities at infinite grid 
+resolution. The results are then compared to the results of Mycek et 
+al.[[1]](#1).
 
-Note that this study takes a considerable amount of wall-clock time to 
-complete. On an [Intel i7-4790][108], the full study required 78 hours. To run 
-an incomplete study, with a more tractable time scale, change the 
-`max_experiments` variable, in the `main()` function to `3`. Pre-calculated 
-results of the full study are available in the [online documentation][110].
-
-This example also requires the [convergence][109] package to be installed, by
-issuing the following command in the conda environment:
+This example requires the [convergence][109] package to be installed. Issue 
+the following command in the conda environment:
 
 ```
 (snld3d) > pip install convergence
 ```
 
-To run the example, move to the directory containing `grid_convergence.py` and
-then call Python:
+To run the example, move to the directory containing `grid_convergence.py` and 
+then call the script using Python with the model type (either `fm` or 
+`structured`) as the second argument. For instance, for the flexible mesh 
+model call:
 
 ```
-(snld3d) > python grid_convergence.py
+(snld3d) > python grid_convergence.py fm
 ```
 
-If successful, the report files (and images) will be placed in a sub-directory 
-called `grid_convergence_report`. To avoid repeating simulations in the event 
-of an unexpected failure or change to the `grid_convergence.py` file, the 
-Delft3D simulations are stored in a sub-directory called 
-`grid_convergence_runs`. If Delft3D is updated, ensure to delete or move this 
-folder, so that new simulations are conducted.
+If successful, the report files (and images) will be placed into a 
+sub-directory based on the model type. For the flexible mesh model, this is 
+`structured/grid_convergence_report`. To avoid repeating simulations in the 
+event of an unexpected failure or change to the `grid_convergence.py` file, 
+the Delft3D simulations are stored in a sub-directory based on the model type. 
+For the flexible mesh model, this is `structured/grid_convergence_runs`. If 
+Delft3D is updated, ensure to delete or move this folder, so that new 
+simulations are conducted.
+
+By default, the study is conducted using just one CPU thread. To reduce 
+simulation time of the `fm` model, assuming additional capacity is available, 
+increase the number of utilised threads using the `--threads` optional argument:
+
+```
+(snld3d) > python grid_convergence.py fm --threads 8
+```
+
+Note that this study takes a considerable amount of wall-clock time to 
+complete. On an [Intel i7-4790][108], the full study required 78 hours. To run 
+an incomplete study, with a more tractable time scale, use the `--experiments` 
+optional argument to reduce the number of experiments. For example:
+
+```
+(snld3d) > python grid_convergence.py fm --threads 8 --experiments 3
+```
+
+Pre-calculated results of the full study are available in the [online 
+documentation][110].
 
 ## Documentation
 

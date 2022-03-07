@@ -149,7 +149,7 @@ def get_cells(case):
     return top / bottom
 
 
-def main():
+def main(template_type, max_experiments, omp_num_threads):
     
     # Steps:
     #
@@ -164,21 +164,32 @@ def main():
     # 9. Compute at desired resolution if lower than last iteration
     # 10. Make report
     
-    # Reduce max experiments to 3, for tractable running time.
-    max_experiments = 5
-    omp_num_threads = 8
-    
     # Set grid resolutions and reporting times
     grid_resolution = [1 / 2 ** i for i in range(max_experiments)]
     sigma = [int(2 / delta) for delta in grid_resolution]
-    stats_interval = [240 / (k ** 2) for k in sigma]
     
-    cases = MycekStudy(dx=grid_resolution,
-                       dy=grid_resolution,
-                       sigma=sigma,
-                       stats_interval=stats_interval,
-                       restart_interval=600)
-    template = Template()
+    kwargs = {"dx": grid_resolution,
+              "dy": grid_resolution,
+              "sigma": sigma,
+              "restart_interval": 600}
+    
+    # Choose options based on the template type
+    if template_type == "fm":
+        
+        kwargs["stats_interval"] = [240 / (k ** 2) for k in sigma]
+    
+    elif template_type == "structured":
+        
+        # Set time step based on flexible mesh runs
+        dt_init_all = [0.5, 0.25, 0.1, 0.0375, 0.0125]
+        kwargs["dt_init"] = dt_init_all[:max_experiments]
+    
+    else:
+        
+        raise ValueError(f"Template type '{template_type}' unrecognised")
+    
+    cases = MycekStudy(**kwargs)
+    template = Template(template_type)
     
     # Use the LiveRunner class to get real time feedback from the Delft3D
     # calculation
@@ -193,12 +204,12 @@ def main():
     
     case_counter = 0
     
-    run_directory = Path("grid_convergence_runs")
-    run_directory.mkdir(exist_ok=True)
+    run_directory = Path(template_type) / "grid_convergence_runs"
+    run_directory.mkdir(exist_ok=True, parents=True)
     
     report = Report(79, "%d %B %Y")
-    report_dir = Path("grid_convergence_report")
-    report_dir.mkdir(exist_ok=True)
+    report_dir = Path(template_type) / "grid_convergence_report"
+    report_dir.mkdir(exist_ok=True, parents=True)
     
     global_validate = Validate()
     ustar_figs = []
@@ -542,7 +553,7 @@ def main():
                               outputfile=f"{report_dir / 'report.docx'}",
                               extra_args=['-C',
                                           f'--resource-path={report_dir}',
-                                          '--bibliography=validation.bib',
+                                          '--bibliography=examples.bib',
                                           '--reference-doc=reference.docx'])
     
     except ImportError:
@@ -550,5 +561,46 @@ def main():
         print(report)
 
 
+def check_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        msg = f"{value} is an invalid positive int value"
+        raise argparse.ArgumentTypeError(msg)
+    return ivalue
+
+
 if __name__ == "__main__":
-    main()
+    
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help='Desired action to perform',
+                                       dest='MODEL')
+    
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('--experiments',
+                               type=check_positive,
+                               choices=range(3, 6),
+                               default=5,
+                               help=("number of experiments to run - defaults "
+                                     "to 5"))
+    
+    parser_fm = subparsers.add_parser('fm',
+                                      parents=[parent_parser],
+                                      help='execute flexible mesh model')
+    parser_fm.add_argument('--threads',
+                           type=check_positive,
+                           default=1,
+                           help=("number of CPU threads to utilise - defaults "
+                                 "to 1"))
+    
+    parser_structured = subparsers.add_parser('structured',
+                                              parents=[parent_parser],
+                                              help='execute structured model')
+    
+    args = parser.parse_args()
+    
+    if "threads" not in args:
+        args.threads = 1
+    
+    main(args.MODEL, args.experiments, args.threads)
