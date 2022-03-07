@@ -1,8 +1,20 @@
 Validation Studies
 ==================
 
+Flexible Mesh
+-------------
+
 .. toctree::
    :maxdepth: 4
 
-   windows/report
-   linux/report
+   fm/windows/report
+   fm/linux/report
+
+
+Structured
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   structured/linux/report
