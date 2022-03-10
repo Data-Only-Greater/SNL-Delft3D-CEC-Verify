@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import collections
 from typing import Any, List, Optional, Type, TypeVar, Union
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, fields
@@ -197,7 +196,7 @@ class CaseStudy:
     
     @classmethod
     def from_yaml(cls: Type[C], path: StrOrPath) -> C:
-        """Make a new Case object from a YAML file
+        """Create a new instance from a YAML file
         
         :param path: path of the existing YAML file
         """
@@ -211,7 +210,7 @@ class CaseStudy:
         return cls(**kwargs)
     
     def to_yaml(self, path: StrOrPath):
-        """Export case as a YAML file
+        """Export object as a YAML file
         
         :param path: path of created YAML file
         """
@@ -229,26 +228,21 @@ class CaseStudy:
         if not (-1 * length <= index <= length - 1):
             raise IndexError("index out of range")
     
-    def __eq__(self, other: C) -> bool:
+    def __eq__(self, other: object) -> bool:
         
         if not isinstance(other, CaseStudy):
             return NotImplemented
         
-        other = asdict(other)
+        other_dict = asdict(other)
         
         for f, v in zip(self.fields, self.values):
             
-            other_v = other[f]
+            other_v = other_dict[f]
             
-            if isinstance(v, collections.Sequence):
-                if not tuple(v) == tuple(other_v):
-                    print(v)
-                    print(other_v)
-                    return False
-            
-            if not v == other_v:
-                print(v, other_v)
-                return False
+            if isinstance(v, Sequence):
+                if tuple(v) != tuple(other_v): return False
+            else:
+                if v != other_v: return False
         
         return True
     
@@ -264,7 +258,7 @@ class CaseStudy:
 
 
 @docstringtemplate
-@dataclass(frozen=True)
+@dataclass(eq=False, frozen=True)
 class MycekStudy(CaseStudy):
     """Class for defining cases corresponding to the Mycek study. Subclass 
     of :class:`.CaseStudy` with the domain and turbine position fixed.

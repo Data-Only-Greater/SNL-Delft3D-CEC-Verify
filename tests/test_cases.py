@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from dataclasses import replace
+
 import pytest
 
 from snl_d3d_cec_verify.cases import CaseStudy, MycekStudy
@@ -83,6 +85,22 @@ def test_casestudy_get_case(cases, index):
     assert case.sigma == index + 1
 
 
+def test_casestudy_to_from_yaml(tmp_path, cases):
+    
+    d = tmp_path / "mock"
+    d.mkdir()
+    p = d / "test.yaml"
+    cases.to_yaml(p)
+    
+    assert len(list(d.iterdir())) == 1
+    
+    test = CaseStudy.from_yaml(p)
+    
+    assert isinstance(test, CaseStudy)
+    assert id(test) != id(cases)
+    assert test == cases
+
+
 @pytest.mark.parametrize("index", [0, 1, 2, 3])
 def test_casestudy_getitem(cases, index):
     case = cases[index]
@@ -135,6 +153,20 @@ def test_casestudy_get_case_out_of_bounds_sigle(cases, index):
     assert "index out of range" in str(excinfo)
 
 
+def test_casestudy_not_eq_other(cases):
+    assert cases != {"a": 1}
+
+
+def test_casestudy_not_eq_scalar(cases):
+    test = replace(cases, simulate_turbines=False)
+    assert cases != test
+
+
+def test_casestudy_eq_sequence(cases):
+    test = replace(cases, dx=(2, 3, 4, 5))
+    assert cases != test
+
+
 @pytest.mark.parametrize("variable", ["x0", "x1", "y0", "y1", "bed_level"])
 def test_mycekstudy_variables_error(variable):
     
@@ -165,3 +197,30 @@ def test_mycekstudy_turb_pos_error(axis):
         MycekStudy(**input_dict)
     
     assert f"turb_pos_{axis}" in str(excinfo)
+
+
+@pytest.fixture
+def mycekcases():
+    return MycekStudy(dx=(1, 2, 3, 4),
+                      dy=(1, 2, 3, 4),
+                      sigma=(1, 2, 3, 4))
+
+
+def test_mycekstudy_to_from_yaml(tmp_path, mycekcases):
+    
+    d = tmp_path / "mock"
+    d.mkdir()
+    p = d / "test.yaml"
+    mycekcases.to_yaml(p)
+    
+    assert len(list(d.iterdir())) == 1
+    
+    test = MycekStudy.from_yaml(p)
+    
+    assert isinstance(test, MycekStudy)
+    assert id(test) != id(cases)
+    assert test == mycekcases
+
+
+def test_casestudy_mycekstudy_equality(cases, mycekcases):
+    assert cases == mycekcases
