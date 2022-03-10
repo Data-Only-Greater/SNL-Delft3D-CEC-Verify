@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import uuid
 import shutil
 import platform
 from pathlib import Path
@@ -71,28 +72,23 @@ def main(grid_resolution, omp_num_threads):
         cases[template_type] = MycekStudy(**kwargs)
         template = Template(template_type)
         
-        run_directory = Path("comparison_runs") / template_type
+        run_directory = Path(template_type) / "runs"
         run_directory.mkdir(exist_ok=True, parents=True)
         
         # Run without turbines
         no_turb_case = replace(cases[template_type], simulate_turbines=False)
-        no_turb_dir = run_directory / "no_turbine"
+        no_turb_dir = find_project_dir(run_directory, no_turb_case)
         
-        if no_turb_dir.is_dir():
+        if no_turb_dir is not None:
             try:
                 Result(no_turb_dir)
             except FileNotFoundError:
-                shutil.rmtree(no_turb_dir)
+                no_turb_dir = None
         
-        if no_turb_dir.is_dir():
-            try:
-                Result(no_turb_dir)
-            except FileNotFoundError:
-                shutil.rmtree(no_turb_dir)
-        
-        # Determine $U_\infty$ for case, by running without the turbine
-        if not no_turb_dir.is_dir():
+        if no_turb_dir is None:
             
+            no_turb_dir = get_unique_dir(run_directory)
+        
             if d3d_bin_path is None:
                 d3d_bin_path = get_env(bin_var)
                 print(f'Setting {template_type} bin folder path to '
@@ -105,8 +101,11 @@ def main(grid_resolution, omp_num_threads):
             runner = LiveRunner(d3d_bin_path,
                                 omp_num_threads=omp_num_threads)
             
+            # Make template and record case
             no_turb_dir.mkdir()
             template(no_turb_case, no_turb_dir)
+            case_path = no_turb_dir / "case.yaml"
+            no_turb_case.to_yaml(case_path)
             
             with Spinner() as spin:
                 for line in runner(no_turb_dir):
@@ -117,15 +116,18 @@ def main(grid_resolution, omp_num_threads):
         u_infty[template_type] = u_infty_ds["$u$"].values.take(0)
         
         # Run with turbines
-        turb_dir = run_directory / "turbine"
+        turb_case = cases[template_type]
+        turb_dir = find_project_dir(run_directory, turb_case)
         
-        if turb_dir.is_dir():
+        if turb_dir is not None:
             try:
                 Result(turb_dir)
             except FileNotFoundError:
-                shutil.rmtree(turb_dir)
+                turb_dir = None
         
-        if not turb_dir.is_dir():
+        if turb_dir is None:
+            
+            turb_dir = get_unique_dir(run_directory)
             
             if d3d_bin_path is None:
                 d3d_bin_path = get_env(bin_var)
@@ -139,8 +141,11 @@ def main(grid_resolution, omp_num_threads):
             runner = LiveRunner(d3d_bin_path,
                                 omp_num_threads=omp_num_threads)
             
+            # Make template and record case
             turb_dir.mkdir()
-            template(cases[template_type], turb_dir)
+            template(turb_case, turb_dir)
+            case_path = turb_dir / "case.yaml"
+            turb_case.to_yaml(case_path)
             
             with Spinner() as spin:
                 for line in runner(turb_dir):
@@ -196,6 +201,30 @@ def main(grid_resolution, omp_num_threads):
     except ImportError:
         
         print(report)
+
+
+def find_project_dir(path, case):
+    
+    path = Path(path)
+    files = list(Path(path).glob("**/case.yaml"))
+    
+    for file in files:
+        test = MycekStudy.from_yaml(file)
+        if test == case: return file.parent
+    
+    return None
+
+
+def get_unique_dir(path, max_tries=1e6):
+    
+    parent = Path(path)
+    
+    for _ in range(int(max_tries)):
+        name = uuid.uuid4().hex
+        child = parent / name
+        if not child.exists(): return child
+    
+    raise RuntimeError("Could not find unique directory name")
 
 
 def get_env(variable):

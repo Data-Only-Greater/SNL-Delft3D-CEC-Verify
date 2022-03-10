@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import uuid
 import shutil
 import platform
 import warnings
@@ -27,126 +28,6 @@ from snl_d3d_cec_verify.result import (get_reset_origin,
 from snl_d3d_cec_verify.text import Spinner
 
 matplotlib.rcParams.update({'font.size': 8})
-
-
-def get_d3d_bin_path():
-    
-    env = dict(os.environ)
-    
-    if 'D3D_BIN' in env:
-        root = Path(env['D3D_BIN'].replace('"', ''))
-        print('D3D_BIN found')
-    else:
-        root = Path("..") / "src" / "bin"
-        print('D3D_BIN not found')
-    
-    print(f'Setting bin folder path to {root.resolve()}')
-    
-    return root.resolve()
-
-
-def get_u0(da, transect, factor, case=None):
-    
-    if case is not None:
-        da = get_reset_origin(da, (case.turb_pos_x,
-                                   case.turb_pos_y,
-                                   case.turb_pos_z))
-    
-    da = get_normalised_dims(da, transect.attrs["$D$"])
-    da = get_normalised_data(da, factor)
-    
-    return da
-
-
-def get_gamma0(da, transect, case=None):
-    
-    if case is not None:
-        da = get_reset_origin(da, (case.turb_pos_x,
-                                   case.turb_pos_y,
-                                   case.turb_pos_z))
-    
-    da = get_normalised_dims(da, transect.attrs["$D$"])
-    da = get_normalised_data_deficit(da,
-                                     transect.attrs["$U_\\infty$"],
-                                     "$\gamma_0$")
-    
-    return da
-
-
-def plot_transects(case,
-                   validate,
-                   result,
-                   factor,
-                   ustar_ax,
-                   gamma_ax):
-    
-    for i, transect in enumerate(validate):
-        
-        transect_true = transect.to_xarray()
-        
-        # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
-        
-        # Determine plot x-axis
-        major_axis = f"${transect.attrs['major_axis']}^*$"
-        
-        # Create and save a u0 figure
-        transect_sim_u0 = get_u0(transect_sim["$u$"],
-                                 transect_true,
-                                 factor,
-                                 case)
-        
-        transect_sim_u0.plot(ax=ustar_ax[i],
-                             x=major_axis,
-                             label=f'{case.dx}m')
-        
-        # Create and save a gamma0 figure
-        transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
-                                         transect_true,
-                                         case)
-        
-        transect_sim_gamma0.plot(ax=gamma_ax[i],
-                                 x=major_axis,
-                                 label=f'{case.dx}m')
-
-
-def get_rmse(estimated, observed):
-    estimated = estimated[~np.isnan(estimated)]
-    if len(estimated) == 0: return np.nan
-    observed = observed[:len(estimated)]
-    return np.sqrt(((estimated - observed[:len(estimated)]) ** 2).mean())
-
-
-def get_transect_error(case, validate, result, factor, data):
-        
-    for i, transect in enumerate(validate):
-        
-        transect_true = transect.to_xarray()
-        
-        # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
-        
-        transect_sim_u0 = get_u0(transect_sim["$u$"],
-                                 transect_true,
-                                 factor,
-                                 case)
-        
-        transect_true_u0 = get_u0(transect_true,
-                                  transect_true,
-                                  transect_true.attrs["$U_\infty$"],
-                                  case)
-        
-        # Calculate RMS error and store
-        rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
-        data["resolution (m)"].append(case.dx)
-        data["Transect"].append(transect.attrs['description'])
-        data["RMSE"].append(rmse)
-
-
-def get_cells(case):
-    top = (case.x1 - case.x0) * (case.y1 - case.y0) * case.sigma
-    bottom = case.dx * case.dy
-    return top / bottom
 
 
 def main(template_type, max_experiments, omp_num_threads):
@@ -204,7 +85,7 @@ def main(template_type, max_experiments, omp_num_threads):
     
     case_counter = 0
     
-    run_directory = Path(template_type) / "grid_convergence_runs"
+    run_directory = Path(template_type) / "runs"
     run_directory.mkdir(exist_ok=True, parents=True)
     
     report = Report(79, "%d %B %Y")
@@ -238,22 +119,25 @@ def main(template_type, max_experiments, omp_num_threads):
         section = f"{case.dx}m Resolution"
         print(section)
         
-        no_turb_dir = run_directory / f"no_turbine_{case.dx}"
+        no_turb_dir = find_project_dir(run_directory, no_turb_case)
         
-        if no_turb_dir.is_dir():
+        if no_turb_dir is not None:
             try:
                 Result(no_turb_dir)
             except FileNotFoundError:
-                shutil.rmtree(no_turb_dir)
+                no_turb_dir = None
         
         # Determine $U_\infty$ for case, by running without the turbine
-        if not no_turb_dir.is_dir():
+        if no_turb_dir is None:
             
             print("Simulating without turbine")
             
+            no_turb_dir = get_unique_dir(run_directory)
             no_turb_dir.mkdir()
             
             template(no_turb_case, no_turb_dir)
+            case_path = no_turb_dir / "case.yaml"
+            no_turb_case.to_yaml(case_path)
             
             with Spinner() as spin:
                 for line in runner(no_turb_dir):
@@ -273,22 +157,25 @@ def main(template_type, max_experiments, omp_num_threads):
                                     message="Insufficient grids for analysis")
             u_infty_convergence.add_grids([(case.dx, u_infty)])
         
-        turb_dir = run_directory / f"turbine_{case.dx}"
+        turb_dir = find_project_dir(run_directory, case)
         
-        if turb_dir.is_dir():
+        if turb_dir is not None:
             try:
                 Result(turb_dir)
             except FileNotFoundError:
-                shutil.rmtree(turb_dir)
+                turb_dir = None
         
         # Run with turbines
-        if not turb_dir.is_dir():
+        if turb_dir is None:
             
             print("Simulating with turbine")
             
+            turb_dir = get_unique_dir(run_directory)
             turb_dir.mkdir()
             
             template(case, turb_dir)
+            case_path = turb_dir / "case.yaml"
+            case.to_yaml(case_path)
             
             with Spinner() as spin:
                 for line in runner(turb_dir):
@@ -559,6 +446,150 @@ def main(template_type, max_experiments, omp_num_threads):
     except ImportError:
         
         print(report)
+
+
+def get_d3d_bin_path():
+    
+    env = dict(os.environ)
+    
+    if 'D3D_BIN' in env:
+        root = Path(env['D3D_BIN'].replace('"', ''))
+        print('D3D_BIN found')
+    else:
+        root = Path("..") / "src" / "bin"
+        print('D3D_BIN not found')
+    
+    print(f'Setting bin folder path to {root.resolve()}')
+    
+    return root.resolve()
+
+
+def find_project_dir(path, case):
+    
+    path = Path(path)
+    files = list(Path(path).glob("**/case.yaml"))
+    
+    for file in files:
+        test = MycekStudy.from_yaml(file)
+        if test == case: return file.parent
+    
+    return None
+
+
+def get_unique_dir(path, max_tries=1e6):
+    
+    parent = Path(path)
+    
+    for _ in range(int(max_tries)):
+        name = uuid.uuid4().hex
+        child = parent / name
+        if not child.exists(): return child
+    
+    raise RuntimeError("Could not find unique directory name")
+
+
+def get_u0(da, transect, factor, case=None):
+    
+    if case is not None:
+        da = get_reset_origin(da, (case.turb_pos_x,
+                                   case.turb_pos_y,
+                                   case.turb_pos_z))
+    
+    da = get_normalised_dims(da, transect.attrs["$D$"])
+    da = get_normalised_data(da, factor)
+    
+    return da
+
+
+def get_gamma0(da, transect, case=None):
+    
+    if case is not None:
+        da = get_reset_origin(da, (case.turb_pos_x,
+                                   case.turb_pos_y,
+                                   case.turb_pos_z))
+    
+    da = get_normalised_dims(da, transect.attrs["$D$"])
+    da = get_normalised_data_deficit(da,
+                                     transect.attrs["$U_\\infty$"],
+                                     "$\gamma_0$")
+    
+    return da
+
+
+def plot_transects(case,
+                   validate,
+                   result,
+                   factor,
+                   ustar_ax,
+                   gamma_ax):
+    
+    for i, transect in enumerate(validate):
+        
+        transect_true = transect.to_xarray()
+        
+        # Compare transect
+        transect_sim = result.faces.extract_z(-1, **transect)
+        
+        # Determine plot x-axis
+        major_axis = f"${transect.attrs['major_axis']}^*$"
+        
+        # Create and save a u0 figure
+        transect_sim_u0 = get_u0(transect_sim["$u$"],
+                                 transect_true,
+                                 factor,
+                                 case)
+        
+        transect_sim_u0.plot(ax=ustar_ax[i],
+                             x=major_axis,
+                             label=f'{case.dx}m')
+        
+        # Create and save a gamma0 figure
+        transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
+                                         transect_true,
+                                         case)
+        
+        transect_sim_gamma0.plot(ax=gamma_ax[i],
+                                 x=major_axis,
+                                 label=f'{case.dx}m')
+
+
+def get_rmse(estimated, observed):
+    estimated = estimated[~np.isnan(estimated)]
+    if len(estimated) == 0: return np.nan
+    observed = observed[:len(estimated)]
+    return np.sqrt(((estimated - observed[:len(estimated)]) ** 2).mean())
+
+
+def get_transect_error(case, validate, result, factor, data):
+        
+    for i, transect in enumerate(validate):
+        
+        transect_true = transect.to_xarray()
+        
+        # Compare transect
+        transect_sim = result.faces.extract_z(-1, **transect)
+        
+        transect_sim_u0 = get_u0(transect_sim["$u$"],
+                                 transect_true,
+                                 factor,
+                                 case)
+        
+        transect_true_u0 = get_u0(transect_true,
+                                  transect_true,
+                                  transect_true.attrs["$U_\infty$"],
+                                  case)
+        
+        # Calculate RMS error and store
+        rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
+        data["resolution (m)"].append(case.dx)
+        data["Transect"].append(transect.attrs['description'])
+        data["RMSE"].append(rmse)
+
+
+def get_cells(case):
+    top = (case.x1 - case.x0) * (case.y1 - case.y0) * case.sigma
+    bottom = case.dx * case.dy
+    return top / bottom
 
 
 def check_positive(value):
