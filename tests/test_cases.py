@@ -8,10 +8,15 @@ from snl_d3d_cec_verify.cases import CaseStudy, MycekStudy
 
 
 @pytest.fixture
-def cases():
-    return CaseStudy(dx=(1, 2, 3, 4),
-                     dy=(1, 2, 3, 4),
-                     sigma=(1, 2, 3, 4))
+def casedef():
+    return {"dx": (1, 2, 3, 4),
+            "dy": (1, 2, 3, 4),
+            "sigma": (1, 2, 3, 4)}
+
+
+@pytest.fixture
+def cases(casedef):
+    return CaseStudy(**casedef)
 
 
 def test_casestudy_fields():
@@ -200,10 +205,8 @@ def test_mycekstudy_turb_pos_error(axis):
 
 
 @pytest.fixture
-def mycekcases():
-    return MycekStudy(dx=(1, 2, 3, 4),
-                      dy=(1, 2, 3, 4),
-                      sigma=(1, 2, 3, 4))
+def mycekcases(casedef):
+    return MycekStudy(**casedef)
 
 
 def test_mycekstudy_to_from_yaml(tmp_path, mycekcases):
