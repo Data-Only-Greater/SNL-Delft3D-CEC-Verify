@@ -2,7 +2,6 @@
 
 import os
 import uuid
-import shutil
 import platform
 from pathlib import Path
 from dataclasses import replace
@@ -14,7 +13,8 @@ from snl_d3d_cec_verify import (MycekStudy,
                                 Report,
                                 Result,
                                 LiveRunner,
-                                Template)
+                                Template,
+                                Validate)
 from snl_d3d_cec_verify.result import get_normalised_data
 from snl_d3d_cec_verify.text import Spinner
 
@@ -25,11 +25,6 @@ def main(grid_resolution, omp_num_threads):
     
     # Set reporting times
     sigma = int(2 / grid_resolution)
-    
-    kwargs = {"dx": grid_resolution,
-              "dy": grid_resolution,
-              "sigma": sigma,
-              "restart_interval": 600}
     
     report = Report(79, "%d %B %Y")
     report_dir = Path("comparison_report")
@@ -45,6 +40,10 @@ def main(grid_resolution, omp_num_threads):
     for template_type in template_types:
         
         d3d_bin_path = None
+        kwargs = {"dx": grid_resolution,
+                  "dy": grid_resolution,
+                  "sigma": sigma,
+                  "restart_interval": 600}
         
         # Choose options based on the template type
         if template_type == "fm":
@@ -78,14 +77,17 @@ def main(grid_resolution, omp_num_threads):
         # Run without turbines
         no_turb_case = replace(cases[template_type], simulate_turbines=False)
         no_turb_dir = find_project_dir(run_directory, no_turb_case)
+        result = None
         
         if no_turb_dir is not None:
             try:
-                Result(no_turb_dir)
+                result = Result(no_turb_dir)
+                print("Loading pre-existing simulation at path "
+                      f"'{no_turb_dir}'")
             except FileNotFoundError:
-                no_turb_dir = None
+                pass
         
-        if no_turb_dir is None:
+        if result is None:
             
             no_turb_dir = get_unique_dir(run_directory)
         
@@ -111,21 +113,24 @@ def main(grid_resolution, omp_num_threads):
                 for line in runner(no_turb_dir):
                     spin(line)
         
-        result = Result(no_turb_dir)
+            result = Result(no_turb_dir)
+        
         u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
         u_infty[template_type] = u_infty_ds["$u$"].values.take(0)
         
         # Run with turbines
         turb_case = cases[template_type]
         turb_dir = find_project_dir(run_directory, turb_case)
+        result = None
         
         if turb_dir is not None:
             try:
-                Result(turb_dir)
+                result = Result(turb_dir)
+                print(f"Loading pre-existing simulation at path '{turb_dir}'")
             except FileNotFoundError:
-                turb_dir = None
+                pass
         
-        if turb_dir is None:
+        if result is None:
             
             turb_dir = get_unique_dir(run_directory)
             
@@ -150,13 +155,20 @@ def main(grid_resolution, omp_num_threads):
             with Spinner() as spin:
                 for line in runner(turb_dir):
                     spin(line)
+            
+            result = Result(turb_dir)
         
-        results[template_type] = Result(turb_dir)
+        results[template_type] = result
     
     print("Post processing...")
     
     section = "Axial Velocity Comparison"
     report.content.add_heading(section)
+    
+    validate = Validate(turb_case)
+    turb_zs = {}
+    unorms = {}
+    maxus = []
     
     for template_type in template_types:
         
@@ -165,16 +177,152 @@ def main(grid_resolution, omp_num_threads):
         turb_z = result.faces.extract_turbine_z(-1, case)
         unorm = get_normalised_data(turb_z["$u$"], u_infty[template_type])
         
+        turb_zs[template_type] = turb_z
+        unorms[template_type] = unorm
+        
         fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-        unorm.plot(x="$x$", y="$y$")
+        unorm.plot(x="$x$", y="$y$", vmin=0.55, vmax=1.05)
         
         plot_name = f"turb_z_u_{template_type}.png"
         plot_path = report_dir / plot_name
         fig.savefig(plot_path, bbox_inches='tight')
         
         # Add figure with caption
-        caption = f"Axial velocity (m/s) for the {template_type} model type"
+        caption = ("Axial velocity normalised by the free stream velocity "
+                   f"for the {template_type} model type")
         report.content.add_image(plot_name, caption, width="3.64in")
+        
+        # Collect maximimum u*
+        maxus.append(unorm.max())
+    
+    # Plot the relative error
+    maxu = max(maxus)
+    diffu = (unorms["structured"] - unorms["fm"]) / maxu
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    diffu.plot(ax=ax,
+               x="$x$",
+               y="$y$",
+               cbar_kwargs={"label": "$u* / u*_{\\mathrm{max}}$"})
+    
+    circle_rad = 6
+    ax.plot(6.1, 3.46, 'o',
+            ms=circle_rad * 2, mec='k', mfc='none', mew=1)
+    ax.annotate('Acceleration', xy=(6, 3.4), xytext=(30, 30),
+                textcoords='offset points', color='k',
+                arrowprops=dict(arrowstyle=('simple,'
+                                            'head_width=0.7,'
+                                            'head_length=0.8,'
+                                            'tail_width=0.1'),
+                                lw=0.2,
+                                facecolor='k',
+                                shrinkB=circle_rad * 2))
+    
+    ax.annotate('Near wake', xy=(7, 3), xytext=(-20, -60),
+                textcoords='offset points', color='k',
+                arrowprops=dict(arrowstyle=('simple,'
+                                            'head_width=0.7,'
+                                            'head_length=0.8,'
+                                            'tail_width=0.1'),
+                                lw=0.2,
+                                facecolor='k'))
+    
+    ax.annotate('Far wake', xy=(15, 3), xytext=(-20, -60),
+                textcoords='offset points', color='k',
+                arrowprops=dict(arrowstyle=('simple,'
+                                            'head_width=0.7,'
+                                            'head_length=0.8,'
+                                            'tail_width=0.1'),
+                                lw=0.2,
+                                facecolor='k'))
+    
+    plot_name = "turb_z_u_diff.png"
+    plot_path = report_dir / plot_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Relative error in normalised axial velocity between the "
+               "structured and fm models")
+    report.content.add_image(plot_name, caption, width="3.64in")
+    
+    # Centerline velocity
+    transect = validate[0]
+    transect_fm = results["fm"].faces.extract_z(-1, **transect)
+    transect_structured = results["structured"].faces.extract_z(-1, **transect)
+    transect_true = transect.to_xarray()
+    
+    transect_fm_unorm = get_normalised_data(transect_fm["$u$"], u_infty["fm"])
+    transect_structured_unorm = get_normalised_data(transect_structured["$u$"],
+                                                    u_infty["structured"])
+    transect_true_unorm = get_normalised_data(transect_true, 0.8)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    transect_fm_unorm.plot(ax=ax, x="$x$", label='fm')
+    transect_structured_unorm.plot(ax=ax, x="$x$", label='structured')
+    transect_true_unorm.plot(ax=ax, x="$x$", label='experiment')
+    ax.legend()
+    ax.grid()
+    ax.set_title("")
+    
+    plot_name = "transect_u.png"
+    plot_path = report_dir / plot_name
+    plt.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Comparison of the normalised turbine centerline velocity. "
+               "Experimental data reverse engineered from [@mycek2014, fig. "
+               f"{transect.attrs['figure']}].")
+    report.content.add_image(plot_name, caption, width="4in")
+    
+    # Radial velocity
+    section = "Radial Velocity Comparison"
+    report.content.add_heading(section)
+    
+    vnorms = {}
+    maxvs = []
+    
+    for template_type in template_types:
+        
+        turb_z = turb_zs[template_type]
+        vnorm = get_normalised_data(turb_z["$v$"], u_infty[template_type])
+        vnorms[template_type] = vnorm
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        vnorm.plot(x="$x$", y="$y$", vmin=-0.059, vmax=0.059, cmap='RdBu_r')
+        
+        plot_name = f"turb_z_v_{template_type}.png"
+        plot_path = report_dir / plot_name
+        fig.savefig(plot_path, bbox_inches='tight')
+        
+        # Add figure with caption
+        caption = ("Radial velocity normalised by the free stream velocity "
+                   f"for the {template_type} model type")
+        report.content.add_image(plot_name, caption, width="3.64in")
+        
+        # Collect maximimum u*
+        maxvs.append(vnorm.max())
+    
+    # Plot the relative error
+    maxv = max(maxvs)
+    diffv = (vnorms["structured"] - vnorms["fm"]) / maxv
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    diffv.plot(ax=ax,
+               x="$x$",
+               y="$y$",
+               cbar_kwargs={"label": "$v* / v*_{\\mathrm{max}}$"})
+    
+    plot_name = "turb_z_v_diff.png"
+    plot_path = report_dir / plot_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Relative error in normalised radial velocity between the "
+               "structured and fm models")
+    report.content.add_image(plot_name, caption, width="3.64in")
+    
+    # Add section for the references
+    report.content.add_heading("References", level=2)
     
     # Add report metadata
     os_name = platform.system()
@@ -196,6 +344,7 @@ def main(grid_resolution, omp_num_threads):
                               outputfile=f"{report_dir / 'report.docx'}",
                               extra_args=['-C',
                                           f'--resource-path={report_dir}',
+                                          '--bibliography=examples.bib',
                                           '--reference-doc=reference.docx'])
     
     except ImportError:

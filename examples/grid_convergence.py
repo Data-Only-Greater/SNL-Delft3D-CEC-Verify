@@ -2,7 +2,6 @@
 
 import os
 import uuid
-import shutil
 import platform
 import warnings
 from pathlib import Path
