@@ -134,27 +134,39 @@ class Content:
             self._body.append((text, _Paragraph))
     
     @docstringtemplate
-    def add_heading(self, text: str, level: int = 1):
+    def add_heading(self, text: str,
+                          level: int = 1,
+                          label: Optional[str] = None):
         """Add a heading to the document.
         
         >>> report = Report()
-        >>> report.content.add_heading("One")
+        >>> report.content.add_heading("Two", level=2, label=sec:two)
         >>> print(report)
-        1: # One
+        1: ## Two {{#sec:two}}
         2:
         
         :param text: Heading text
         :param level: Heading level, defaults to {level}.
+        :param label: label for the heading, must start with 'sec:'
         
         """
         
         start = '#' * level + ' '
-        self.add_text(start + text, wrapped=False)
+        
+        if label is None:
+            label = ""
+        elif label[:4] != "sec:":
+            raise ValueError("label must start with 'sec:'")
+        else:
+            label = f" #{label}"
+        
+        self.add_text(start + text + label, wrapped=False)
     
     @docstringtemplate
     def add_table(self, dataframe: pd.DataFrame,
                         index: bool = True,
-                        caption: Optional[str] = None):
+                        caption: Optional[str] = None,
+                        label: Optional[str] = None):
         """Add a table to the document, converted from a 
         :class:`pandas:pandas.DataFrame`.
         
@@ -162,20 +174,22 @@ class Content:
         >>> a = {{"a": [1, 2],
         ...      "b": [3, 4]}}
         >>> df = pd.DataFrame(a)
-        >>> report.content.add_table(df, index=False, caption="A table")
+        >>> report.content.add_table(df, index=False, caption="A table", label="tbl:a")
         >>> print(report)
         1: |   a |   b |
         2: |----:|----:|
         3: |   1 |   3 |
         4: |   2 |   4 |
         5:
-        6: Table:  A table
+        6: Table:  A table {{#tbl:a}}
         7:
         
         :param dataframe: DataFrame containing the table headings and data 
         :param index: include the DataFrame index in the table, defaults to
             {index}
-        :param caption: add a caption for the table
+        :param caption: caption for the table
+        :param label: label for the table, requires :param:`caption` to be set
+            and must start with 'tbl:'
 
         """
         
@@ -183,11 +197,19 @@ class Content:
         
         if caption is None: return
         
-        text = "Table:  " + caption
+        if label is None:
+            label = ""
+        elif label[:4] != "tbl:":
+            raise ValueError("label must start with 'tbl:'")
+        else:
+            label = f" #{label}"
+        
+        text = "Table:  " + caption + label
         self.add_text(text, wrapped=False)
     
     def add_image(self, path: StrOrPath,
                         caption: Optional[str] = None,
+                        label: Optional[str] = None,
                         width: Optional[str] = None,
                         height: Optional[str] = None):
         """Add image to document, passed as path to a compatible image file.
@@ -195,14 +217,16 @@ class Content:
         >>> report = Report()
         >>> report.content.add_image("high_art.png",
         ...                          caption="Probably an NFT",
+        ...                          label="fig:hart"
         ...                          width="6in",
         ...                          height="4in")
         >>> print(report)
-        1: ![Probably an NFT](high_art.png){ width=6in height=4in }
+        1: ![Probably an NFT](high_art.png){ #fig:hart width=6in height=4in }
         2:
         
         :param path: path to the image file
         :param caption: caption for the image
+        :param label: label for the image, must start with 'fig:'
         :param width: image width in document, including units
         :param height: image height in document, including units
 
@@ -220,6 +244,11 @@ class Content:
         if width is not None or height is not None:
             
             attrs_str = "{ "
+            
+            if label is not None:
+                if label[:4] != "fig:":
+                    raise ValueError("label must start with 'fig:'")
+                attrs_str += f"#{label} "
             
             if width is not None:
                 attrs_str += f"width={width} "
