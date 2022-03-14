@@ -6,6 +6,7 @@ import platform
 from pathlib import Path
 from dataclasses import replace
 
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -162,6 +163,18 @@ def main(grid_resolution, omp_num_threads):
     
     print("Post processing...")
     
+    section = "Introduction"
+    report.content.add_heading(section)
+    
+    text = ("This is a comparison of the performance of the Mycek flume "
+            "experiment [@mycek2014] simulation using the flexible mesh (FM) "
+            "and structured grid solvers for Delft3D. The simulation "
+            "settings are mirrored between the two methods as much as "
+            "possible. The chosen grid resolution for this study is "
+            f"{grid_resolution}m. Axial and radial velocities in the "
+            "horizontal plane intersecting the turbine hub will be examined.")
+    report.content.add_text(text)
+    
     section = "Axial Velocity Comparison"
     report.content.add_heading(section)
     
@@ -169,6 +182,10 @@ def main(grid_resolution, omp_num_threads):
     turb_zs = {}
     unorms = {}
     maxus = []
+    
+    plot_names = []
+    captions = []
+    fig_labels = []
     
     for template_type in template_types:
         
@@ -183,21 +200,47 @@ def main(grid_resolution, omp_num_threads):
         fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
         unorm.plot(x="$x$", y="$y$", vmin=0.55, vmax=1.05)
         
-        plot_name = f"turb_z_u_{template_type}.png"
+        plot_name = f"turb_z_u_{template_type}"
+        plot_file_name = f"{plot_name}.png"
+        plot_names.append(plot_file_name)
         plot_path = report_dir / plot_name
         fig.savefig(plot_path, bbox_inches='tight')
         
-        # Add figure with caption
+        # Add figure caption
         caption = ("Axial velocity normalised by the free stream velocity "
                    f"for the {template_type} model type")
-        report.content.add_image(plot_name, caption, width="3.64in")
+        captions.append(caption)
+        
+        fig_label = f"fig:{plot_name}"
+        fig_labels.append(fig_label)
         
         # Collect maximimum u*
         maxus.append(unorm.max())
     
+    label_text = "; ".join([f"@{x.capitalize()}" for x in fig_labels])
+    label_text = f"[{label_text}]"
+    text = ("This section compares axial velocities between the FM and "
+            f"structured grid models. {label_text} show the axial velocity "
+            "over the horizontal plane intersecting the turbine hub for the "
+            "FM and structured gird models, respectively. The "
+            "units are non-dimensionalised by the free-stream velocity, "
+            "measured at the hub location without the presence of the "
+            "turbine. If $u$ is the dimensional velocity, and $u_\infty$ is "
+            "the dimensional free stream velocity, then the normalized "
+            "velocity $u^* =  u / u_\infty$. Note the observable difference "
+            "in the wake velocities immediately downstream of the turbine.")
+    report.content.add_text(text)
+    
+    for plot_name, caption, fig_label in zip(plot_names, captions, fig_labels):
+        report.content.add_image(plot_name,
+                                 caption,
+                                 label=fig_label,
+                                 width="3.64in")
+    
     # Plot the relative error
     maxu = max(maxus)
     diffu = (unorms["structured"] - unorms["fm"]) / maxu
+    maxdiffu = np.fabs(diffu.values).max()
     
     fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
     diffu.plot(ax=ax,
@@ -236,14 +279,29 @@ def main(grid_resolution, omp_num_threads):
                                 lw=0.2,
                                 facecolor='k'))
     
-    plot_name = "turb_z_u_diff.png"
-    plot_path = report_dir / plot_name
+    plot_name = "turb_z_u_diff"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
     fig.savefig(plot_path, bbox_inches='tight')
+    fig_label_wake = f"fig:{plot_name}"
+    
+    text = (f"[@{fig_label.capitalize()}] shows the error between the "
+            "non-dimensional axial velocities of the structured grid and FM "
+            "models, relative to the maximum value within the two "
+            "simulations. Three main areas of difference are revealed, the "
+            "increased deficit in the near wake for the structured model, the "
+            "reduced deficit of the structured model in the far wake and the "
+            "increased acceleration around the edges of the turbine of the "
+            "structured model.")
+    report.content.add_text(text)
     
     # Add figure with caption
     caption = ("Relative error in normalised axial velocity between the "
                "structured and fm models")
-    report.content.add_image(plot_name, caption, width="3.64in")
+    report.content.add_image(plot_file_name,
+                             caption,
+                             label=fig_label_wake,
+                             width="3.64in")
     
     # Centerline velocity
     transect = validate[0]
@@ -264,15 +322,31 @@ def main(grid_resolution, omp_num_threads):
     ax.grid()
     ax.set_title("")
     
-    plot_name = "transect_u.png"
-    plot_path = report_dir / plot_name
-    plt.savefig(plot_path, bbox_inches='tight')
+    plot_name = "transect_u"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    fig_label_transect = f"fig:{plot_name}"
+    
+    text = ("Comparing the non-dimensional centerline velocities in "
+            f"[@{fig_label_transect}] alongside the experimental data "
+            "published in [@mycek2014] confirms the behavior in the near and "
+            f"far wake shown in [@{fig_label_wake}]. Generally, the "
+            "structured model performs better in the near wake compared to "
+            "the experimental data, however the performance in the far wake "
+            "is better for the FM model, where the wake has decayed less. "
+            "Nonetheless, neither model captures the experimental "
+            "measurements well for the whole centerline.")
+    report.content.add_text(text)
     
     # Add figure with caption
     caption = ("Comparison of the normalised turbine centerline velocity. "
                "Experimental data reverse engineered from [@mycek2014, fig. "
                f"{transect.attrs['figure']}].")
-    report.content.add_image(plot_name, caption, width="4in")
+    report.content.add_image(plot_file_name,
+                             caption,
+                             label=fig_label_transect,
+                             width="4in")
     
     # Radial velocity
     section = "Radial Velocity Comparison"
@@ -280,6 +354,10 @@ def main(grid_resolution, omp_num_threads):
     
     vnorms = {}
     maxvs = []
+    
+    plot_names = []
+    captions = []
+    fig_labels = []
     
     for template_type in template_types:
         
@@ -290,21 +368,46 @@ def main(grid_resolution, omp_num_threads):
         fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
         vnorm.plot(x="$x$", y="$y$", vmin=-0.059, vmax=0.059, cmap='RdBu_r')
         
-        plot_name = f"turb_z_v_{template_type}.png"
-        plot_path = report_dir / plot_name
+        plot_name = f"turb_z_v_{template_type}"
+        plot_file_name = f"{plot_name}.png"
+        plot_names.append(plot_file_name)
+        plot_path = report_dir / plot_file_name
         fig.savefig(plot_path, bbox_inches='tight')
         
-        # Add figure with caption
         caption = ("Radial velocity normalised by the free stream velocity "
                    f"for the {template_type} model type")
-        report.content.add_image(plot_name, caption, width="3.64in")
+        captions.append(caption)
+        
+        fig_label = f"fig:{plot_name}"
+        fig_labels.append(fig_label)
         
         # Collect maximimum u*
         maxvs.append(vnorm.max())
     
+    label_text = "; ".join([f"@{x.capitalize()}" for x in fig_labels])
+    label_text = f"[{label_text}]"
+    text = ("This section compares radial velocities between the FM and "
+            f"structured grid models. {label_text} show the radial velocity "
+            "over the horizontal plane intersecting the turbine hub for the "
+            "FM and structured gird models, respectively. The units are "
+            "non-dimensionalized by the free-stream velocity, (in the axial "
+            "direction) measured at the hub location without the presence of "
+            "the turbine. If $v$ is the dimensional velocity, then the "
+            "normalized velocity $v^* =  v / u_\infty$. Note the increased "
+            "radial velocities recorded for the structured grid compared to "
+            "the FM simulation.")
+    report.content.add_text(text)
+    
+    for plot_name, caption, fig_label in zip(plot_names, captions, fig_labels):
+        report.content.add_image(plot_name,
+                                 caption,
+                                 label=fig_label,
+                                 width="3.64in")
+    
     # Plot the relative error
     maxv = max(maxvs)
     diffv = (vnorms["structured"] - vnorms["fm"]) / maxv
+    maxdiffv = np.fabs(diffv.values).max()
     
     fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
     diffv.plot(ax=ax,
@@ -312,14 +415,32 @@ def main(grid_resolution, omp_num_threads):
                y="$y$",
                cbar_kwargs={"label": "$v* / v*_{\\mathrm{max}}$"})
     
-    plot_name = "turb_z_v_diff.png"
-    plot_path = report_dir / plot_name
+    plot_name = "turb_z_v_diff"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
     fig.savefig(plot_path, bbox_inches='tight')
+    fig_label = f"fig:{plot_name}"
+    
+    text = (f"[@{fig_label.capitalize()}] shows the error between the "
+            "non-dimensional radial velocities of the structured grid and FM "
+            "models, relative to the maximum value within the two "
+            "simulations. The largest errors are seen upstream of the "
+            "turbine, while smaller errors are seen downstream of the "
+            "turbine. The errors in the radial flow are also much higher than "
+            "for the axial flow, with the maximum error in radial velocity "
+            f"being {maxdiffv:.4g}, while the error is {maxdiffu:.4g} for the "
+            f"axial velocity (from [@{fig_label_wake}]). The differences in "
+            "the radial flows may be contributing to the differences in the "
+            "near wake for the axial velocities.")
+    report.content.add_text(text)
     
     # Add figure with caption
     caption = ("Relative error in normalised radial velocity between the "
                "structured and fm models")
-    report.content.add_image(plot_name, caption, width="3.64in")
+    report.content.add_image(plot_file_name,
+                             caption,
+                             label=fig_label,
+                             width="3.64in")
     
     # Add section for the references
     report.content.add_heading("References", level=2)
@@ -342,7 +463,8 @@ def main(grid_resolution, omp_num_threads):
         pypandoc.convert_file(f"{report_dir / 'report.md'}",
                               'docx',
                               outputfile=f"{report_dir / 'report.docx'}",
-                              extra_args=['-C',
+                              extra_args=['--filter=pandoc-crossref',
+                                          '-C',
                                           f'--resource-path={report_dir}',
                                           '--bibliography=examples.bib',
                                           '--reference-doc=reference.docx'])
