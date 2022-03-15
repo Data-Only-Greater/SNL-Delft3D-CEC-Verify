@@ -166,9 +166,9 @@ def main(grid_resolution, omp_num_threads):
     section = "Introduction"
     report.content.add_heading(section)
     
-    text = ("This is a comparison of the performance of the Mycek flume "
-            "experiment [@mycek2014] simulation using the flexible mesh (FM) "
-            "and structured grid solvers for Delft3D. The simulation "
+    text = ("This is a comparison of the performance of simulations of the "
+            "Mycek flume experiment [@mycek2014]  using the flexible mesh "
+            "(FM) and structured grid solvers for Delft3D. The simulation "
             "settings are mirrored between the two methods as much as "
             "possible. The chosen grid resolution for this study is "
             f"{grid_resolution}m. Axial and radial velocities in the "
@@ -176,7 +176,7 @@ def main(grid_resolution, omp_num_threads):
     report.content.add_text(text)
     
     section = "Axial Velocity Comparison"
-    report.content.add_heading(section)
+    report.content.add_heading(section, label="sec:axial")
     
     validate = Validate(turb_case)
     turb_zs = {}
@@ -228,7 +228,8 @@ def main(grid_resolution, omp_num_threads):
             "turbine. If $u$ is the dimensional velocity, and $u_\infty$ is "
             "the dimensional free stream velocity, then the normalized "
             "velocity $u^* =  u / u_\infty$. Note the observable difference "
-            "in the wake velocities immediately downstream of the turbine.")
+            "in the wake velocities immediately downstream of the turbine "
+            "between the two simulations.")
     report.content.add_text(text)
     
     for plot_name, caption, fig_label in zip(plot_names, captions, fig_labels):
@@ -283,9 +284,9 @@ def main(grid_resolution, omp_num_threads):
     plot_file_name = f"{plot_name}.png"
     plot_path = report_dir / plot_file_name
     fig.savefig(plot_path, bbox_inches='tight')
-    fig_label_wake = f"fig:{plot_name}"
+    fig_label_diffu = f"fig:{plot_name}"
     
-    text = (f"[@{fig_label.capitalize()}] shows the error between the "
+    text = (f"[@{fig_label_diffu.capitalize()}] shows the error between the "
             "non-dimensional axial velocities of the structured grid and FM "
             "models, relative to the maximum value within the two "
             "simulations. Three main areas of difference are revealed, the "
@@ -300,7 +301,7 @@ def main(grid_resolution, omp_num_threads):
                "structured and fm models")
     report.content.add_image(plot_file_name,
                              caption,
-                             label=fig_label_wake,
+                             label=fig_label_diffu,
                              width="3.64in")
     
     # Centerline velocity
@@ -328,10 +329,10 @@ def main(grid_resolution, omp_num_threads):
     fig.savefig(plot_path, bbox_inches='tight')
     fig_label_transect = f"fig:{plot_name}"
     
-    text = ("Comparing the non-dimensional centerline velocities in "
-            f"[@{fig_label_transect}] alongside the experimental data "
-            "published in [@mycek2014] confirms the behavior in the near and "
-            f"far wake shown in [@{fig_label_wake}]. Generally, the "
+    text = ("Comparing the non-dimensional centerline velocities alongside "
+            "the experimental data (published in [@mycek2014]) in "
+            f"[@{fig_label_transect}], confirms the behavior in the near and "
+            f"far wake shown in [@{fig_label_diffu}]. Generally, the "
             "structured model performs better in the near wake compared to "
             "the experimental data, however the performance in the far wake "
             "is better for the FM model, where the wake has decayed less. "
@@ -350,7 +351,7 @@ def main(grid_resolution, omp_num_threads):
     
     # Radial velocity
     section = "Radial Velocity Comparison"
-    report.content.add_heading(section)
+    report.content.add_heading(section, label="sec:radial")
     
     vnorms = {}
     maxvs = []
@@ -419,9 +420,9 @@ def main(grid_resolution, omp_num_threads):
     plot_file_name = f"{plot_name}.png"
     plot_path = report_dir / plot_file_name
     fig.savefig(plot_path, bbox_inches='tight')
-    fig_label = f"fig:{plot_name}"
+    fig_label_diffv = f"fig:{plot_name}"
     
-    text = (f"[@{fig_label.capitalize()}] shows the error between the "
+    text = (f"[@{fig_label_diffv.capitalize()}] shows the error between the "
             "non-dimensional radial velocities of the structured grid and FM "
             "models, relative to the maximum value within the two "
             "simulations. The largest errors are seen upstream of the "
@@ -429,9 +430,7 @@ def main(grid_resolution, omp_num_threads):
             "turbine. The errors in the radial flow are also much higher than "
             "for the axial flow, with the maximum error in radial velocity "
             f"being {maxdiffv:.4g}, while the error is {maxdiffu:.4g} for the "
-            f"axial velocity (from [@{fig_label_wake}]). The differences in "
-            "the radial flows may be contributing to the differences in the "
-            "near wake for the axial velocities.")
+            f"axial velocity (from [@{fig_label_diffu}]).")
     report.content.add_text(text)
     
     # Add figure with caption
@@ -439,8 +438,33 @@ def main(grid_resolution, omp_num_threads):
                "structured and fm models")
     report.content.add_image(plot_file_name,
                              caption,
-                             label=fig_label,
+                             label=fig_label_diffv,
                              width="3.64in")
+    
+    # Conclusion
+    report.content.add_heading("Conclusion")
+    
+    text = ("Comparison of simulations of the 2014 Mycek flume experiment "
+            "[@mycek2014] using the flexible mesh (FM) and structured grid "
+            "solvers for Delft3D, reveals significant differences. As "
+            "seen in [@sec:axial], differences in the axial velocities "
+            "between the two methods were seen in the near wake, far wake, "
+            "and at the turbine edges. When comparing to the experimental "
+            f"data, as in [@{fig_label_diffu}], it was observed that the "
+            "structured grid simulation performs better in the near wake, "
+            "while the FM simulation is better in the far wake. In "
+            "[@sec:radial], radial velocities were compared with differences "
+            "seen immediately upstream and downstream of the turbine (see "
+            f"[@{fig_label_diffv}]). Notably, the maximum relative errors "
+            "between the two simulations were much larger for the radial "
+            f"velocities than then axial velocities, {maxdiffv:.4g} and "
+            f"{maxdiffu:.4g} respectively. This discrepancy may account for "
+            "some of the differences seen in the axial flows, although the "
+            "underlying mechanisms are not yet known. Other factors may also "
+            "be contributing, including interpretation of the simulation "
+            "parameters or selection of the time step for the structured grid "
+            "simulations.")
+    report.content.add_text(text)
     
     # Add section for the references
     report.content.add_heading("References", level=2)
@@ -465,6 +489,7 @@ def main(grid_resolution, omp_num_threads):
                               outputfile=f"{report_dir / 'report.docx'}",
                               extra_args=['--filter=pandoc-crossref',
                                           '-C',
+                                          '-N',
                                           f'--resource-path={report_dir}',
                                           '--bibliography=examples.bib',
                                           '--reference-doc=reference.docx'])
