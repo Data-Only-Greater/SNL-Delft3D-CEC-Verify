@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import textwrap
+import warnings
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Type
 from pathlib import Path
@@ -140,7 +141,7 @@ class Content:
         """Add a heading to the document.
         
         >>> report = Report()
-        >>> report.content.add_heading("Two", level=2, label=sec:two)
+        >>> report.content.add_heading("Two", level=2, label="sec:two")
         >>> print(report)
         1: ## Two {{#sec:two}}
         2:
@@ -148,6 +149,8 @@ class Content:
         :param text: Heading text
         :param level: Heading level, defaults to {level}.
         :param label: label for the heading, must start with 'sec:'
+        
+        :raises ValueError: if ``label`` does not start with 'sec:'
         
         """
         
@@ -158,7 +161,7 @@ class Content:
         elif label[:4] != "sec:":
             raise ValueError("label must start with 'sec:'")
         else:
-            label = f" #{label}"
+            label = f" {{#{label}}}"
         
         self.add_text(start + text + label, wrapped=False)
     
@@ -174,7 +177,10 @@ class Content:
         >>> a = {{"a": [1, 2],
         ...      "b": [3, 4]}}
         >>> df = pd.DataFrame(a)
-        >>> report.content.add_table(df, index=False, caption="A table", label="tbl:a")
+        >>> report.content.add_table(df,
+        ...                          index=False,
+        ...                          caption="A table",
+        ...                          label="tbl:a")
         >>> print(report)
         1: |   a |   b |
         2: |----:|----:|
@@ -190,19 +196,24 @@ class Content:
         :param caption: caption for the table
         :param label: label for the table, requires :param:`caption` to be set
             and must start with 'tbl:'
-
+        
+        :raises ValueError: if ``label`` does not start with 'tbl:'
+        
         """
-        
-        self.add_text(dataframe.to_markdown(index=index), wrapped=False)
-        
-        if caption is None: return
         
         if label is None:
             label = ""
         elif label[:4] != "tbl:":
             raise ValueError("label must start with 'tbl:'")
+        elif caption is None:
+            warnings.warn('label is discarded if no caption is given')
+            label = ""
         else:
-            label = f" #{label}"
+            label = f" {{#{label}}}"
+        
+        self.add_text(dataframe.to_markdown(index=index), wrapped=False)
+        
+        if caption is None: return
         
         text = "Table:  " + caption + label
         self.add_text(text, wrapped=False)
@@ -217,7 +228,7 @@ class Content:
         >>> report = Report()
         >>> report.content.add_image("high_art.png",
         ...                          caption="Probably an NFT",
-        ...                          label="fig:hart"
+        ...                          label="fig:hart",
         ...                          width="6in",
         ...                          height="4in")
         >>> print(report)
@@ -226,10 +237,13 @@ class Content:
         
         :param path: path to the image file
         :param caption: caption for the image
-        :param label: label for the image, must start with 'fig:'
+        :param label: label for the image, requires :param:`caption` to be set
+            and must start with 'fig:'
         :param width: image width in document, including units
         :param height: image height in document, including units
-
+        
+        :raises ValueError: if ``label`` does not start with 'fig:'
+        
         """
         
         path = Path(path)
@@ -241,13 +255,20 @@ class Content:
         
         text += f"({path})"
         
-        if width is not None or height is not None:
+        if label is not None:
+            if label[:4] != "fig:":
+                raise ValueError("label must start with 'fig:'")
+            elif caption is None:
+                warnings.warn('label is discarded if no caption is given')
+                label = None
+        
+        if (label is not None or
+            width is not None or
+            height is not None):
             
             attrs_str = "{ "
             
             if label is not None:
-                if label[:4] != "fig:":
-                    raise ValueError("label must start with 'fig:'")
                 attrs_str += f"#{label} "
             
             if width is not None:

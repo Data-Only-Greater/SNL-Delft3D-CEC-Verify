@@ -150,6 +150,34 @@ def test_content_add_heading(content):
     assert text == '#' * level + ' ' + title
 
 
+def test_content_add_heading_label_error(content):
+    
+    title = "Test"
+    level = 2
+    label = "mock"
+    
+    with pytest.raises(ValueError) as excinfo:
+        content.add_heading(title, level=level, label=label)
+    
+    assert "must start with 'sec:'" in str(excinfo)
+    assert len(content._body) == 0
+
+
+def test_content_add_heading_label(content):
+    
+    title = "Test"
+    level = 2
+    label = "sec:mock"
+    
+    content.add_heading(title, level=level, label=label)
+    
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
+    
+    text = content._body[0][0]
+    assert text == '#' * level + ' ' + title + ' ' + f'{{#{label}}}'
+
+
 def test_content_add_table(content):
     
     data = {"a": [1, 2, 3],
@@ -168,6 +196,58 @@ def test_content_add_table(content):
     
     caption_text = content._body[1][0]
     assert caption_text == "Table:  " + caption
+
+
+def test_content_add_table_label_error(content):
+    
+    df = "mock"
+    caption = "test"
+    label = "mock"
+    
+    with pytest.raises(ValueError) as excinfo:
+        content.add_table(df, caption=caption, label=label)
+    
+    assert "must start with 'tbl:'" in str(excinfo)
+    assert len(content._body) == 0
+
+
+def test_content_add_table_label_no_caption(content):
+    
+    data = {"a": [1, 2, 3],
+            "b": [4, 5, 6]}
+    df = pd.DataFrame(data)
+    
+    label = "tbl:mock"
+    
+    with pytest.warns(UserWarning, match='label is discarded'):
+        content.add_table(df, label=label)
+    
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
+    
+    table_text = content._body[0][0]
+    assert table_text == df.to_markdown(index=True)
+
+
+def test_content_add_table_label(content):
+    
+    data = {"a": [1, 2, 3],
+            "b": [4, 5, 6]}
+    df = pd.DataFrame(data)
+    
+    caption = "test"
+    label = "tbl:mock"
+    content.add_table(df, caption=caption, label=label)
+    
+    assert len(content._body) == 2
+    assert content._body[0][1] is _Paragraph
+    assert content._body[1][1] is _Paragraph
+    
+    table_text = content._body[0][0]
+    assert table_text == df.to_markdown(index=True)
+    
+    caption_text = content._body[1][0]
+    assert caption_text == "Table:  " + caption + ' ' + f'{{#{label}}}'
 
 
 def test_content_add_image(content):
@@ -195,24 +275,72 @@ def test_content_add_image_with_caption(content):
     assert image_text == f"![{caption}]({fake_path})"
 
 
-@pytest.mark.parametrize("width, height, expected_attrs", [
-                        ("5in", None, "width=5in"),
-                        (None, "10px", "height=10px"),
-                        ("5in", "10px", "width=5in height=10px")])
-def test_content_add_image_with_dimensions(content,
-                                           width,
-                                           height,
-                                           expected_attrs):
+def test_content_add_image_label_error(content):
     
     fake_path = "some_image.jpg"
-    content.add_image(fake_path, width=width, height=height)
+    caption = "test"
+    label = "mock"
+    
+    with pytest.raises(ValueError) as excinfo:
+        content.add_image(fake_path, caption=caption, label=label)
+    
+    assert "must start with 'fig:'" in str(excinfo)
+    assert len(content._body) == 0
+
+
+def test_content_add_image_label_no_caption(content):
+    
+    fake_path = "some_image.jpg"
+    label = "fig:mock"
+    
+    with pytest.warns(UserWarning, match='label is discarded'):
+        content.add_image(fake_path, label=label)
     
     assert len(content._body) == 1
     assert content._body[0][1] is _Paragraph
     
     image_text = content._body[0][0]
-    assert image_text == (f"![{fake_path}]({fake_path}){{ {expected_attrs} "
-                          "}\\")
+    assert image_text == f"![{fake_path}]({fake_path})\\"
+
+
+def test_content_add_image_with_caption_label(content):
+    
+    fake_path = "some_image.jpg"
+    caption = "my caption"
+    label = "fig:mock"
+    content.add_image(fake_path, caption, label=label)
+    
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
+    
+    image_text = content._body[0][0]
+    assert image_text == f"![{caption}]({fake_path}){{ #{label} }}"
+
+
+@pytest.mark.parametrize("label, width, height, expected_attrs", [
+                        (None, "5in", None, "width=5in"),
+                        ("fig:mock", None, "10px", "#fig:mock height=10px"),
+                        (None, "5in", "10px", "width=5in height=10px")])
+def test_content_add_image_with_dimensions(content,
+                                           label,
+                                           width,
+                                           height,
+                                           expected_attrs):
+    
+    fake_path = "some_image.jpg"
+    caption = "test"
+    content.add_image(fake_path,
+                      caption=caption,
+                      label=label,
+                      width=width,
+                      height=height)
+    
+    assert len(content._body) == 1
+    assert content._body[0][1] is _Paragraph
+    
+    image_text = content._body[0][0]
+    assert image_text == (f"![{caption}]({fake_path}){{ {expected_attrs} "
+                          "}")
 
 
 def test_content_clear(content, text):
