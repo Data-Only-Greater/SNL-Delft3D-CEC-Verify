@@ -553,8 +553,8 @@ if __name__ == "__main__":
     parser.add_argument('--grid-resolution',
                         type=float,
                         choices=[1.0, 0.5, 0.25, 0.125, 0.0625],
-                        default=0.25,
-                        help=("grid resolution - defaults to 0.25"))
+                        default=0.0625,
+                        help=("grid resolution - defaults to 0.0625"))
     
     parser.add_argument('--threads',
                         type=check_positive,

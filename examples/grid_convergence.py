@@ -123,6 +123,8 @@ def main(template_type, max_experiments, omp_num_threads):
         if no_turb_dir is not None:
             try:
                 Result(no_turb_dir)
+                print("Loading pre-existing simulation at path "
+                      f"'{no_turb_dir}'")
             except FileNotFoundError:
                 no_turb_dir = None
         
@@ -161,6 +163,7 @@ def main(template_type, max_experiments, omp_num_threads):
         if turb_dir is not None:
             try:
                 Result(turb_dir)
+                print(f"Loading pre-existing simulation at path '{turb_dir}'")
             except FileNotFoundError:
                 turb_dir = None
         
@@ -604,8 +607,8 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(help='Desired action to perform',
-                                       dest='MODEL')
+    subparsers = parser.add_subparsers(dest='MODEL',
+                                       required=True)
     
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('--experiments',

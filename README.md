@@ -212,10 +212,10 @@ If successful, the report files (and images) will be placed into a
 sub-directory based on the model type. For the flexible mesh model, this is 
 `structured/grid_convergence_report`. To avoid repeating simulations in the 
 event of an unexpected failure or change to the `grid_convergence.py` file, 
-the Delft3D simulations are stored in a sub-directory based on the model type. 
-For the flexible mesh model, this is `structured/grid_convergence_runs`. If 
-Delft3D is updated, ensure to delete or move this folder, so that new 
-simulations are conducted.
+the Delft3D simulations, and a copy of their case study parameters, are stored 
+in a sub-directory based on the model type. For the structured grid model, 
+this is `structured/runs`. If Delft3D is updated, ensure to delete or move 
+this folder, so that new simulations are conducted.
 
 By default, the study is conducted using just one CPU thread. To reduce 
 simulation time of the `fm` model, assuming additional capacity is available, 
@@ -236,6 +236,72 @@ optional argument to reduce the number of experiments. For example:
 
 Pre-calculated results of the full study are available in the [online 
 documentation][110].
+
+### Model Comparison Study
+
+Required files:
++   `comparison.py`
++   `examples.bib` (for conversion to Word format)
++   `reference.docx` (for conversion to Word format)
+
+The second production example is a comparison of the flexible mesh and 
+structured grid solvers for a turbine simulation using identical settings.
+
+This example uses the [pandoc-crossref][119] package to reference sections
+and figures within the generated report. To install the package issue the 
+following command:
+
+```
+(snld3d) > conda install install pandoc-crossref=0.3.10.0
+```
+
+For the example to run, two environment variable **must be set**. For path to 
+the flexible mesh solver, set the `D3D_FM_BIN` variable. In PowerShell, for 
+example:
+
+```
+(snld3d) > $env:D3D_FM_BIN = "\path\to\SNL-Delft3D-FM-CEC\src\bin"
+```
+
+For the path to the structured grid solver, set the `D3D_4_BIN` environment
+variable. In PowerShell again:
+
+```
+(snld3d) > $env:D3D_4_BIN = "\path\to\SNL-Delft3D-CEC\src\bin"
+```
+
+Then move to the directory containing `comparison.py` and call the script using 
+Python:
+
+```
+(snld3d) > python comparison.py
+```
+
+If successful, the report files (and images) will be placed into a 
+sub-directory called `comparison_report`. To avoid repeating simulations, the 
+Delft3D simulations, and a copy of their case study parameters, are stored in 
+a sub-directory based on the model type. For the flexible mesh model, this is 
+`fm/runs`. If Delft3D is updated, ensure to delete or move this folder, so 
+that new simulations are conducted.
+
+By default, the study is conducted using just one CPU thread. To reduce 
+simulation time of the `fm` model, assuming additional capacity is available, 
+increase the number of utilised threads using the `--threads` optional argument:
+
+```
+(snld3d) > python comparison.py --threads 8
+```
+
+Note that this study takes a considerable amount of wall-clock time to 
+complete. To run the simulations at lower resolution (and, therefore, more 
+rapidly), use the `--grid-resolution` optional argument. For example:
+
+```
+(snld3d) > python comparison.py --threads 8 --grid-resolution 0.25
+```
+
+Pre-calculated results of the study at the default resolution of 0.0625m is 
+available in the [online documentation][110].
 
 ## Documentation
 
@@ -395,3 +461,4 @@ Retrieved 24 January 2022, from https://www.grc.nasa.gov/www/wind/valid/tutorial
 [116]: https://github.com/SNL-WaterPower/SNL-Delft3D-CEC
 [117]: https://www.deltares.nl/en/software/delft3d-4-suite/
 [118]: https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/releases/latest
+[119]: https://github.com/lierdakil/pandoc-crossref
