@@ -18,3 +18,12 @@ Structured
    :maxdepth: 4
 
    structured/linux/report
+
+
+Comparison
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   comparison/report

@@ -194,8 +194,8 @@ class Content:
         :param index: include the DataFrame index in the table, defaults to
             {index}
         :param caption: caption for the table
-        :param label: label for the table, requires :param:`caption` to be set
-            and must start with 'tbl:'
+        :param label: label for the table, requires ``caption`` to be set and
+            must start with 'tbl:'
         
         :raises ValueError: if ``label`` does not start with 'tbl:'
         
@@ -237,8 +237,8 @@ class Content:
         
         :param path: path to the image file
         :param caption: caption for the image
-        :param label: label for the image, requires :param:`caption` to be set
-            and must start with 'fig:'
+        :param label: label for the image, requires ``caption`` to be set and
+            must start with 'fig:'
         :param width: image width in document, including units
         :param height: image height in document, including units
         
