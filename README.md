@@ -213,9 +213,9 @@ sub-directory based on the model type. For the flexible mesh model, this is
 `structured/grid_convergence_report`. To avoid repeating simulations in the 
 event of an unexpected failure or change to the `grid_convergence.py` file, 
 the Delft3D simulations, and a copy of their case study parameters, are stored 
-in a sub-directory based on the model type. For the structured grid model, 
-this is `structured/runs`. If Delft3D is updated, ensure to delete or move 
-this folder, so that new simulations are conducted.
+in a sub-directory based on the model type. For the structured grid model, for 
+example, this is `structured/runs`. If the Delft3D solver is updated, ensure to 
+delete or move this folder, so that new simulations are conducted.
 
 By default, the study is conducted using just one CPU thread. To reduce 
 simulation time of the `fm` model, assuming additional capacity is available, 
@@ -248,11 +248,11 @@ The second production example is a comparison of the flexible mesh and
 structured grid solvers for a turbine simulation using identical settings.
 
 This example uses the [pandoc-crossref][119] package to reference sections
-and figures within the generated report. To install the package issue the 
-following command:
+and figures within the generated report. To install the package (for converting
+to Word format with pypandoc) issue the following command:
 
 ```
-(snld3d) > conda install install pandoc-crossref=0.3.10.0
+(snld3d) > conda install pandoc-crossref=0.3.10.0
 ```
 
 For the example to run, two environment variable **must be set**. For path to 
@@ -280,8 +280,9 @@ Python:
 If successful, the report files (and images) will be placed into a 
 sub-directory called `comparison_report`. To avoid repeating simulations, the 
 Delft3D simulations, and a copy of their case study parameters, are stored in 
-a sub-directory based on the model type. For the flexible mesh model, this is 
-`fm/runs`. If Delft3D is updated, ensure to delete or move this folder, so 
+a sub-directory based on the model type. For the flexible mesh model this is 
+`fm/runs` and for the structured grid model it's `structured/runs`. If 
+either Delft3D solver is updated, ensure to delete or move these folders, so 
 that new simulations are conducted.
 
 By default, the study is conducted using just one CPU thread. To reduce 
