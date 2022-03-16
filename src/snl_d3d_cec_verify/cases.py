@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, TypeVar, Union
+from typing import Any, List, Optional, Type, TypeVar, Union
 from collections.abc import Sequence
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 
-from .types import Num
+from yaml import load, dump
+try:
+    from yaml import CSafeLoader as Loader, CSafeDumper as Dumper
+except ImportError: # pragma: no cover
+    from yaml import SafeLoader as Loader, SafeDumper as Dumper # type: ignore
+
+from .types import Num, StrOrPath
 from ._docs import docstringtemplate
 
 # Reused compound types
@@ -14,9 +20,12 @@ T = TypeVar('T')
 OneOrMany = Union[T, Sequence[T]]
 OneOrManyOptional = Union[Optional[T], Sequence[Optional[T]]]
 
+# Create a generic variable that can be 'CaseStudy', or any subclass.
+C = TypeVar('C', bound='CaseStudy')
+
 
 @docstringtemplate
-@dataclass(frozen=True)
+@dataclass(eq=False, frozen=True)
 class CaseStudy:
     """
     Class for defining variables for single or multiple case studies.
@@ -185,6 +194,32 @@ class CaseStudy:
         
         return CaseStudy(*case_values)
     
+    @classmethod
+    def from_yaml(cls: Type[C], path: StrOrPath) -> C:
+        """Create a new instance from a YAML file
+        
+        :param path: path of the existing YAML file
+        """
+        
+        with open(path, 'r') as yamlfile:
+            raw = load(yamlfile, Loader=Loader)
+        
+        kwarg_names = [f.name for f in fields(cls) if f.init]
+        kwargs = {key: raw[key] for key in kwarg_names}
+        
+        return cls(**kwargs)
+    
+    def to_yaml(self, path: StrOrPath):
+        """Export object as a YAML file
+        
+        :param path: path of created YAML file
+        """
+        
+        data = asdict(self)
+        
+        with open(path, 'w') as yamlfile:
+            dump(data, yamlfile, Dumper=Dumper)
+    
     def _single_index_check(self, index: int):
         if index not in [0, -1]: raise IndexError("index out of range")
     
@@ -192,6 +227,24 @@ class CaseStudy:
         length = len(self)
         if not (-1 * length <= index <= length - 1):
             raise IndexError("index out of range")
+    
+    def __eq__(self, other: object) -> bool:
+        
+        if not isinstance(other, CaseStudy):
+            return NotImplemented
+        
+        other_dict = asdict(other)
+        
+        for f, v in zip(self.fields, self.values):
+            
+            other_v = other_dict[f]
+            
+            if isinstance(v, Sequence):
+                if tuple(v) != tuple(other_v): return False
+            else:
+                if v != other_v: return False
+        
+        return True
     
     def __getitem__(self, item: int) -> CaseStudy:
         return self.get_case(item)
@@ -205,7 +258,7 @@ class CaseStudy:
 
 
 @docstringtemplate
-@dataclass(frozen=True)
+@dataclass(eq=False, frozen=True)
 class MycekStudy(CaseStudy):
     """Class for defining cases corresponding to the Mycek study. Subclass 
     of :class:`.CaseStudy` with the domain and turbine position fixed.
