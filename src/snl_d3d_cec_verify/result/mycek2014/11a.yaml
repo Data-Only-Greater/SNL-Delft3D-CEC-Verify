@@ -5,7 +5,7 @@ data: [0.400646465, 0.400646465, 0.392888889, 0.38189899, 0.398060606,
        0.444606061, 0.493090909, 0.54610101, 0.566141414, 0.606222222]
 name: $u_0$
 attrs:
-    description: Centreline velocity
+    description: Centreline velocity (3\% TI)
     $D$: 0.7
     $U_\infty$: 0.8
     $I_\infty$: 3\%
