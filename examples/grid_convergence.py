@@ -470,10 +470,13 @@ def find_project_dir(path, case):
     
     path = Path(path)
     files = list(Path(path).glob("**/case.yaml"))
+    ignore_fields = ["stats_interval",
+                     "restart_interval"]
     
     for file in files:
         test = MycekStudy.from_yaml(file)
-        if test == case: return file.parent
+        if test.is_equal(case, ignore_fields):
+            return file.parent
     
     return None
 
