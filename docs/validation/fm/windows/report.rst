@@ -9,13 +9,13 @@ grid resolution, of 0.0625m, achieved an asymptotic ratio of 1.032
 (asymptotic range is indicated by a value :math:`\approx 1`). At zero
 grid resolution, the normalised velocity deficit measured 1.2 diameters
 downstream from the turbine was 35.85%, a 28.18% error against the
-measured value of 49.92%. For the centreline velocity (3% ti) transect,
+measured value of 49.92%. For the centreline velocity (3% TI) transect,
 the root mean square error at the lowest grid resolution was 0.1954. For
-the centreline velocity (15% ti) transect, the root mean square error at
+the centreline velocity (15% TI) transect, the root mean square error at
 the lowest grid resolution was 0.1172. For the axial velocity at
-:math:`x^*=5` (3% ti) transect, the root mean square error at the lowest
+:math:`x^*=5` (3% TI) transect, the root mean square error at the lowest
 grid resolution was 0.1167. For the axial velocity at :math:`x^*=5` (15%
-ti) transect, the root mean square error at the lowest grid resolution
+TI) transect, the root mean square error at the lowest grid resolution
 was 0.06263.
 
 Grid Convergence Studies
