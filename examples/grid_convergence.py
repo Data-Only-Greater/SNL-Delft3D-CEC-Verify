@@ -244,6 +244,8 @@ def main(template_type, max_experiments, omp_num_threads):
     transect_summary = ""
     n_transects = len(global_validate)
     
+    lower_first = lambda s: s[:1].lower() + s[1:] if s else ''
+    
     for i, transect in enumerate(global_validate):
         
         description = transect.attrs['description']
@@ -252,8 +254,9 @@ def main(template_type, max_experiments, omp_num_threads):
         transect_rmse = transect_df.iloc[-1, 1]
         
         transect_summary += (
-            f"For the {description.lower()} transect, the root mean square "
-            f"error at the lowest grid resolution was {transect_rmse:.4g}.")
+            f"For the {lower_first(description)} transect, the root mean "
+            "square error at the lowest grid resolution was "
+            f"{transect_rmse:.4g}.")
         
         if (i + 1) < n_transects:
             transect_summary += " "
@@ -470,10 +473,13 @@ def find_project_dir(path, case):
     
     path = Path(path)
     files = list(Path(path).glob("**/case.yaml"))
+    ignore_fields = ["stats_interval",
+                     "restart_interval"]
     
     for file in files:
         test = MycekStudy.from_yaml(file)
-        if test == case: return file.parent
+        if test.is_equal(case, ignore_fields):
+            return file.parent
     
     return None
 

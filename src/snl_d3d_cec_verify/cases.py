@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type, TypeVar, Union
+from typing import Any, Iterable, List, Optional, Type, TypeVar, Union
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, fields
 
@@ -220,22 +220,31 @@ class CaseStudy:
         with open(path, 'w') as yamlfile:
             dump(data, yamlfile, Dumper=Dumper)
     
-    def _single_index_check(self, index: int):
-        if index not in [0, -1]: raise IndexError("index out of range")
-    
-    def _multi_index_check(self, index: int):
-        length = len(self)
-        if not (-1 * length <= index <= length - 1):
-            raise IndexError("index out of range")
-    
-    def __eq__(self, other: object) -> bool:
+    def is_equal(self, other: object,
+                       ignore_fields: Optional[Iterable[str]] = None) -> bool:
+        """Test equality of another object
+        
+        Use the ``ignore_fields`` argument to ignore fields when comparing
+        :class:`.CaseStudy` objects:
+        
+        >>> case = CaseStudy(dx=1)
+        >>> other = CaseStudy(dx=2)
+        >>> other.is_equal(case, ignore_fields=["dx"])
+        True
+        
+        :param other: the object to test for equality
+        :param ignore_fields: a sequence of field names to ignore
+        """
         
         if not isinstance(other, CaseStudy):
             return NotImplemented
         
+        if ignore_fields is None: ignore_fields = []
         other_dict = asdict(other)
         
         for f, v in zip(self.fields, self.values):
+            
+            if f in ignore_fields: continue
             
             other_v = other_dict[f]
             
@@ -245,6 +254,17 @@ class CaseStudy:
                 if v != other_v: return False
         
         return True
+    
+    def _single_index_check(self, index: int):
+        if index not in [0, -1]: raise IndexError("index out of range")
+    
+    def _multi_index_check(self, index: int):
+        length = len(self)
+        if not (-1 * length <= index <= length - 1):
+            raise IndexError("index out of range")
+    
+    def __eq__(self, other: object) -> bool:
+        return self.is_equal(other)
     
     def __getitem__(self, item: int) -> CaseStudy:
         return self.get_case(item)

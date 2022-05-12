@@ -286,8 +286,10 @@ class Validate():
     
     >>> validate = Validate()
     >>> print(validate)
-    Validate(0: Centreline velocity
-             1: Axial velocity at $x^*=5$)
+    Validate(0: Centreline velocity (3\% TI)
+             1: Centreline velocity (15\% TI)
+             2: Axial velocity at $x^*=5$ (3\% TI)
+             3: Axial velocity at $x^*=5$ (15\% TI))
     
     >>> validate[0].to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray '$u_0$' (dim_0: 10)>

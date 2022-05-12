@@ -172,6 +172,14 @@ def test_casestudy_eq_sequence(cases):
     assert cases != test
 
 
+def test_casestudy_isequal_ignore_fields(cases):
+    ignore_fields = {"stats_interval": 1,
+                     "restart_interval": 2}
+    test = replace(cases, **ignore_fields)
+    assert not cases.is_equal(test)
+    assert cases.is_equal(test, ignore_fields)
+
+
 @pytest.mark.parametrize("variable", ["x0", "x1", "y0", "y1", "bed_level"])
 def test_mycekstudy_variables_error(variable):
     

@@ -15,7 +15,7 @@ data: [0.830222222, 0.821333334, 0.824888889, 0.821333334, 0.821333334,
        0.837333334]
 name: $u$
 attrs:
-    description: Axial velocity at $x^*=5$
+    description: Axial velocity at $x^*=5$ (3\% TI)
     $D$: 0.7
     $U_\infty$: 0.8
     $I_\infty$: 3\%

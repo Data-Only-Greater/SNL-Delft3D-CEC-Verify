@@ -82,20 +82,20 @@ def main(grid_resolution, omp_num_threads):
         
         if no_turb_dir is not None:
             try:
-                result = Result(no_turb_dir)
                 print("Loading pre-existing simulation at path "
                       f"'{no_turb_dir}'")
+                result = Result(no_turb_dir)
             except FileNotFoundError:
                 pass
         
         if result is None:
             
             no_turb_dir = get_unique_dir(run_directory)
-        
+            
             if d3d_bin_path is None:
-                d3d_bin_path = get_env(bin_var)
                 print(f'Setting {template_type} bin folder path to '
                       f'{d3d_bin_path}')
+                d3d_bin_path = get_env(bin_var)
             
             print(f"Simulating {template_type} model without turbine")
             
@@ -126,8 +126,8 @@ def main(grid_resolution, omp_num_threads):
         
         if turb_dir is not None:
             try:
-                result = Result(turb_dir)
                 print(f"Loading pre-existing simulation at path '{turb_dir}'")
+                result = Result(turb_dir)
             except FileNotFoundError:
                 pass
         
@@ -136,9 +136,9 @@ def main(grid_resolution, omp_num_threads):
             turb_dir = get_unique_dir(run_directory)
             
             if d3d_bin_path is None:
-                d3d_bin_path = get_env(bin_var)
                 print(f'Setting {template_type} bin folder path to '
                       f'{d3d_bin_path}')
+                d3d_bin_path = get_env(bin_var)
             
             print(f"Simulating {template_type} model with turbine")
             
@@ -305,21 +305,27 @@ def main(grid_resolution, omp_num_threads):
                              width="3.64in")
     
     # Centerline velocity
-    transect = validate[0]
-    transect_fm = results["fm"].faces.extract_z(-1, **transect)
-    transect_structured = results["structured"].faces.extract_z(-1, **transect)
-    transect_true = transect.to_xarray()
+    transect3 = validate[0]
+    transect15 = validate[1]
+    
+    transect_fm = results["fm"].faces.extract_z(-1, **transect3)
+    transect_structured = results["structured"].faces.extract_z(-1,
+                                                                **transect3)
+    transect3_true = transect3.to_xarray()
+    transect15_true = transect15.to_xarray()
     
     transect_fm_unorm = get_normalised_data(transect_fm["$u$"], u_infty["fm"])
     transect_structured_unorm = get_normalised_data(transect_structured["$u$"],
                                                     u_infty["structured"])
-    transect_true_unorm = get_normalised_data(transect_true, 0.8)
+    transect3_true_unorm = get_normalised_data(transect3_true, 0.8)
+    transect15_true_unorm = get_normalised_data(transect15_true, 0.8)
     
     fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
     transect_fm_unorm.plot(ax=ax, x="$x$", label='fm')
     transect_structured_unorm.plot(ax=ax, x="$x$", label='structured')
-    transect_true_unorm.plot(ax=ax, x="$x$", label='experiment')
-    ax.legend()
+    transect3_true_unorm.plot(ax=ax, x="$x$", label='experiment (3% TI)')
+    transect15_true_unorm.plot(ax=ax, x="$x$", label='experiment (15% TI)')
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     ax.grid()
     ax.set_title("")
     
@@ -330,24 +336,28 @@ def main(grid_resolution, omp_num_threads):
     fig_label_transect = f"fig:{plot_name}"
     
     text = ("Comparing the non-dimensional centerline velocities alongside "
-            "the experimental data (published in [@mycek2014]) in "
+            "the experimental data (published in [@mycek2014]) for two "
+            "turbulence intensity (TI) levels, in "
             f"[@{fig_label_transect}], confirms the behavior in the near and "
             f"far wake shown in [@{fig_label_diffu}]. Generally, the "
             "structured model performs better in the near wake compared to "
-            "the experimental data, however the performance in the far wake "
-            "is better for the FM model, where the wake has decayed less. "
+            "the experimental data. In the far wake, the FM model better "
+            "repesents the 3% TI experimental data, and the structured model "
+            "matches better to the 15\% TI experimental data. "
             "Nonetheless, neither model captures the experimental "
-            "measurements well for the whole centerline.")
+            "measurements well for the whole centerline. Note that the "
+            "TI within the Delft3D simulations is between 5\% and 6\%.")
     report.content.add_text(text)
     
     # Add figure with caption
     caption = ("Comparison of the normalised turbine centerline velocity. "
-               "Experimental data reverse engineered from [@mycek2014, fig. "
-               f"{transect.attrs['figure']}].")
+               "Experimental data reverse engineered from [@mycek2014, figs. "
+               f"{transect3.attrs['figure']} \& "
+               f"{transect15.attrs['figure']}].")
     report.content.add_image(plot_file_name,
                              caption,
                              label=fig_label_transect,
-                             width="4in")
+                             width="5.5in")
     
     # Radial velocity
     section = "Radial Velocity Comparison"
@@ -503,10 +513,13 @@ def find_project_dir(path, case):
     
     path = Path(path)
     files = list(Path(path).glob("**/case.yaml"))
+    ignore_fields = ["stats_interval",
+                     "restart_interval"]
     
     for file in files:
         test = MycekStudy.from_yaml(file)
-        if test == case: return file.parent
+        if test.is_equal(case, ignore_fields):
+            return file.parent
     
     return None
 
