@@ -9,10 +9,14 @@ grid resolution, of 0.0625m, achieved an asymptotic ratio of 1.003
 (asymptotic range is indicated by a value :math:`\approx 1`). At zero
 grid resolution, the normalised velocity deficit measured 1.2 diameters
 downstream from the turbine was 43.04%, a 13.78% error against the
-measured value of 49.92%. For the centreline velocity transect, the root
-mean square error at the lowest grid resolution was 0.2004. For the
-axial velocity at :math:`x^*=5` transect, the root mean square error at
-the lowest grid resolution was 0.1232.
+measured value of 49.92%. For the centreline velocity (3% TI) transect,
+the root mean square error at the lowest grid resolution was 0.2004. For
+the centreline velocity (15% TI) transect, the root mean square error at
+the lowest grid resolution was 0.09075. For the axial velocity at
+:math:`x^*=5` (3% TI) transect, the root mean square error at the lowest
+grid resolution was 0.1232. For the axial velocity at :math:`x^*=5` (15%
+TI) transect, the root mean square error at the lowest grid resolution
+was 0.05688.
 
 Grid Convergence Studies
 ------------------------
@@ -28,8 +32,7 @@ resolution is 0.8046m/s. The grid resolution required for a fine-grid
 GCI of 1.0% is 0.03862m.
 
 .. table:: Free stream velocity (:math:`U_\infty`) per grid resolution
-           with computational cells and error against value at zero grid
-           resolution
+           with computational cells and error against value at zero grid resolution
 
    ============== ======= ================ ==========
    resolution (m) # cells :math:`U_\infty` error
@@ -96,8 +99,8 @@ This section presents axial velocity transects along the turbine
 centreline and at cross-sections along the :math:`y`-axis. Errors are
 reported relative to the experimental data given in (Mycek et al. 2014).
 
-Centreline velocity
-~~~~~~~~~~~~~~~~~~~
+Centreline velocity (3% TI)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The root mean square error (RMSE) for this transect at the finest grid
 resolution of 0.0625m was 0.2004.
@@ -135,8 +138,47 @@ resolution of 0.0625m was 0.2004.
    resolution comparison. Experimental data reverse engineered from
    (Mycek et al. 2014, fig. 11a).
 
-Axial velocity at :math:`x^*=5`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Centreline velocity (15% TI)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The root mean square error (RMSE) for this transect at the finest grid
+resolution of 0.0625m was 0.09075.
+
+.. table:: Root mean square error (RMSE) for the normalised velocity,
+           :math:`u^*_0`, per grid resolution.
+
+   ============== =========
+   resolution (m) RMSE
+   ============== =========
+   1              0.203884
+   0.5            0.136543
+   0.25           0.0818053
+   0.125          0.101083
+   0.0625         0.0907545
+   ============== =========
+
+.. figure:: transect_u0_1.png
+   :alt: Normalised velocity, :math:`u^*_0`, (m/s) per grid resolution
+         comparison. Experimental data reverse engineered from (Mycek et al.
+         2014, fig. 11b).
+   :width: 5.68in
+
+   Normalised velocity, :math:`u^*_0`, (m/s) per grid resolution
+   comparison. Experimental data reverse engineered from (Mycek et al.
+   2014, fig. 11b).
+
+.. figure:: transect_gamma0_1.png
+   :alt: Normalised velocity deficit, :math:`\gamma_0`, (%) per grid
+         resolution comparison. Experimental data reverse engineered from
+         (Mycek et al. 2014, fig. 11b).
+   :width: 5.68in
+
+   Normalised velocity deficit, :math:`\gamma_0`, (%) per grid
+   resolution comparison. Experimental data reverse engineered from
+   (Mycek et al. 2014, fig. 11b).
+
+Axial velocity at :math:`x^*=5` (3% TI)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The root mean square error (RMSE) for this transect at the finest grid
 resolution of 0.0625m was 0.1232.
@@ -154,7 +196,7 @@ resolution of 0.0625m was 0.1232.
    0.0625         0.123211
    ============== ========
 
-.. figure:: transect_u0_1.png
+.. figure:: transect_u0_2.png
    :alt: Normalised velocity, :math:`u^*_0`, (m/s) per grid resolution
          comparison. Experimental data reverse engineered from (Mycek et al.
          2014, fig. A12a).
@@ -164,7 +206,46 @@ resolution of 0.0625m was 0.1232.
    comparison. Experimental data reverse engineered from (Mycek et al.
    2014, fig. A12a).
 
-.. figure:: transect_gamma0_1.png
+.. figure:: transect_gamma0_2.png
+   :alt: Normalised velocity deficit, :math:`\gamma_0`, (%) per grid
+         resolution comparison. Experimental data reverse engineered from
+         (Mycek et al. 2014, fig. A12a).
+   :width: 5.68in
+
+   Normalised velocity deficit, :math:`\gamma_0`, (%) per grid
+   resolution comparison. Experimental data reverse engineered from
+   (Mycek et al. 2014, fig. A12a).
+
+Axial velocity at :math:`x^*=5` (15% TI)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The root mean square error (RMSE) for this transect at the finest grid
+resolution of 0.0625m was 0.05688.
+
+.. table:: Root mean square error (RMSE) for the normalised velocity,
+           :math:`u^*_0`, per grid resolution.
+
+   ============== =========
+   resolution (m) RMSE
+   ============== =========
+   1              0.0474432
+   0.5            0.0520709
+   0.25           0.0470542
+   0.125          0.0609816
+   0.0625         0.056879
+   ============== =========
+
+.. figure:: transect_u0_3.png
+   :alt: Normalised velocity, :math:`u^*_0`, (m/s) per grid resolution
+         comparison. Experimental data reverse engineered from (Mycek et al.
+         2014, fig. A12a).
+   :width: 5.68in
+
+   Normalised velocity, :math:`u^*_0`, (m/s) per grid resolution
+   comparison. Experimental data reverse engineered from (Mycek et al.
+   2014, fig. A12a).
+
+.. figure:: transect_gamma0_3.png
    :alt: Normalised velocity deficit, :math:`\gamma_0`, (%) per grid
          resolution comparison. Experimental data reverse engineered from
          (Mycek et al. 2014, fig. A12a).
