@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import warnings
+
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pytest
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import xarray as xr
 
 from snl_d3d_cec_verify.cases import CaseStudy
 from snl_d3d_cec_verify.result.faces import (_check_case_study,

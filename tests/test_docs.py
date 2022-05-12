@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import sys
+
+import pytest
+
 from snl_d3d_cec_verify._docs import docstringtemplate
 
 
@@ -39,6 +43,15 @@ def test_docstringtemplate_classmethod():
     assert "defaults to ``2``" in f.__func__.__doc__
 
 
-def test_docstringtemplate_staticmethod():
+@pytest.mark.skipif(sys.version_info >= (3, 10),
+                    reason="Requires Python == 3.9")
+def test_docstringtemplate_staticmethod_py39():
     f = docstringtemplate(Mock.__dict__['static_method'])
     assert "defaults to ``3``" in f.__func__.__doc__
+
+
+@pytest.mark.skipif(sys.version_info == (3, 9),
+                    reason="Requires Python >= 3.10")
+def test_docstringtemplate_staticmethod_py310():
+    f = docstringtemplate(Mock.__dict__['static_method'])
+    assert "defaults to ``3``" in f.__doc__
