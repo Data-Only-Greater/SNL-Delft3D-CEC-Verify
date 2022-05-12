@@ -62,24 +62,26 @@ acceleration around the edges of the turbine of the structured model.
    structured and fm models
 
 Comparing the non-dimensional centerline velocities alongside the
-experimental data (published in (Mycek et al. 2014)) in fig. 4, confirms
-the behavior in the near and far wake shown in fig. 3. Generally, the
-structured model performs better in the near wake compared to the
-experimental data, however the performance in the far wake is better for
-the FM model, where the wake has decayed less. Nonetheless, neither
-model captures the experimental measurements well for the whole
-centerline.
+experimental data (published in (Mycek et al. 2014)) for two turbulence
+intensity (TI) levels, in fig. 4, confirms the behavior in the near and
+far wake shown in fig. 3. Generally, the structured model performs
+better in the near wake compared to the experimental data. In the far
+wake, the FM model better repesents the 3% TI experimental data, and the
+structured model matches better to the 15% TI experimental data.
+Nonetheless, neither model captures the experimental measurements well
+for the whole centerline. Note that the TI within the Delft3D
+simulations is between 5% and 6%.
 
 .. figure:: transect_u.png
    :alt: Figure 4: Comparison of the normalised turbine centerline
          velocity. Experimental data reverse engineered from (Mycek et al.
-         2014, fig. 11a).
+         2014, fig. 11a & 11b).
    :name: fig:transect_u
-   :width: 4in
+   :width: 5.5in
 
    Figure 4: Comparison of the normalised turbine centerline velocity.
    Experimental data reverse engineered from (Mycek et al. 2014, fig.
-   11a).
+   11a & 11b).
 
 .. _sec:radial:
 
