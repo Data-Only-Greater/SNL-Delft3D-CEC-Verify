@@ -222,6 +222,19 @@ class CaseStudy:
     
     def is_equal(self, other: object,
                        ignore_fields: Optional[Iterable[str]] = None) -> bool:
+        """Test equality of another object
+        
+        Use the ``ignore_fields`` argument to ignore fields when comparing
+        :class:`.CaseStudy` objects:
+        
+        >>> case = CaseStudy(dx=1)
+        >>> other = CaseStudy(dx=2)
+        >>> other.is_equal(case, ignore_fields=["dx"])
+        True
+        
+        :param other: the object to test for equality
+        :param ignore_fields: a sequence of field names to ignore
+        """
         
         if not isinstance(other, CaseStudy):
             return NotImplemented
