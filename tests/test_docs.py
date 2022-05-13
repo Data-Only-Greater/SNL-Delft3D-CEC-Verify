@@ -43,14 +43,20 @@ def test_docstringtemplate_classmethod():
     assert "defaults to ``2``" in f.__func__.__doc__
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 10),
+def is_python_version(major, minor):
+    if major != sys.version_info.major: return False
+    if minor != sys.version_info.minor: return False
+    return True
+
+
+@pytest.mark.skipif(not is_python_version(3, 9),
                     reason="Requires Python == 3.9")
 def test_docstringtemplate_staticmethod_py39():
     f = docstringtemplate(Mock.__dict__['static_method'])
     assert "defaults to ``3``" in f.__func__.__doc__
 
 
-@pytest.mark.skipif(sys.version_info == (3, 9),
+@pytest.mark.skipif(is_python_version(3, 9),
                     reason="Requires Python >= 3.10")
 def test_docstringtemplate_staticmethod_py310():
     f = docstringtemplate(Mock.__dict__['static_method'])
