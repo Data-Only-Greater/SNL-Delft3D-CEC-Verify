@@ -23,6 +23,9 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           conda-build-version: "*"
+      - name: Store CONDA variable
+        run: |
+          echo "CONDA=$CONDA" >> $GITHUB_ENV
       - name: Build conda package
         run: |
           conda build --no-anaconda-upload --no-test --override-channels -c conda-forge recipe
@@ -30,7 +33,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: conda-package
-          path: ${{CONDA}}/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+          path: ${{env.CONDA}}/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
           if-no-files-found: error
   test:
     name: Conda Package Test
