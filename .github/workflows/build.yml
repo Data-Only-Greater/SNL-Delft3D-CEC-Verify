@@ -66,7 +66,7 @@ jobs:
           pattern="snl-delft3d-cec-verify-*.tar.bz2"
           files=( $pattern )
           echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
-          echo "CONDA_CHANNEL=${{ runner.temp }}/channel/${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "CONDA_CHANNEL=channel/${{ matrix.arch }}" >> $GITHUB_ENV
       - name: Setup local channel
         run: |
           mkdir -p $CONDA_CHANNEL
