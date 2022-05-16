@@ -74,7 +74,7 @@ jobs:
           conda index $CONDA_CHANNEL
       - name: Install package
         run: |
-          conda install --override-channels -c file://'$CONDA_CHANNEL' -c conda-forge snl-delft3d-cec-verify
+          conda install --override-channels -c file://$CONDA_CHANNEL -c conda-forge snl-delft3d-cec-verify
       - name: Extract test files
         run: |
           conda install --override-channels -c conda-forge conda-package-handling
