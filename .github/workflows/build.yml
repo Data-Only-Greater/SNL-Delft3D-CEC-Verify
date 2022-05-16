@@ -61,14 +61,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           conda-build-version: "*"
-      - name: Install conda package
+      - name: Install package
         run: |
-          conda install --override-channels -c conda-forge $CONDA_PKG pytest pytest-mock
+          conda install --override-channels -c conda-forge $CONDA_PKG
       - name: Extract test files
         run: |
           cph extract $CONDA_PKG --dest src
       - name: Test package
-        run: pytest
+        run: |
+          conda install --override-channels -c conda-forge pytest pytest-mock
+          pytest
         working-directory: src/info/test
   upload:
     name: Conda Package Upload
