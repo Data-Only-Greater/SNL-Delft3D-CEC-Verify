@@ -30,7 +30,8 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: conda-package
-          path: $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+          path: ${{env.CONDA}}/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+          if-no-files-found: error
   test:
     name: Conda Package Test
     needs: build
