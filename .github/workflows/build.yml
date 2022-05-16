@@ -43,6 +43,11 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
         python-version: ['3.9', '3.10']
+        include:
+          - arch: win-64
+            os: windows-latest
+          - arch: linux-64
+            os: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
@@ -52,18 +57,24 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: conda-package
-      - name: Get package name
+      - name: Get package and channel name
         run: |
           pattern="snl-delft3d-cec-verify-*.tar.bz2"
           files=( $pattern )
           echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
+          echo "CONDA_CHANNEL=channel/${{ matrix.arch }}" >> $GITHUB_ENV
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
           conda-build-version: "*"
+      - name: Setup local channel
+        run: |
+          mkdir -p $CONDA_CHANNEL
+          cp $CONDA_PKG $CONDA_CHANNEL
+          conda index $CONDA_CHANNEL
       - name: Install package
         run: |
-          conda install --override-channels -c conda-forge $CONDA_PKG
+          conda install --override-channels -c file://$CONDA_CHANNEL -c conda-forge snl-delft3d-cec-verify
       - name: Extract test files
         run: |
           conda install --override-channels -c conda-forge conda-package-handling
@@ -90,7 +101,7 @@ jobs:
           conda install -y anaconda-client
           anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater snl-delft3d-cec-verify-*.tar.bz2
   zip_examples:
-    name: Upload Examples
+    name: Release Example Upload
     needs: test
     runs-on: ubuntu-latest
     steps:
