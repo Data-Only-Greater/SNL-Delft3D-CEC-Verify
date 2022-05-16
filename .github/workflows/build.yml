@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Conda Build
+    name: Conda Package Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,6 +54,7 @@ jobs:
           name: conda-package
       - uses: conda-incubator/setup-miniconda@v2
         with:
+          python-version: ${{ matrix.python-version }}
           conda-build-version: "*"
       - name: Test conda package
         run: |
@@ -70,12 +71,10 @@ jobs:
         with:
           name: conda-package
       - uses: conda-incubator/setup-miniconda@v2
-        with:
-          conda-build-version: "*"
       - name: Upload conda package
         run: |
           conda install -y anaconda-client
-          # anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater snl-delft3d-cec-verify-*.tar.bz2
+          anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater snl-delft3d-cec-verify-*.tar.bz2
   zip_examples:
     name: Upload Examples
     needs: test
