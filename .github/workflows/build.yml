@@ -28,7 +28,7 @@ jobs:
           echo "CONDA=$CONDA" >> $GITHUB_ENV
       - name: Build conda package
         run: |
-          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge recipe
+          conda build --no-anaconda-upload --override-channels -c conda-forge recipe
         working-directory: ${{env.conda-directory}}
       - uses: actions/upload-artifact@v3
         with:
@@ -52,13 +52,24 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: conda-package
+      - name: Get package name
+      - run: |
+          pattern="snl-delft3d-cec-verify-*.tar.bz2"
+          files=( $pattern )
+          echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
           conda-build-version: "*"
-      - name: Test conda package
+      - name: Install conda package
         run: |
-          conda build --override-channels -c conda-forge --test snl-delft3d-cec-verify-*.tar.bz2
+          conda install --override-channels -c conda-forge $CONDA_PKG pytest pytest-mock
+      - name: Extract test files
+        run: |
+          cph extract $CONDA_PKG --dest src
+      - name: Test package
+        run: pytest
+        working-directory: src/info/test
   upload:
     name: Conda Package Upload
     needs: test
