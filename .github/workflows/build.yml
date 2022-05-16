@@ -53,7 +53,7 @@ jobs:
         with:
           name: conda-package
       - name: Get package name
-      - run: |
+        run: |
           pattern="snl-delft3d-cec-verify-*.tar.bz2"
           files=( $pattern )
           echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
@@ -68,8 +68,7 @@ jobs:
         run: |
           cph extract $CONDA_PKG --dest src
       - name: Test package
-        run: |
-          pytest
+        run: pytest
         working-directory: src/info/test
   upload:
     name: Conda Package Upload
