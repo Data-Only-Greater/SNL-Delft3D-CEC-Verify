@@ -68,7 +68,8 @@ jobs:
         run: |
           cph extract $CONDA_PKG --dest src
       - name: Test package
-        run: pytest
+        run: |
+          pytest
         working-directory: src/info/test
   upload:
     name: Conda Package Upload
