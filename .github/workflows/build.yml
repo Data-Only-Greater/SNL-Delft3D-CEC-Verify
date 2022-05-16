@@ -14,27 +14,67 @@ jobs:
         shell: bash -l {0}
     env:
       conda-directory: ${{ github.workspace }}/.conda
-    if: github.repository == 'Data-Only-Greater/SNL-Delft3D-CEC-Verify'
+    if: github.repository == 'H0R5E/SNL-Delft3D-CEC-Verify'
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
           lfs: 'true'
-      - name: Set GIT_DESCRIBE_NUMBER
-        run: echo "GIT_DESCRIBE_NUMBER=$(git log $(git describe --tags --abbrev=0)..HEAD --oneline | wc -l)" >> $GITHUB_ENV
       - uses: conda-incubator/setup-miniconda@v2
         with:
           conda-build-version: "*"
       - name: Build conda package
         run: |
-          conda build --no-anaconda-upload --override-channels -c conda-forge recipe
+          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge recipe
         working-directory: ${{env.conda-directory}}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: conda-package
+          path: $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+  test:
+    name: Conda Package Test
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python-version: ['3.9', '3.10']
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      conda-directory: ${{ github.workspace }}/.conda
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: conda-package
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          conda-build-version: "*"
+      - name: Test conda package
+        run: |
+          conda build --override-channels -c conda-forge --test snl-delft3d-cec-verify-*.tar.bz2
+  upload:
+    name: Conda Package Upload
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: conda-package
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          conda-build-version: "*"
       - name: Upload conda package
         run: |
           conda install -y anaconda-client
-          anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+          # anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater snl-delft3d-cec-verify-*.tar.bz2
   zip_examples:
     name: Upload Examples
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
