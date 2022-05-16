@@ -66,6 +66,7 @@ jobs:
           conda install --override-channels -c conda-forge $CONDA_PKG
       - name: Extract test files
         run: |
+          conda install --override-channels -c conda-forge conda-package-handling
           cph extract $CONDA_PKG --dest src
       - name: Test package
         run: |
