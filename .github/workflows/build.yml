@@ -54,6 +54,10 @@ jobs:
     env:
       conda-directory: ${{ github.workspace }}/.conda
     steps:
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          conda-build-version: "*"
       - uses: actions/download-artifact@v3
         with:
           name: conda-package
@@ -62,11 +66,7 @@ jobs:
           pattern="snl-delft3d-cec-verify-*.tar.bz2"
           files=( $pattern )
           echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
-          echo "CONDA_CHANNEL=channel/${{ matrix.arch }}" >> $GITHUB_ENV
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          conda-build-version: "*"
+          echo "CONDA_CHANNEL=${{ runner.temp }}/channel/${{ matrix.arch }}" >> $GITHUB_ENV
       - name: Setup local channel
         run: |
           mkdir -p $CONDA_CHANNEL
