@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import warnings
 import collections
 from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd # type: ignore
-import geopandas as gpd # type: ignore
 import xarray as xr
 from shapely.geometry import LineString # type: ignore
 from shapely.geometry.base import BaseGeometry # type: ignore
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import geopandas as gpd # type: ignore
 
 from .base import _TimeStepResolver
 from ..types import StrOrPath
@@ -123,9 +127,8 @@ class Edges(_TimeStepResolver):
         if self._frame is None:
             self._frame = frame
         else:
-            self._frame = self._frame.append(frame,
-                                             ignore_index=True,
-                                             sort=False)
+            self._frame = pd.concat([self._frame, frame],
+                                    ignore_index=True)
         
         self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
 
@@ -169,7 +172,7 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
                 index = int(edge_face_values[iedge, iface]) - 1
                 
                 if index < 0:
-                    p = np.array(line.centroid)
+                    p = np.array(line.centroid.coords)
                 else:
                     x = face_x_values[index]
                     y = face_y_values[index]

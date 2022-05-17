@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import warnings
+
 import pandas as pd
 import pytest
-import geopandas as gpd
 from shapely.geometry import LineString
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import geopandas as gpd
 
 from snl_d3d_cec_verify.result.edges import _map_to_edges_geoframe, Edges
 

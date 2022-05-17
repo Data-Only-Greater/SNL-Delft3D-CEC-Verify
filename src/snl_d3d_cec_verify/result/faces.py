@@ -489,9 +489,8 @@ class Faces(ABC, _FacesDataClassMixin):
         if self._frame is None:
             self._frame = frame
         else:
-            self._frame = self._frame.append(frame,
-                                             ignore_index=True,
-                                             sort=False)
+            self._frame = pd.concat([self._frame, frame],
+                                    ignore_index=True)
         
         self._t_steps[t_step] = pd.Timestamp(frame["time"].unique().take(0))
     
