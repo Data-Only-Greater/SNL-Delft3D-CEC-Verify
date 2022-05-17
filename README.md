@@ -4,6 +4,7 @@
 [![unit tests](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/unit_tests.yml)
 [![static type checks](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/static_type_checks.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/static_type_checks.yml)
 [![documentation](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/docs.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/docs.yml)
+[![packaging](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/package.yml/badge.svg)](https://github.com/Data-Only-Greater/SNL-Delft3D-CEC-Verify/actions/workflows/package.yml)
 
 [![codecov](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify/branch/main/graph/badge.svg?token=JJCDDVNPS6)](https://codecov.io/gh/Data-Only-Greater/SNL-Delft3D-CEC-Verify)
 [![Conda](https://img.shields.io/conda/v/dataonlygreater/snl-delft3d-cec-verify?label=conda)](https://anaconda.org/dataonlygreater/snl-delft3d-cec-verify)
