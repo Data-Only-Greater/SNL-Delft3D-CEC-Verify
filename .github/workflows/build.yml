@@ -43,11 +43,6 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
         python-version: ['3.9', '3.10']
-        include:
-          - arch: win-64
-            os: windows-latest
-          - arch: linux-64
-            os: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
@@ -66,15 +61,22 @@ jobs:
           pattern="snl-delft3d-cec-verify-*.tar.bz2"
           files=( $pattern )
           echo "CONDA_PKG=${files[0]}" >> $GITHUB_ENV
-          echo CONDA_CHANNEL='${{ runner.temp }}/channel/${{ matrix.arch }}' >> $GITHUB_ENV
+          echo CONDA_CHANNEL='${{ runner.temp }}/channel' >> $GITHUB_ENV
       - name: Setup local channel
         run: |
-          mkdir -p $CONDA_CHANNEL
-          cp $CONDA_PKG $CONDA_CHANNEL
+          mkdir -p $CONDA_CHANNEL/noarch
+          cp $CONDA_PKG $CONDA_CHANNEL/noarch
           conda index $CONDA_CHANNEL
       - name: Install package
         run: |
-          conda install --override-channels -c file://$CONDA_CHANNEL -c conda-forge snl-delft3d-cec-verify
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            conda install --override-channels -c file://$CONDA_CHANNEL -c conda-forge snl-delft3d-cec-verify
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            conda install --override-channels -c $CONDA_CHANNEL -c conda-forge snl-delft3d-cec-verify
+          else
+               echo "$RUNNER_OS not supported"
+               exit 1
+          fi
       - name: Extract test files
         run: |
           conda install --override-channels -c conda-forge conda-package-handling
