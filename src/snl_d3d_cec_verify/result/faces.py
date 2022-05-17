@@ -359,11 +359,11 @@ class Faces(ABC, _FacesDataClassMixin):
                                      z=z)
     
     @_extract
-    def extract_k(self, t_step: int,
-                        k: int,
-                        x: Optional[Sequence[Num]] = None,
-                        y: Optional[Sequence[Num]] = None) -> xr.Dataset:
-        """Extract data on the plane at the given sigma-level (k). Available
+    def extract_sigma(self, t_step: int,
+                            sigma: float,
+                            x: Optional[Sequence[Num]] = None,
+                            y: Optional[Sequence[Num]] = None) -> xr.Dataset:
+        """Extract data on the plane at the given sigma-level. Available
         data is:
         
         * :code:`z`: the z-level, in metres
@@ -427,7 +427,7 @@ class Faces(ABC, _FacesDataClassMixin):
         
         return _faces_frame_to_slice(self._frame,
                                      self._t_steps[t_step],
-                                     k=k)
+                                     k=sigma)
     
     def extract_depth(self, t_step: int) -> xr.DataArray:
         """Extract the depth, in meters, at each of the face centres.
@@ -506,44 +506,38 @@ def _check_case_study(case: CaseStudy):
 
 def _faces_frame_to_slice(frame: pd.DataFrame,
                           sim_time: pd.Timestamp,
-                          k: Optional[int] = None,
-                          z: Optional[Num] = None) -> xr.Dataset:
+                          key: str,
+                          value: Num) -> xr.Dataset:
     
-    if (k is None and z is None) or (k is not None and z is not None):
-        raise RuntimeError("either k or z must be given")
+    valid_keys = ('z', 'sigma')
     
-    frame = frame.set_index(['x', 'y', 'z', 'time'])
-    frame = frame.xs(sim_time, level=3)
+    if key not in valid_keys:
+        keys_msg = ", ".join(valid_keys)
+        err_msg = f"Given key is not valid. Choose from {keys_msg}"
+        raise RuntimeError(err_msg)
     
-    if z is None:
+    frame = frame.set_index(['x', 'y', 'time'])
+    frame = frame.xs(sim_time, level=2)
+    
+    data = collections.defaultdict(list)
+    
+    for (x, y), group in frame.groupby(level=[0, 1]):
         
-        kframe = frame[frame["k"] == k]
-        kframe = kframe.drop(["depth", "k"], axis=1)
-        kframe = kframe.reset_index(2)
-        ds = kframe.to_xarray()
-        ds = ds.assign_coords({"k": k})
-    
-    else:
+        gframe = group.set_index(key)
+        zvalues = gframe.reindex(
+                gframe.index.union([value])).interpolate('values').loc[value]
         
-        data = collections.defaultdict(list)
+        data["x"].append(x)
+        data["y"].append(y)
+        data["k"].append(zvalues["k"])
+        data["u"].append(zvalues["u"])
+        data["v"].append(zvalues["v"])
+        data["w"].append(zvalues["w"])
         
-        for (x, y), group in frame.groupby(level=[0, 1]):
-            
-            gframe = group.droplevel([0, 1])
-            zvalues = gframe.reindex(
-                        gframe.index.union([z])).interpolate('values').loc[z]
-            
-            data["x"].append(x)
-            data["y"].append(y)
-            data["k"].append(zvalues["k"])
-            data["u"].append(zvalues["u"])
-            data["v"].append(zvalues["v"])
-            data["w"].append(zvalues["w"])
-            
-        zframe = pd.DataFrame(data)
-        zframe = zframe.set_index(['x', 'y'])
-        ds = zframe.to_xarray()
-        ds = ds.assign_coords({"z": z})
+    zframe = pd.DataFrame(data)
+    zframe = zframe.set_index(['x', 'y'])
+    ds = zframe.to_xarray()
+    ds = ds.assign_coords({"z": z})
     
     ds = ds.assign_coords({"time": sim_time})
     ds = ds.rename({"z": "$z$",
@@ -597,9 +591,10 @@ def _map_to_faces_frame(map_path: StrOrPath,
             y = y_values[iface]
             depth = depth_values[t_step, iface]
             
-            for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
+            for ilayer in ds.mesh2d_nLayers.values:
                 
-                z = sigma_values[ilayer] * depth
+                sigma = sigma_values[ilayer]
+                z = sigma * depth
                 u = u_values[t_step, iface, ilayer]
                 v = v_values[t_step, iface, ilayer]
                 w = w_values[t_step, iface, ilayer]
@@ -607,7 +602,7 @@ def _map_to_faces_frame(map_path: StrOrPath,
                 data["x"].append(x)
                 data["y"].append(y)
                 data["z"].append(z)
-                data["k"].append(k)
+                data["sigma"].append(sigma)
                 data["time"].append(time)
                 data["depth"].append(depth)
                 data["u"].append(u)
