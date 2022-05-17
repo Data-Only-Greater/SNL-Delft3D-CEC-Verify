@@ -14,7 +14,7 @@ jobs:
         shell: bash -l {0}
     env:
       conda-directory: ${{ github.workspace }}/.conda
-    if: github.repository == 'H0R5E/SNL-Delft3D-CEC-Verify'
+    if: github.repository == 'Data-Only-Greater/SNL-Delft3D-CEC-Verify'
     steps:
       - uses: actions/checkout@v2
         with:
