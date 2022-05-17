@@ -1,10 +1,5 @@
-name: Build Release
-
-on:
-  workflow_dispatch:
-  release:
-    types: [published]
-
+name: Packaging Tests
+on: [push, pull_request]
 jobs:
   build:
     name: Conda Package Build
@@ -14,7 +9,6 @@ jobs:
         shell: bash -l {0}
     env:
       conda-directory: ${{ github.workspace }}/.conda
-    if: github.repository == 'H0R5E/SNL-Delft3D-CEC-Verify'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -28,7 +22,7 @@ jobs:
           echo "CONDA=$CONDA" >> $GITHUB_ENV
       - name: Build conda package
         run: |
-          conda build --no-anaconda-upload --override-channels -c conda-forge recipe
+          conda build --no-anaconda-upload --no-test --override-channels -c conda-forge recipe
         working-directory: ${{env.conda-directory}}
       - uses: actions/upload-artifact@v3
         with:
@@ -86,40 +80,19 @@ jobs:
           conda install --override-channels -c conda-forge pytest pytest-mock
           pytest
         working-directory: src/info/test
-  upload:
-    name: Conda Package Upload
-    needs: test
+  status:
+    name: Packaging Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: conda-package
-      - uses: conda-incubator/setup-miniconda@v2
-      - name: Upload conda package
-        run: |
-          conda install -y anaconda-client
-          anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater snl-delft3d-cec-verify-*.tar.bz2
-  zip_examples:
-    name: Release Example Upload
     needs: test
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          lfs: 'true'
-      - name: Set GIT_DESCRIBE_TAG
-        run: echo "GIT_DESCRIBE_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
-      - uses: papeloto/action-zip@v1
-        with:
-          files: examples/
-          dest: examples.zip
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: examples.zip
-          tag: ${{ env.GIT_DESCRIBE_TAG }}
+      - run: |
+          curl --request POST \
+          --url https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
+          --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+          --header 'content-type: application/json' \
+          --data '{
+            "context": "Packaging Tests",
+            "state": "success",
+            "description": "Packaging tests passed",
+            "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }'

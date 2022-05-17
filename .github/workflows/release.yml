@@ -1,0 +1,54 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Conda Package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      conda-directory: ${{ github.workspace }}/.conda
+    if: github.repository == 'H0R5E/SNL-Delft3D-CEC-Verify'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          lfs: 'true'
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          conda-build-version: "*"
+      - name: Build
+        run: |
+          conda build --no-anaconda-upload --override-channels -c conda-forge recipe
+        working-directory: ${{env.conda-directory}}
+      - name: Upload
+        run: |
+          conda install -y anaconda-client
+          anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
+  zip_examples:
+    name: Examples
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          lfs: 'true'
+      - name: Set GIT_DESCRIBE_TAG
+        run: echo "GIT_DESCRIBE_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+      - uses: papeloto/action-zip@v1
+        with:
+          files: examples/
+          dest: examples.zip
+      - name: Upload
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: examples.zip
+          tag: ${{ env.GIT_DESCRIBE_TAG }}
