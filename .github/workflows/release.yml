@@ -33,7 +33,6 @@ jobs:
           anaconda -t ${{ secrets.CONDA_TOKEN }} upload -u dataonlygreater $CONDA/conda-bld/noarch/snl-delft3d-cec-verify-*.tar.bz2
   zip_examples:
     name: Examples
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
