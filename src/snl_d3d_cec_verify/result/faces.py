@@ -8,9 +8,11 @@ from typing import (cast,
                     Any,
                     Callable,
                     Dict,
+                    List,
                     Optional,
                     Sequence,
-                    TypeVar)
+                    TypeVar,
+                    Union)
 from functools import wraps
 from dataclasses import dataclass, field
 
@@ -584,7 +586,7 @@ def _map_to_faces_frame(map_path: StrOrPath,
     with xr.open_dataset(map_path) as ds:
         
         if t_step is None:
-            t_steps = range(len(ds.time))
+            t_steps = tuple(range(len(ds.time)))
         else:
             t_steps = (t_step,)
         
@@ -634,12 +636,13 @@ class _StructuredFaces(Faces):
 def _trim_to_faces_frame(trim_path: StrOrPath,
                          t_step: int = None) -> pd.DataFrame:
     
-    data = collections.defaultdict(list)
+    Content = Union[Num, pd.Timestamp]
+    data: Dict[str, List[Content]] = collections.defaultdict(list)
     
     with xr.open_dataset(trim_path) as ds:
         
         if t_step is None:
-            t_steps = range(len(ds.time))
+            t_steps = tuple(range(len(ds.time)))
         else:
             t_steps = (t_step,)
         
