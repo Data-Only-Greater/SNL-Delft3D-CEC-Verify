@@ -31,7 +31,7 @@ def _extract(func: F) -> F:
     
     @wraps(func)
     def wrapper(self, t_step: int,
-                      kz: Num,
+                      value: Num,
                       x: Optional[Sequence[Num]] = None,
                       y: Optional[Sequence[Num]] = None) -> xr.Dataset:
         
@@ -46,7 +46,7 @@ def _extract(func: F) -> F:
         if t_step not in self._t_steps:
             self._load_t_step(t_step)
         
-        ds = func(self, t_step, kz, x, y)
+        ds = func(self, t_step, value, x, y)
         
         if not do_interp: return ds
         
@@ -76,17 +76,17 @@ class Faces(ABC, _FacesDataClassMixin):
     >>> result = Result(data_dir)
     >>> result.faces.extract_z(-1, -1) #doctest: +ELLIPSIS
     <xarray.Dataset>
-    Dimensions:  ($x$: 18, $y$: 4)
+    Dimensions:   ($x$: 18, $y$: 4)
     Coordinates:
-      * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
-      * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-        $z$      ... -1
-        time     datetime64[ns] 2001-01-01T01:00:00
+      * $x$       ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+      * $y$       ($y$) float64 1.5 2.5 3.5 4.5
+        $z$       ... -1
+        time      datetime64[ns] 2001-01-01T01:00:00
     Data variables:
-        k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
-        $u$      ($x$, $y$) float64 0.781 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
-        $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
-        $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
+        $\\sigma$  ($x$, $y$) float64 -0.4994 -0.4994 -0.4994 ... -0.5 -0.5 -0.5
+        $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
+        $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
+        $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
         
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -103,7 +103,7 @@ class Faces(ABC, _FacesDataClassMixin):
         """Extract data at the turbine centre, as defined in the given
         :class:`.CaseStudy` object. Available data is:
         
-        * :code:`k`: sigma layer
+        * :code:`sigma`: sigma layer
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
@@ -118,16 +118,16 @@ class Faces(ABC, _FacesDataClassMixin):
         <xarray.Dataset>
         Dimensions:  (dim_0: 1)
         Coordinates:
-            $z$      ... -1
-            time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) ... 6
-            $y$      (dim_0) ... 3
+            $z$       ... -1
+            time      datetime64[ns] 2001-01-01T01:00:00
+            $x$       (dim_0) ... 6
+            $y$       (dim_0) ... 3
         Dimensions without coordinates: dim_0
         Data variables:
-            k        (dim_0) float64 1.001
-            $u$      (dim_0) float64 0.7748
-            $v$      (dim_0) float64 -2.942e-17
-            $w$      (dim_0) float64 0.0002786
+            $\\sigma$  (dim_0) float64 -0.4996
+            $u$       (dim_0) float64 0.7748
+            $v$       (dim_0) float64 -2.942e-17
+            $w$       (dim_0) float64 0.0002786
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -187,18 +187,18 @@ class Faces(ABC, _FacesDataClassMixin):
         >>> case = MycekStudy()
         >>> result.faces.extract_turbine_centreline(-1, case, x_step=1) #doctest: +ELLIPSIS
         <xarray.Dataset>
-        Dimensions:  (dim_0: 13)
+        Dimensions:   (dim_0: 13)
         Coordinates:
-            $z$      ... -1
-            time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) float64 6.0 7.0 8.0 9.0 10.0 ... 14.0 15.0 16.0 17.0 18.0
-            $y$      (dim_0) ... 3 3 3 3 3 3 3 3 3 3 3 3 3
+            $z$       ... -1
+            time      datetime64[ns] 2001-01-01T01:00:00
+            $x$       (dim_0) float64 6.0 7.0 8.0 9.0 10.0 ... 14.0 15.0 16.0 17.0 18.0
+            $y$       (dim_0) ... 3 3 3 3 3 3 3 3 3 3 3 3 3
         Dimensions without coordinates: dim_0
         Data variables:
-            k        (dim_0) float64 1.001 1.001 1.001 1.001 1.001 ... 1.0 1.0 1.0 nan
-            $u$      (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
-            $v$      (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
-            $w$      (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
+            $\\sigma$  (dim_0) float64 -0.4996 -0.4996 -0.4996 ... -0.4999 -0.4999 nan
+            $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
+            $v$       (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
+            $w$       (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -255,17 +255,17 @@ class Faces(ABC, _FacesDataClassMixin):
         >>> case = MycekStudy()
         >>> result.faces.extract_turbine_z(-1, case) #doctest: +ELLIPSIS
         <xarray.Dataset>
-        Dimensions:  ($x$: 18, $y$: 4)
+        Dimensions:   ($x$: 18, $y$: 4)
         Coordinates:
-          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
-          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-            $z$      ... -1
-            time     datetime64[ns] 2001-01-01T01:00:00
+          * $x$       ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$       ($y$) float64 1.5 2.5 3.5 4.5
+            $z$       ... -1
+            time      datetime64[ns] 2001-01-01T01:00:00
         Data variables:
-            k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
-            $u$      ($x$, $y$) float64 0.781 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
-            $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
-            $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
+            $\\sigma$  ($x$, $y$) float64 -0.4994 -0.4994 -0.4994 ... -0.5 -0.5 -0.5
+            $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
+            $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
+            $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
@@ -295,7 +295,7 @@ class Faces(ABC, _FacesDataClassMixin):
                         y: Optional[Sequence[Num]] = None) -> xr.Dataset:
         """Extract data on the plane at the given z-level. Available data is:
         
-        * :code:`k`: sigma layer
+        * :code:`sigma`: sigma value
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
@@ -311,35 +311,35 @@ class Faces(ABC, _FacesDataClassMixin):
         >>> y = [2, 2, 2, 2, 2]
         >>> result.faces.extract_z(-1, -1, x, y) #doctest: +ELLIPSIS
         <xarray.Dataset>
-        Dimensions:  (dim_0: 5)
+        Dimensions:   (dim_0: 5)
         Coordinates:
-            $z$      ... -1
-            time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) ... 6 7 8 9 10
-            $y$      (dim_0) ... 2 2 2 2 2
+            $z$       ... -1
+            time      datetime64[ns] 2001-01-01T01:00:00
+            $x$       (dim_0) ... 6 7 8 9 10
+            $y$       (dim_0) ... 2 2 2 2 2
         Dimensions without coordinates: dim_0
         Data variables:
-            k        (dim_0) float64 1.001 1.001 1.001 1.001 1.001
-            $u$      (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
-            $v$      (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
-            $w$      (dim_0) float64 0.0002786 -0.0004764 0.0003097 -0.0002754 0.0003252
+            $\\sigma$  (dim_0) float64 -0.4996 -0.4996 -0.4996 -0.4997 -0.4997
+            $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
+            $v$       (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
+            $w$       (dim_0) float64 0.0002786 -0.0004764 ... -0.0002754 0.0003252
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
         
         >>> result.faces.extract_z(-1, -1) #doctest: +ELLIPSIS
         <xarray.Dataset>
-        Dimensions:  ($x$: 18, $y$: 4)
+        Dimensions:   ($x$: 18, $y$: 4)
         Coordinates:
-          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
-          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-            $z$      ... -1
-            time     datetime64[ns] 2001-01-01T01:00:00
+          * $x$       ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$       ($y$) float64 1.5 2.5 3.5 4.5
+            $z$       ... -1
+            time      datetime64[ns] 2001-01-01T01:00:00
         Data variables:
-            k        ($x$, $y$) float64 1.002 1.002 1.002 1.002 ... 1.0 1.0 1.0 1.0
-            $u$      ($x$, $y$) float64 0.781 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
-            $v$      ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
-            $w$      ($x$, $y$) float64 -0.01472 -0.01472 -0.01472 ... 0.001343 0.001343
+            $\\sigma$  ($x$, $y$) float64 -0.4994 -0.4994 -0.4994 ... -0.5 -0.5 -0.5
+            $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
+            $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
+            $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
         
         :param t_step: Time step index
         :param z: z-level at which to extract data
@@ -356,7 +356,8 @@ class Faces(ABC, _FacesDataClassMixin):
         
         return _faces_frame_to_slice(self._frame,
                                      self._t_steps[t_step],
-                                     z=z)
+                                     "z",
+                                     z)
     
     @_extract
     def extract_sigma(self, t_step: int,
@@ -380,40 +381,40 @@ class Faces(ABC, _FacesDataClassMixin):
         >>> result = Result(data_dir)
         >>> x = [6, 7, 8, 9, 10]
         >>> y = [2, 2, 2, 2, 2]
-        >>> result.faces.extract_k(-1, 1, x, y) #doctest: +ELLIPSIS
+        >>> result.faces.extract_sigma(-1, -0.5, x, y) #doctest: +ELLIPSIS
         <xarray.Dataset>
-        Dimensions:  (dim_0: 5)
+        Dimensions:   (dim_0: 5)
         Coordinates:
-            k        ... 1
-            time     datetime64[ns] 2001-01-01T01:00:00
-            $x$      (dim_0) ... 6 7 8 9 10
-            $y$      (dim_0) ... 2 2 2 2 2
+            $\\sigma$  ... -0.5
+            time      datetime64[ns] 2001-01-01T01:00:00
+            $x$       (dim_0) ... 6 7 8 9 10
+            $y$       (dim_0) ... 2 2 2 2 2
         Dimensions without coordinates: dim_0
         Data variables:
-            $z$      (dim_0) float64 -1.001 -1.001 -1.001 -1.001 -1.001
-            $u$      (dim_0) float64 0.7747 0.7746 0.7744 0.7745 0.7745
-            $v$      (dim_0) float64 -3.88e-18 4.267e-17 5.452e-17 5.002e-17 8.013e-17
-            $w$      (dim_0) float64 0.0002791 -0.0004769 0.0003101 -0.0002756 0.0003256
+            $z$       (dim_0) float64 -1.001 -1.001 -1.001 -1.001 -1.001
+            $u$       (dim_0) float64 0.7747 0.7746 0.7744 0.7745 0.7745
+            $v$       (dim_0) float64 -3.88e-18 4.267e-17 5.452e-17 5.002e-17 8.013e-17
+            $w$       (dim_0) float64 0.0002791 -0.0004769 ... -0.0002756 0.0003256
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
         
-        >>> result.faces.extract_k(-1, 1) #doctest: +ELLIPSIS
+        >>> result.faces.extract_sigma(-1, -0.5) #doctest: +ELLIPSIS
         <xarray.Dataset>
-        Dimensions:  ($x$: 18, $y$: 4)
+        Dimensions:   ($x$: 18, $y$: 4)
         Coordinates:
-          * $x$      ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
-          * $y$      ($y$) float64 1.5 2.5 3.5 4.5
-            k        ... 1
-            time     datetime64[ns] 2001-01-01T01:00:00
+          * $x$       ($x$) float64 0.5 1.5 2.5 3.5 4.5 5.5 ... 13.5 14.5 15.5 16.5 17.5
+          * $y$       ($y$) float64 1.5 2.5 3.5 4.5
+            $\\sigma$  ... -0.5
+            time      datetime64[ns] 2001-01-01T01:00:00
         Data variables:
-            $z$      ($x$, $y$) float64 -1.001 -1.001 -1.001 -1.001 ... -1.0 -1.0 -1.0
-            $u$      ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
-            $v$      ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
-            $w$      ($x$, $y$) float64 -0.01473 -0.01473 -0.01473 ... 0.001343 0.001343
+            $z$       ($x$, $y$) float64 -1.001 -1.001 -1.001 -1.001 ... -1.0 -1.0 -1.0
+            $u$       ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
+            $v$       ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
+            $w$       ($x$, $y$) float64 -0.01473 -0.01473 ... 0.001343 0.001343
         
         :param t_step: Time step index
-        :param k: k-level (sigma) at which to extract data
+        :param sigma: sigma-level at which to extract data
         :param x: x-coordinates on which to interpolate data
         :param y: y-coordinates on which to interpolate data
         
@@ -427,7 +428,8 @@ class Faces(ABC, _FacesDataClassMixin):
         
         return _faces_frame_to_slice(self._frame,
                                      self._t_steps[t_step],
-                                     k=sigma)
+                                     "sigma",
+                                     sigma)
     
     def extract_depth(self, t_step: int) -> xr.DataArray:
         """Extract the depth, in meters, at each of the face centres.
@@ -509,12 +511,15 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
                           key: str,
                           value: Num) -> xr.Dataset:
     
-    valid_keys = ('z', 'sigma')
+    valid_keys = ['z', 'sigma']
     
     if key not in valid_keys:
         keys_msg = ", ".join(valid_keys)
         err_msg = f"Given key is not valid. Choose from {keys_msg}"
         raise RuntimeError(err_msg)
+    
+    valid_keys.remove(key)
+    other_key = valid_keys[0]
     
     frame = frame.set_index(['x', 'y', 'time'])
     frame = frame.xs(sim_time, level=2)
@@ -529,7 +534,7 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
         
         data["x"].append(x)
         data["y"].append(y)
-        data["k"].append(zvalues["k"])
+        data[other_key].append(zvalues[other_key])
         data["u"].append(zvalues["u"])
         data["v"].append(zvalues["v"])
         data["w"].append(zvalues["w"])
@@ -537,7 +542,7 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
     zframe = pd.DataFrame(data)
     zframe = zframe.set_index(['x', 'y'])
     ds = zframe.to_xarray()
-    ds = ds.assign_coords({"z": z})
+    ds = ds.assign_coords({key: value})
     
     ds = ds.assign_coords({"time": sim_time})
     ds = ds.rename({"z": "$z$",
@@ -545,7 +550,8 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
                     "y": "$y$",
                     "u": "$u$",
                     "v": "$v$",
-                    "w": "$w$"})
+                    "w": "$w$",
+                    "sigma": r"$\sigma$"})
     
     return ds
 
@@ -553,8 +559,9 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
 def _faces_frame_to_depth(frame: pd.DataFrame,
                           sim_time: pd.Timestamp) -> xr.DataArray:
     
-    frame = frame.set_index(['x', 'y', 'k', 'time'])
-    frame = frame.xs((0, sim_time), level=(2, 3))
+    sigma = frame["sigma"].unique().take(0)
+    frame = frame.set_index(['x', 'y', 'sigma', 'time'])
+    frame = frame.xs((sigma, sim_time), level=(2, 3))
     frame = frame.drop(["z", "u", "v", "w"], axis=1)
     ds = frame.to_xarray()
     ds = ds.assign_coords({"time": sim_time})
@@ -576,38 +583,45 @@ def _map_to_faces_frame(map_path: StrOrPath,
     
     with xr.open_dataset(map_path) as ds:
         
-        time = ds.time[t_step].values.take(0)
-        x_values = ds.mesh2d_face_x.values
-        y_values = ds.mesh2d_face_y.values
-        depth_values = ds.mesh2d_waterdepth.values
-        sigma_values = ds.mesh2d_layer_sigma.values
-        u_values = ds.mesh2d_ucx.values
-        v_values = ds.mesh2d_ucy.values
-        w_values = ds.mesh2d_ucz.values
+        if t_step is None:
+            t_steps = range(len(ds.time))
+        else:
+            t_steps = (t_step,)
         
-        for iface in ds.mesh2d_nFaces.values:
+        for i in t_steps:
+        
+            time = ds.time[i].values.take(0)
+            x_values = ds.mesh2d_face_x.values
+            y_values = ds.mesh2d_face_y.values
+            depth_values = ds.mesh2d_waterdepth.values
+            sigma_values = ds.mesh2d_layer_sigma.values
+            u_values = ds.mesh2d_ucx.values
+            v_values = ds.mesh2d_ucy.values
+            w_values = ds.mesh2d_ucz.values
             
-            x = x_values[iface]
-            y = y_values[iface]
-            depth = depth_values[t_step, iface]
-            
-            for ilayer in ds.mesh2d_nLayers.values:
+            for iface in ds.mesh2d_nFaces.values:
                 
-                sigma = sigma_values[ilayer]
-                z = sigma * depth
-                u = u_values[t_step, iface, ilayer]
-                v = v_values[t_step, iface, ilayer]
-                w = w_values[t_step, iface, ilayer]
+                x = x_values[iface]
+                y = y_values[iface]
+                depth = depth_values[i, iface]
                 
-                data["x"].append(x)
-                data["y"].append(y)
-                data["z"].append(z)
-                data["sigma"].append(sigma)
-                data["time"].append(time)
-                data["depth"].append(depth)
-                data["u"].append(u)
-                data["v"].append(v)
-                data["w"].append(w)
+                for ilayer in ds.mesh2d_nLayers.values:
+                    
+                    sigma = sigma_values[ilayer]
+                    z = sigma * depth
+                    u = u_values[i, iface, ilayer]
+                    v = v_values[i, iface, ilayer]
+                    w = w_values[i, iface, ilayer]
+                    
+                    data["x"].append(x)
+                    data["y"].append(y)
+                    data["z"].append(z)
+                    data["sigma"].append(sigma)
+                    data["time"].append(time)
+                    data["depth"].append(depth)
+                    data["u"].append(u)
+                    data["v"].append(v)
+                    data["w"].append(w)
     
     return pd.DataFrame(data)
 
@@ -620,60 +634,68 @@ class _StructuredFaces(Faces):
 def _trim_to_faces_frame(trim_path: StrOrPath,
                          t_step: int = None) -> pd.DataFrame:
     
+    data = collections.defaultdict(list)
+    
     with xr.open_dataset(trim_path) as ds:
         
-        time = ds.time[t_step].values
-        ds_step = ds.isel(time=t_step)
+        if t_step is None:
+            t_steps = range(len(ds.time))
+        else:
+            t_steps = (t_step,)
         
-        x = ds_step.XZ.values
-        y = ds_step.YZ.values
-        dp0 = ds_step.DP0.values
-        s1 = ds_step.S1.values
-        sig_lyr = ds_step.SIG_LYR.values
-        ik = ds_step.KMAXOUT_RESTR.values
-        u1 = ds_step.U1.values
-        v1 = ds_step.V1.values
-        w = ds_step.W.values
-    
-    n_layers = len(ik)
-    
-    x = x[1:-1, 1:-1]
-    x = np.repeat(x[np.newaxis, :, :], n_layers, axis=0)
-    
-    y = y[1:-1, 1:-1]
-    y = np.repeat(y[np.newaxis, :, :], n_layers, axis=0)
-    
-    depth = dp0 + s1
-    z = depth[..., None] * sig_lyr
-    z = np.rollaxis(z, 2)
-    z = z[:, 1:-1, 1:-1]
-    
-    ik = np.flip(ik).reshape(n_layers, 1, 1)
-    k = np.ones(x.shape, dtype=int) * ik
-    
-    time = np.tile(time, x.shape)
-    
-    depth = depth[1:-1, 1:-1]
-    depth = np.repeat(depth[np.newaxis, :, :], n_layers, axis=0)
-    
-    u1 = u1[:, :-1, 1:-1]
-    u = np.nansum([u1[:, :-1, :], u1[:, 1:, :]], axis=0) / 2
-    
-    v1 = v1[:,1:-1,:-1]
-    v = np.nansum([v1[:, :, :-1], v1[:, :, 1:]], axis=0) / 2
-    
-    w = np.nansum([w[1:, :, :], w[:-1, :, :]], axis=0) / 2
-    w = w[:, 1:-1, 1:-1]
-    
-    data = {}
-    data["x"] = np.ravel(x)
-    data["y"] = np.ravel(y)
-    data["z"] = np.ravel(z)
-    data["k"] = np.ravel(k)
-    data["time"] = np.ravel(time)
-    data["depth"] = np.ravel(depth)
-    data["u"] = np.ravel(u)
-    data["v"] = np.ravel(v)
-    data["w"] = np.ravel(w)
+        for i in t_steps:
+            
+            time = ds.time[i].values
+            ds_step = ds.isel(time=i)
+            
+            x = ds_step.XZ.values
+            y = ds_step.YZ.values
+            dp0 = ds_step.DP0.values
+            s1 = ds_step.S1.values
+            sig_lyr = ds_step.SIG_LYR.values
+            ik = ds_step.KMAXOUT_RESTR.values
+            u1 = ds_step.U1.values
+            v1 = ds_step.V1.values
+            w = ds_step.W.values
+        
+            n_layers = len(ik)
+            
+            x = x[1:-1, 1:-1]
+            x = np.repeat(x[np.newaxis, :, :], n_layers, axis=0)
+            
+            y = y[1:-1, 1:-1]
+            y = np.repeat(y[np.newaxis, :, :], n_layers, axis=0)
+            
+            depth = dp0 + s1
+            z = depth[..., None] * sig_lyr
+            z = np.rollaxis(z, 2)
+            z = z[:, 1:-1, 1:-1]
+            
+            isig = sig_lyr.reshape(n_layers, 1, 1)
+            sigma = np.ones(x.shape, dtype=int) * isig
+            
+            time = np.tile(time, x.shape)
+            
+            depth = depth[1:-1, 1:-1]
+            depth = np.repeat(depth[np.newaxis, :, :], n_layers, axis=0)
+            
+            u1 = u1[:, :-1, 1:-1]
+            u = np.nansum([u1[:, :-1, :], u1[:, 1:, :]], axis=0) / 2
+            
+            v1 = v1[:,1:-1,:-1]
+            v = np.nansum([v1[:, :, :-1], v1[:, :, 1:]], axis=0) / 2
+            
+            w = np.nansum([w[1:, :, :], w[:-1, :, :]], axis=0) / 2
+            w = w[:, 1:-1, 1:-1]
+            
+            data["x"].extend(np.ravel(x))
+            data["y"].extend(np.ravel(y))
+            data["z"].extend(np.ravel(z))
+            data["sigma"].extend(np.ravel(sigma))
+            data["time"].extend(np.ravel(time))
+            data["depth"].extend(np.ravel(depth))
+            data["u"].extend(np.ravel(u))
+            data["v"].extend(np.ravel(v))
+            data["w"].extend(np.ravel(w))
     
     return pd.DataFrame(data)

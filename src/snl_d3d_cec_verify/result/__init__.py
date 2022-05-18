@@ -286,10 +286,10 @@ class Validate():
     
     >>> validate = Validate()
     >>> print(validate)
-    Validate(0: Centreline velocity (3\% TI)
-             1: Centreline velocity (15\% TI)
-             2: Axial velocity at $x^*=5$ (3\% TI)
-             3: Axial velocity at $x^*=5$ (15\% TI))
+    Validate(0: Centreline velocity (3\\% TI)
+             1: Centreline velocity (15\\% TI)
+             2: Axial velocity at $x^*=5$ (3\\% TI)
+             3: Axial velocity at $x^*=5$ (15\\% TI))
     
     >>> validate[0].to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray '$u_0$' (dim_0: 10)>
@@ -427,18 +427,18 @@ class Transect():
     >>> result = Result(data_dir)
     >>> result.faces.extract_z(-1, **x) #doctest: +ELLIPSIS
     <xarray.Dataset>
-    Dimensions:  (dim_0: 4)
+    Dimensions:   (dim_0: 4)
     Coordinates:
-        $z$      ... -1
-        time     datetime64[ns] 2001-01-01T01:00:00
-        $x$      (dim_0) ... 1 2 3 4
-        $y$      (dim_0) ... 2 2 2 2
+        $z$       ... -1
+        time      datetime64[ns] 2001-01-01T01:00:00
+        $x$       (dim_0) ... 1 2 3 4
+        $y$       (dim_0) ... 2 2 2 2
     Dimensions without coordinates: dim_0
     Data variables:
-        k        (dim_0) float64 1.002 1.002 1.002 1.001
-        $u$      (dim_0) float64 0.7793 0.7776 0.7766 0.7757
-        $v$      (dim_0) float64 1.193e-17 4.679e-17 2.729e-17 -2.519e-17
-        $w$      (dim_0) float64 -0.001658 0.0001347 -0.00114 0.0002256
+        $\\sigma$  (dim_0) float64 -0.4994 -0.4995 -0.4995 -0.4995
+        $u$       (dim_0) float64 0.7793 0.7776 0.7766 0.7757
+        $v$       (dim_0) float64 1.193e-17 4.679e-17 2.729e-17 -2.519e-17
+        $w$       (dim_0) float64 -0.001658 0.0001347 -0.00114 0.0002256
     
     :param z: z-level of the transect, in meters
     :param x: x-coordinates of the transect, in meters
@@ -609,7 +609,7 @@ class Transect():
         """
         :meta private:
         """
-        return KeysView(["kz", "x", "y"])
+        return KeysView(["value", "x", "y"])
     
     def to_xarray(self) -> xr.DataArray:
         """Export transect as a :class:`xarray.DataArray` object.
@@ -667,7 +667,7 @@ class Transect():
     def __getitem__(self, item: str) -> Union[None,
                                               Num,
                                               npt.NDArray[np.float64]]:
-        if item == "kz": item = "z"
+        if item == "value": item = "z"
         return getattr(self, item)
 
 
