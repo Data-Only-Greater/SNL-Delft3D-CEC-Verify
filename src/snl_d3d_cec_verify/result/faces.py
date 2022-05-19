@@ -531,8 +531,10 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
     for (x, y), group in frame.groupby(level=[0, 1]):
         
         gframe = group.set_index(key)
-        zvalues = gframe.reindex(
-                gframe.index.union([value])).interpolate('values').loc[value]
+        zvalues = gframe.reindex(gframe.index.union([value])
+                            ).interpolate('slinear',
+                                          fill_value="extrapolate",
+                                          limit_direction="both").loc[value]
         
         data["x"].append(x)
         data["y"].append(y)
@@ -635,6 +637,8 @@ class _StructuredFaces(Faces):
 
 def _trim_to_faces_frame(trim_path: StrOrPath,
                          t_step: int = None) -> pd.DataFrame:
+    
+    # RTUR1 LTUR=0 is the TKE
     
     Content = Union[Num, pd.Timestamp]
     data: Dict[str, List[Content]] = collections.defaultdict(list)

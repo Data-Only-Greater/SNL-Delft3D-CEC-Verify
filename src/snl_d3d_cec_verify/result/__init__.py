@@ -57,9 +57,9 @@ class Result:
     >>> result.x_lim
     (0.0, 18.0)
     
-    >>> result.edges.extract_k(-1, 1) #doctest: +ELLIPSIS
+    >>> result.edges.extract_sigma(-1, 0.5) #doctest: +ELLIPSIS
                                             geometry            u1   n0   n1
-    0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
+    0      LINESTRING (0.00000 1.00000, 0.00000 2.00000)  9.753143e-01  1.0 -0.0
     ...
     
     :param project_path: path to the Delft3D project directory

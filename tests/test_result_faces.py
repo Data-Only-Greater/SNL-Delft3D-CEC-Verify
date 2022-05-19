@@ -69,6 +69,26 @@ def test_faces_frame_to_slice_sigma(faces_frame):
     assert ds["$w$"].max() <= faces_frame["w"].max()
 
 
+def test_faces_frame_to_slice_sigma_extrapolate_forward(faces_frame):
+    
+    ts = pd.Timestamp("2001-01-01 01:00:00")
+    sigma = 0
+    ds = _faces_frame_to_slice(faces_frame, ts, "sigma", sigma)
+    
+    assert ds["$z$"].min() > -1e-15
+    assert ds["$z$"].max() < 0
+
+
+def test_faces_frame_to_slice_sigma_extrapolate_backward(faces_frame):
+    
+    ts = pd.Timestamp("2001-01-01 01:00:00")
+    sigma = -1
+    ds = _faces_frame_to_slice(faces_frame, ts, "sigma", sigma)
+    
+    assert ds["$z$"].min() > -2.0024
+    assert ds["$z$"].max() < -2
+
+
 def test_faces_frame_to_slice_z(faces_frame):
     
     ts = pd.Timestamp("2001-01-01 01:00:00")
