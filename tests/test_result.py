@@ -447,9 +447,13 @@ def test_trasect_unpacking(transect):
                 "y": np.array([1, 1, 1])}
     
     assert "data" not in result
-    assert result["kz"] == expected["z"]
+    assert result["value"] == expected["z"]
     assert (result["x"] == expected["x"]).all()
     assert (result["y"] == expected["y"]).all()
+
+
+def test_trasect_extract(faces, transect):
+    faces.extract_z(-1, **transect)
 
 
 @pytest.fixture

@@ -3,10 +3,11 @@
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from snl_d3d_cec_verify.result import Transect
-
+from snl_d3d_cec_verify.result.faces import Faces
 
 
 def pytest_assertrepr_compare(op, left, right):
@@ -54,6 +55,19 @@ def pytest_assertrepr_compare(op, left, right):
                 comparison.append(get_comp_str(key))
         
         return comparison
+
+
+class MockFaces(Faces):
+    def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
+        frame = pd.read_csv(self.nc_path, parse_dates=["time"])
+        times = frame.time.unique()
+        return frame[frame.time == times[t_step]]
+
+
+@pytest.fixture
+def faces(data_dir):
+    csv_path = data_dir / "output" / "faces_frame.csv"
+    return MockFaces(csv_path, 2, 18)
 
 
 @pytest.fixture

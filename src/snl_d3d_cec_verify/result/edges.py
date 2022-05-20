@@ -30,9 +30,9 @@ class Edges(_TimeStepResolver):
     >>> from snl_d3d_cec_verify import Result
     >>> data_dir = getfixture('data_dir')
     >>> result = Result(data_dir)
-    >>> result.edges.extract_k(-1, 1) #doctest: +ELLIPSIS
+    >>> result.edges.extract_sigma(-1, 0.5) #doctest: +ELLIPSIS
                                             geometry            u1   n0   n1
-    0      LINESTRING (1.00000 2.00000, 0.00000 2.00000) -3.662849e-17  0.0  1.0
+    0      LINESTRING (0.00000 1.00000, 0.00000 2.00000)  9.753143e-01  1.0 -0.0
     ...
     
     :param nc_path: path to the ``.nc`` file containing results
@@ -47,12 +47,12 @@ class Edges(_TimeStepResolver):
                                                init=False,
                                                repr=False)
     
-    def extract_k(self, t_step: int,
-                        k: int,
-                        goem: Optional[BaseGeometry] = None
-                                                    ) -> gpd.GeoDataFrame:
+    def extract_sigma(self, t_step: int,
+                            value: float,
+                            goem: Optional[BaseGeometry] = None
+                            ) -> gpd.GeoDataFrame:
         """Extract data from the grid edges for a given time step and sigma
-        level (:code:`k`). Available data is:
+        level (:code:`sigma`). Available data is:
         
         * :code:`u1`: velocity, in metres per second
         * :code:`n0`: edge normal x-coordinate
@@ -67,16 +67,16 @@ class Edges(_TimeStepResolver):
         >>> data_dir = getfixture('data_dir')
         >>> result = Result(data_dir)
         >>> line = LineString([(6, 2), (10, 2)])
-        >>> result.edges.extract_k(-1, 1, line)
+        >>> result.edges.extract_sigma(-1, 0.5, line)
                    geometry            u1
-        0   POINT (6.00000 2.00000) -6.794595e-18
-        1   POINT (7.00000 2.00000)  7.732358e-01
-        2   POINT (8.00000 2.00000)  7.753754e-01
-        3   POINT (9.00000 2.00000)  7.737631e-01
-        4  POINT (10.00000 2.00000)  7.750168e-01
+        0  POINT (10.00000 2.00000)  0.991826
+        1   POINT (6.00000 2.00000)  0.991709
+        2   POINT (7.00000 2.00000)  0.974911
+        3   POINT (8.00000 2.00000)  0.992091
+        4   POINT (9.00000 2.00000)  0.976797
         
         :param t_step: Time step index
-        :param k: sigma level
+        :param sigma: sigma level
         :param goem: Optional shapely geometry, where data is extracted on
             the intersection with the grid edges using the 
             :meth:`object.intersection` method.
@@ -97,20 +97,44 @@ class Edges(_TimeStepResolver):
         
         assert self._frame is not None
         
-        kframe = self._frame.set_index(['time', 'k'])
-        kframe = kframe.sort_index()
-        kframe = kframe.loc[(self._t_steps[t_step], k)]
-        kframe = kframe.reset_index(drop=True)
+        gdf = self._frame.copy()
+        gdf['wkt'] = gdf['geometry'].apply(lambda geom: geom.wkt)
         
-        if goem is None: return kframe
+        gdf = gdf.set_index(['wkt', 'time'])
+        gdf = gdf.xs(self._t_steps[t_step], level=1)
         
-        data = {}
-        pfilter = kframe.intersection(goem).geom_type == "Point"
+        data = collections.defaultdict(list)
         
-        data["geometry"] = kframe.intersection(goem)[pfilter]
-        data["u1"] = kframe[pfilter]["u1"]
+        for _, group in gdf.groupby(by="wkt"):
+            
+            geometry = group["geometry"].values[0]
+            n0 = group["n0"].values[0]
+            n1 = group["n1"].values[0]
+            gframe = group.set_index("sigma")
+            gframe = gframe.drop("geometry", axis=1)
+            df = pd.DataFrame(gframe)
+            
+            svalues = df.reindex(df.index.union([value])
+                            ).interpolate('slinear',
+                                          fill_value="extrapolate",
+                                          limit_direction="both").loc[value]
+            
+            data["geometry"].append(geometry)
+            data["u1"].append(svalues["u1"])
+            data["n0"].append(n0)
+            data["n1"].append(n1)
         
         gframe = gpd.GeoDataFrame(data)
+        
+        if goem is None: return gframe
+        
+        pdata = {}
+        pfilter = gframe.intersection(goem).geom_type == "Point"
+        
+        pdata["geometry"] = gframe.intersection(goem)[pfilter]
+        pdata["u1"] = gframe[pfilter]["u1"]
+        
+        gframe = gpd.GeoDataFrame(pdata)
         gframe["wkt"] = gframe["geometry"].apply(lambda geom: geom.wkt)
         gframe = gframe.drop_duplicates(["wkt"])
         gframe = gframe.drop("wkt", axis=1)
@@ -140,59 +164,68 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
     
     with xr.open_dataset(map_path) as ds:
         
-        time = ds.time[t_step].values.take(0)
-        edge_node_values = ds.mesh2d_edge_nodes.values
-        edge_face_values = ds.mesh2d_edge_faces.values
-        node_x_values = ds.mesh2d_node_x.values
-        node_y_values = ds.mesh2d_node_y.values
-        face_x_values = ds.mesh2d_face_x.values
-        face_y_values = ds.mesh2d_face_y.values
-        u1_values = ds.mesh2d_u1.values
+        if t_step is None:
+            t_steps = tuple(range(len(ds.time)))
+        else:
+            t_steps = (t_step,)
         
-        for iedge in ds.mesh2d_nEdges.values:
+        for istep in t_steps:
             
-            points = []
-            two = (0, 1)
+            time = ds.time[istep].values.take(0)
+            edge_node_values = ds.mesh2d_edge_nodes.values
+            edge_face_values = ds.mesh2d_edge_faces.values
+            node_x_values = ds.mesh2d_node_x.values
+            node_y_values = ds.mesh2d_node_y.values
+            face_x_values = ds.mesh2d_face_x.values
+            face_y_values = ds.mesh2d_face_y.values
+            sigma_values = ds.mesh2d_layer_sigma.values
+            u1_values = ds.mesh2d_u1.values
             
-            for inode in two:
-                index = edge_node_values[iedge, inode] - 1
-                x = node_x_values[index]
-                y = node_y_values[index]
-                p = np.array((x, y))
-                points.append(p)
-            
-            line = LineString(points)
-            linevec = points[1] - points[0]
-            normvec = np.array((-linevec[1], linevec[0]))
-            
-            points = []
-            
-            for iface in two:
+            for iedge in ds.mesh2d_nEdges.values:
                 
-                index = int(edge_face_values[iedge, iface]) - 1
+                points = []
+                two = (0, 1)
                 
-                if index < 0:
-                    p = np.array(line.centroid.coords)
-                else:
-                    x = face_x_values[index]
-                    y = face_y_values[index]
+                for inode in two:
+                    index = edge_node_values[iedge, inode] - 1
+                    x = node_x_values[index]
+                    y = node_y_values[index]
                     p = np.array((x, y))
+                    points.append(p)
                 
-                points.append(p)
-            
-            facevec = points[1] - points[0]
-            normvec *= np.dot(facevec, normvec)
-            normvec /= np.linalg.norm(normvec)
-            
-            for k, ilayer in enumerate(ds.mesh2d_nLayers.values):
+                line = LineString(points)
+                linevec = points[1] - points[0]
+                normvec = np.array((-linevec[1], linevec[0]))
                 
-                u1 = u1_values[t_step, iedge, ilayer]
+                points = []
                 
-                data["geometry"].append(line)
-                data["k"].append(k)
-                data["time"].append(time)
-                data["u1"].append(u1)
-                data["n0"].append(normvec[0])
-                data["n1"].append(normvec[1])
+                for iface in two:
+                    
+                    index = int(edge_face_values[iedge, iface]) - 1
+                    
+                    if index < 0:
+                        p = np.array(line.centroid.coords)
+                    else:
+                        x = face_x_values[index]
+                        y = face_y_values[index]
+                        p = np.array((x, y))
+                    
+                    points.append(p)
+                
+                facevec = points[1] - points[0]
+                normvec *= np.dot(facevec, normvec)
+                normvec /= np.linalg.norm(normvec)
+                
+                for ilayer in ds.mesh2d_nLayers.values:
+                    
+                    sigma = sigma_values[ilayer]
+                    u1 = u1_values[istep, iedge, ilayer]
+                    
+                    data["geometry"].append(line)
+                    data["sigma"].append(sigma)
+                    data["time"].append(time)
+                    data["u1"].append(u1)
+                    data["n0"].append(normvec[0])
+                    data["n1"].append(normvec[1])
     
     return gpd.GeoDataFrame(data)

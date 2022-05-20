@@ -20,11 +20,44 @@ def test_map_to_edges_geoframe(data_dir):
     
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 498
-    assert gdf.columns.to_list() == ["geometry", "k", "time", "u1", "n0", "n1"]
+    assert gdf.columns.to_list() == ["geometry",
+                                     "sigma",
+                                     "time",
+                                     "u1",
+                                     "n0",
+                                     "n1"]
     assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
                                                         set(['LineString'])
-    assert set(gdf["k"]) == set([0, 1, 2])
+    assert set(gdf["sigma"]) == set([-0.8333333333333334,
+                                     -0.5,
+                                     -0.16666666666666669])
     assert set(gdf["time"]) == set([pd.Timestamp('2001-01-01 01:00:00')])
+    assert gdf["u1"].min() > -0.9
+    assert gdf["u1"].max() < 0.9
+    assert set(gdf["n0"]) == set([0., -1., 1.])
+    assert set(gdf["n1"]) == set([0., -1., 1.])
+
+
+def test_map_to_edges_geoframe_none(data_dir):
+    
+    map_path = data_dir / "output" / "FlowFM_map.nc"
+    gdf = _map_to_edges_geoframe(map_path)
+    
+    assert isinstance(gdf, gpd.GeoDataFrame)
+    assert len(gdf) == 996
+    assert gdf.columns.to_list() == ["geometry",
+                                     "sigma",
+                                     "time",
+                                     "u1",
+                                     "n0",
+                                     "n1"]
+    assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
+                                                        set(['LineString'])
+    assert set(gdf["sigma"]) == set([-0.8333333333333334,
+                                     -0.5,
+                                     -0.16666666666666669])
+    assert set(gdf["time"]) == set([pd.Timestamp('2001-01-01 00:00:00'),
+                                    pd.Timestamp('2001-01-01 01:00:00')])
     assert gdf["u1"].min() > -0.9
     assert gdf["u1"].max() < 0.9
     assert set(gdf["n0"]) == set([0., -1., 1.])
@@ -70,25 +103,26 @@ def test_edges_load_t_step_no_repeat(edges):
     assert len(edges._t_steps) == 1
 
 
-def test_edges_extract_k_no_geom(edges):
+def test_edges_extract_sigma_no_geom(edges):
     
-    gdf = edges.extract_k(-1, 0)
+    gdf = edges.extract_sigma(-1, 0.5)
     
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 166
     assert gdf.columns.to_list() == ["geometry", "u1", "n0", "n1"]
     assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
                                                         set(['LineString'])
-    assert gdf["u1"].min() > -0.9
-    assert gdf["u1"].max() < 0.9
+    
+    assert gdf["u1"].min() > -1
+    assert gdf["u1"].max() < 1
     assert set(gdf["n0"]) == set([0., -1., 1.])
     assert set(gdf["n1"]) == set([0., -1., 1.])
 
 
-def test_edges_extract_k_line(edges):
+def test_edges_extract_sigma_line(edges):
     
     centreline = LineString(((0, 3), (18, 3)))
-    gdf = edges.extract_k(-1, 0, centreline)
+    gdf = edges.extract_sigma(-1, 0, centreline)
     
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 19
@@ -100,3 +134,15 @@ def test_edges_extract_k_line(edges):
     
     wkt = gdf["geometry"].apply(lambda geom: geom.wkt)
     assert len(set(wkt)) == 19
+
+
+def test_edges_extract_sigma_extrapolate_forward(edges):
+    gdf = edges.extract_sigma(-1, 0)
+    assert gdf["u1"].min() > -0.9
+    assert gdf["u1"].max() < 0.9
+
+
+def test_edges_extract_sigma_extrapolate_backward(edges):
+    gdf = edges.extract_sigma(-1, -1)
+    assert gdf["u1"].min() > -0.6
+    assert gdf["u1"].max() < 0.61

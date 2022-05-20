@@ -14,7 +14,6 @@ from snl_d3d_cec_verify.cases import CaseStudy
 from snl_d3d_cec_verify.result.faces import (_check_case_study,
                                              _faces_frame_to_slice,
                                              _faces_frame_to_depth,
-                                             Faces,
                                              _map_to_faces_frame,
                                              _FMFaces,
                                              _trim_to_faces_frame,
@@ -39,11 +38,11 @@ def faces_frame(data_dir):
     return frame[frame.time == times[-1]]
 
 
-def test_faces_frame_to_slice_k(faces_frame):
+def test_faces_frame_to_slice_sigma(faces_frame):
     
     ts = pd.Timestamp("2001-01-01 01:00:00")
-    k = 0
-    ds = _faces_frame_to_slice(faces_frame, ts, k=k)
+    sigma = -0.5
+    ds = _faces_frame_to_slice(faces_frame, ts, "sigma", sigma)
     
     assert isinstance(ds, xr.Dataset)
     
@@ -55,11 +54,11 @@ def test_faces_frame_to_slice_k(faces_frame):
     assert np.isclose(ds["$y$"].min(), 1.5)
     assert np.isclose(ds["$y$"].max(), 4.5)
     
-    assert ds.k.values.take(0) == k
+    assert ds[r"$\sigma$"].values.take(0) == sigma
     assert ds.time.values.take(0) == ts
     
-    assert ds["$z$"].min() > -1.669
-    assert ds["$z$"].max() < -1.666
+    assert ds["$z$"].min() > -1.0012
+    assert ds["$z$"].max() < -1
     
     # Same bounds as the frame
     assert ds["$u$"].min() >= faces_frame["u"].min()
@@ -70,11 +69,31 @@ def test_faces_frame_to_slice_k(faces_frame):
     assert ds["$w$"].max() <= faces_frame["w"].max()
 
 
+def test_faces_frame_to_slice_sigma_extrapolate_forward(faces_frame):
+    
+    ts = pd.Timestamp("2001-01-01 01:00:00")
+    sigma = 0
+    ds = _faces_frame_to_slice(faces_frame, ts, "sigma", sigma)
+    
+    assert ds["$z$"].min() > -1e-15
+    assert ds["$z$"].max() < 0
+
+
+def test_faces_frame_to_slice_sigma_extrapolate_backward(faces_frame):
+    
+    ts = pd.Timestamp("2001-01-01 01:00:00")
+    sigma = -1
+    ds = _faces_frame_to_slice(faces_frame, ts, "sigma", sigma)
+    
+    assert ds["$z$"].min() > -2.0024
+    assert ds["$z$"].max() < -2
+
+
 def test_faces_frame_to_slice_z(faces_frame):
     
     ts = pd.Timestamp("2001-01-01 01:00:00")
     z = -1
-    ds = _faces_frame_to_slice(faces_frame, ts, z=z)
+    ds = _faces_frame_to_slice(faces_frame, ts, "z", z)
     
     assert isinstance(ds, xr.Dataset)
     
@@ -89,7 +108,7 @@ def test_faces_frame_to_slice_z(faces_frame):
     assert ds["$z$"].values.take(0) == z
     assert ds.time.values.take(0) == ts
     
-    assert ds.k.min() > 1
+    assert ds[r"$\sigma$"].values.min() >= -1
     assert ds["$z$"].max() < 1.002
     
     # Same bounds as the frame
@@ -101,15 +120,12 @@ def test_faces_frame_to_slice_z(faces_frame):
     assert ds["$w$"].max() <= faces_frame["w"].max()
 
 
-@pytest.mark.parametrize("k, z", [
-                            ("mock", "mock"),
-                            (None, None)])
-def test_faces_frame_to_slice_k_z_error(k, z):
+def test_faces_frame_to_slice_error():
     
     with pytest.raises(RuntimeError) as excinfo:
-        _faces_frame_to_slice("mock", "mock", k=k, z=z)
+        _faces_frame_to_slice("mock", "mock", "mock", "mock")
     
-    assert "either k or z must be given" in str(excinfo)
+    assert "Given key is not valid" in str(excinfo)
 
 
 def test_faces_frame_to_depth(faces_frame):
@@ -126,19 +142,6 @@ def test_faces_frame_to_depth(faces_frame):
     # Same bounds as the frame
     assert da.min() >= faces_frame["depth"].min()
     assert da.max() <= faces_frame["depth"].max()
-
-
-class MockFaces(Faces):
-    def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
-        frame = pd.read_csv(self.nc_path, parse_dates=["time"])
-        times = frame.time.unique()
-        return frame[frame.time == times[t_step]]
-
-
-@pytest.fixture
-def faces(data_dir):
-    csv_path = data_dir / "output" / "faces_frame.csv"
-    return MockFaces(csv_path, 2, 18)
 
 
 def test_faces_load_t_step_first(faces):
@@ -181,33 +184,32 @@ def test_faces_extract_depth(mocker, faces):
     mock.assert_called()
 
 
-def test_faces_extract_k(mocker, faces):
+def test_faces_extract_sigma(mocker, faces):
     mock = mocker.patch('snl_d3d_cec_verify.result.faces.'
                         '_faces_frame_to_slice')
-    faces.extract_k(-1, 0)
+    faces.extract_sigma(-1, 0)
     mock.assert_called()
-    assert 'k' in mock.call_args.kwargs
-    assert 'z' not in mock.call_args.kwargs
+    assert 'sigma' in mock.call_args.args[2]
 
 
-def test_faces_extract_k_interp(faces):
+def test_faces_extract_sigma_interp(faces):
     
     t_step = -1
-    k = 0
+    sigma = -0.5
     x = 1
     y = 3
     
-    ds = faces.extract_k(t_step, k, x, y)
+    ds = faces.extract_sigma(t_step, sigma, x, y)
     t_step = faces._resolve_t_step(t_step)
     ts = faces._t_steps[t_step]
     
     assert isinstance(ds, xr.Dataset)
     
-    assert ds.k.values.take(0) == k
+    assert ds[r"$\sigma$"].values.take(0) == sigma
     assert ds.time.values.take(0) == ts
     assert ds["$x$"].values.take(0) == x
     assert ds["$y$"].values.take(0) == y
-    assert np.isclose(ds["$z$"].values, -1.66857945)
+    assert np.isclose(ds["$z$"].values, -1.00114767)
     
     # Same bounds as the frame
     assert (faces._frame["u"].min() <= ds["$u$"].values.take(0) <=
@@ -223,8 +225,7 @@ def test_faces_extract_z(mocker, faces):
                         '_faces_frame_to_slice')
     faces.extract_z(-1, -1)
     mock.assert_called()
-    assert 'z' in mock.call_args.kwargs
-    assert 'k' not in mock.call_args.kwargs
+    assert 'z' in mock.call_args.args[2]
 
 
 def test_faces_extract_z_interp(faces):
@@ -244,7 +245,7 @@ def test_faces_extract_z_interp(faces):
     assert ds.time.values.take(0) == ts
     assert ds["$x$"].values.take(0) == x
     assert ds["$y$"].values.take(0) == y
-    assert np.isclose(ds.k.values, 1.00171953)
+    assert np.isclose(ds[r"$\sigma$"].values, -0.49942682)
     
     # Same bounds as the frame
     assert (faces._frame["u"].min() <= ds["$u$"].values.take(0) <=
@@ -345,7 +346,7 @@ def test_map_to_faces_frame(data_dir):
     assert faces_frame.columns.to_list() == ["x",
                                              "y",
                                              "z",
-                                             "k",
+                                             "sigma",
                                              "time",
                                              "depth",
                                              "u",
@@ -359,13 +360,63 @@ def test_map_to_faces_frame(data_dir):
     assert -2 < faces_frame["z"].min() < -4 / 3
     assert -2 / 3 < faces_frame["z"].max() < 0
     
-    assert set(faces_frame["k"]) == set([0, 1, 2])
+    assert (faces_frame["sigma"].unique() == (-0.8333333333333334,
+                                              -0.5,
+                                              -0.16666666666666669)).all()
     assert set(faces_frame["time"]) == set([
                                         pd.Timestamp('2001-01-01 01:00:00')])
     assert faces_frame["depth"].min() > 2
     assert faces_frame["depth"].max() < 2.003
     
     assert faces_frame["u"].min() > 0.6
+    assert faces_frame["u"].max() < 0.9
+    assert faces_frame["v"].min() > -1e-15
+    assert faces_frame["v"].max() < 1e-15
+    assert faces_frame["w"].min() > -0.02
+    assert faces_frame["w"].max() < 0.02
+    
+    sigma_slice = _faces_frame_to_slice(faces_frame,
+                                        pd.Timestamp('2001-01-01 01:00:00'), 
+                                        "sigma",
+                                        -0.75)
+    
+    assert np.isclose(sigma_slice["$z$"].values.mean(), -1.5009617997833038)
+
+
+def test_map_to_faces_frame_none(data_dir):
+    
+    map_path = data_dir / "output" / "FlowFM_map.nc"
+    faces_frame = _map_to_faces_frame(map_path)
+    
+    assert isinstance(faces_frame, pd.DataFrame)
+    assert len(faces_frame) == 432
+    assert faces_frame.columns.to_list() == ["x",
+                                             "y",
+                                             "z",
+                                             "sigma",
+                                             "time",
+                                             "depth",
+                                             "u",
+                                             "v",
+                                             "w"]
+    
+    assert np.isclose(faces_frame["x"].min(), 0.5)
+    assert np.isclose(faces_frame["x"].max(), 17.5)
+    assert np.isclose(faces_frame["y"].min(), 1.5)
+    assert np.isclose(faces_frame["y"].max(), 4.5)
+    assert -2 < faces_frame["z"].min() < -4 / 3
+    assert -2 / 3 < faces_frame["z"].max() < 0
+    
+    assert (faces_frame["sigma"].unique() == (-0.8333333333333334,
+                                              -0.5,
+                                              -0.16666666666666669)).all()
+    assert set(faces_frame["time"]) == set([
+                                        pd.Timestamp('2001-01-01 00:00:00'),
+                                        pd.Timestamp('2001-01-01 01:00:00')])
+    assert faces_frame["depth"].min() >= 2
+    assert faces_frame["depth"].max() < 2.003
+    
+    assert faces_frame["u"].min() >= 0.
     assert faces_frame["u"].max() < 0.9
     assert faces_frame["v"].min() > -1e-15
     assert faces_frame["v"].max() < 1e-15
@@ -397,7 +448,7 @@ def test_trim_to_faces_frame(data_dir):
     assert faces_frame.columns.to_list() == ["x",
                                              "y",
                                              "z",
-                                             "k",
+                                             "sigma",
                                              "time",
                                              "depth",
                                              "u",
@@ -411,13 +462,61 @@ def test_trim_to_faces_frame(data_dir):
     assert -2 < faces_frame["z"].min() < -4 / 3
     assert -2 / 3 < faces_frame["z"].max() < 0
     
-    assert set(faces_frame["k"]) == set([0, 1, 2])
+    assert np.isclose(faces_frame["sigma"].unique(),
+                      (-0.16666667, -0.5, -0.83333331)).all()
     assert set(faces_frame["time"]) == set([
                                         pd.Timestamp('2001-01-01 01:00:00')])
     assert faces_frame["depth"].min() > 2
     assert faces_frame["depth"].max() < 2.005
     
     assert faces_frame["u"].min() > 0.6
+    assert faces_frame["u"].max() < 0.9
+    assert faces_frame["v"].min() > -1e-2
+    assert faces_frame["v"].max() < 1e-2
+    assert faces_frame["w"].min() > -0.03
+    assert faces_frame["w"].max() < 0.02
+    
+    sigma_slice = _faces_frame_to_slice(faces_frame,
+                                        pd.Timestamp('2001-01-01 01:00:00'), 
+                                        "sigma",
+                                        -0.75)
+    
+    assert np.isclose(sigma_slice["$z$"].values.mean(), -1.5014247)
+
+
+def test_trim_to_faces_frame_none(data_dir):
+    
+    trim_path = data_dir / "output" / "trim-D3D.nc"
+    faces_frame = _trim_to_faces_frame(trim_path)
+    
+    assert isinstance(faces_frame, pd.DataFrame)
+    assert len(faces_frame) == 432
+    assert faces_frame.columns.to_list() == ["x",
+                                             "y",
+                                             "z",
+                                             "sigma",
+                                             "time",
+                                             "depth",
+                                             "u",
+                                             "v",
+                                             "w"]
+    
+    assert np.isclose(faces_frame["x"].min(), 0.5)
+    assert np.isclose(faces_frame["x"].max(), 17.5)
+    assert np.isclose(faces_frame["y"].min(), 1.5)
+    assert np.isclose(faces_frame["y"].max(), 4.5)
+    assert -2 < faces_frame["z"].min() < -4 / 3
+    assert -2 / 3 < faces_frame["z"].max() < 0
+    
+    assert np.isclose(faces_frame["sigma"].unique(),
+                      (-0.16666667, -0.5, -0.83333331)).all()
+    assert set(faces_frame["time"]) == set([
+                                        pd.Timestamp('2001-01-01 00:00:00'),
+                                        pd.Timestamp('2001-01-01 01:00:00')])
+    assert faces_frame["depth"].min() >= 2
+    assert faces_frame["depth"].max() < 2.005
+    
+    assert faces_frame["u"].min() >= 0.
     assert faces_frame["u"].max() < 0.9
     assert faces_frame["v"].min() > -1e-2
     assert faces_frame["v"].max() < 1e-2
