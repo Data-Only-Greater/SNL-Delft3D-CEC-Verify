@@ -66,7 +66,7 @@ class MockFaces(Faces):
 
 @pytest.fixture
 def faces(data_dir):
-    csv_path = data_dir / "output" / "faces_frame.csv"
+    csv_path = data_dir / "output" / "faces_frame_fm.csv"
     return MockFaces(csv_path, 2, 18)
 
 

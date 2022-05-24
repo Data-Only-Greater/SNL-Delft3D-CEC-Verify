@@ -89,7 +89,10 @@ class Faces(ABC, _FacesDataClassMixin):
         $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-        
+    
+    Note that for structured simulations the data variable "TKE" is also
+    included.
+    
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
     :param xmax: maximum range in x-direction, in metres
@@ -109,6 +112,8 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
+        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+          squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. For example:
         
@@ -179,6 +184,8 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
+        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+          squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. Use the ``x_step``
         argument to control the frequency of samples. For example:
@@ -248,6 +255,8 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
+        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+          squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`.For example:
         
@@ -301,6 +310,8 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
+        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+          squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
         ``y`` parameters are defined, then the results are interpolated onto
@@ -373,6 +384,8 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
+        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+          squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
         ``y`` parameters are defined, then the results are interpolated onto
@@ -543,19 +556,26 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
         data["v"].append(zvalues["v"])
         data["w"].append(zvalues["w"])
         
+        if "tke" in zvalues:
+            data["tke"].append(zvalues["tke"])
+        
     zframe = pd.DataFrame(data)
     zframe = zframe.set_index(['x', 'y'])
     ds = zframe.to_xarray()
     ds = ds.assign_coords({key: value})
     
     ds = ds.assign_coords({"time": sim_time})
-    ds = ds.rename({"z": "$z$",
-                    "x": "$x$",
-                    "y": "$y$",
-                    "u": "$u$",
-                    "v": "$v$",
-                    "w": "$w$",
-                    "sigma": r"$\sigma$"})
+    
+    name_map = {"z": "$z$",
+                "x": "$x$",
+                "y": "$y$",
+                "u": "$u$",
+                "v": "$v$",
+                "w": "$w$",
+                "sigma": r"$\sigma$"}
+    if "tke" in data: name_map["tke"] = "TKE"
+    
+    ds = ds.rename(name_map)
     
     return ds
 
@@ -563,10 +583,13 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
 def _faces_frame_to_depth(frame: pd.DataFrame,
                           sim_time: pd.Timestamp) -> xr.DataArray:
     
+    to_drop = ["z", "u", "v", "w"]
+    if "tke" in frame: to_drop.append("tke")
+    
     sigma = frame["sigma"].unique().take(0)
     frame = frame.set_index(['x', 'y', 'sigma', 'time'])
     frame = frame.xs((sigma, sim_time), level=(2, 3))
-    frame = frame.drop(["z", "u", "v", "w"], axis=1)
+    frame = frame.drop(to_drop, axis=1)
     ds = frame.to_xarray()
     ds = ds.assign_coords({"time": sim_time})
     ds = ds.rename({"x": "$x$",
@@ -664,7 +687,8 @@ def _trim_to_faces_frame(trim_path: StrOrPath,
             u1 = ds_step.U1.values
             v1 = ds_step.V1.values
             w = ds_step.W.values
-        
+            tke = ds_step.RTUR1.values
+            
             n_layers = len(ik)
             
             x = x[1:-1, 1:-1]
@@ -695,6 +719,9 @@ def _trim_to_faces_frame(trim_path: StrOrPath,
             w = np.nansum([w[1:, :, :], w[:-1, :, :]], axis=0) / 2
             w = w[:, 1:-1, 1:-1]
             
+            tke = np.nansum([tke[0, 1:, :, :], tke[0, :-1, :, :]], axis=0) / 2
+            tke = tke[:, 1:-1, 1:-1]
+            
             data["x"].extend(np.ravel(x))
             data["y"].extend(np.ravel(y))
             data["z"].extend(np.ravel(z))
@@ -704,5 +731,6 @@ def _trim_to_faces_frame(trim_path: StrOrPath,
             data["u"].extend(np.ravel(u))
             data["v"].extend(np.ravel(v))
             data["w"].extend(np.ravel(w))
+            data["tke"].extend(np.ravel(tke))
     
     return pd.DataFrame(data)
