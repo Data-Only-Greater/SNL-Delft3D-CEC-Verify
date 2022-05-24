@@ -119,14 +119,14 @@ def test_edges_extract_sigma_no_geom(edges):
     
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 166
-    assert gdf.columns.to_list() == ["geometry", "u1", 'TKE', "n0", "n1"]
+    assert gdf.columns.to_list() == ["geometry", "u1", '$k$', "n0", "n1"]
     assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
                                                         set(['LineString'])
     
     assert gdf["u1"].min() > -1
     assert gdf["u1"].max() < 1
-    assert gdf["TKE"].min() > 0.0035
-    assert gdf["TKE"].max() < 0.0049
+    assert gdf["$k$"].min() > 0.0035
+    assert gdf["$k$"].max() < 0.0049
     assert set(gdf["n0"]) == set([0., -1., 1.])
     assert set(gdf["n1"]) == set([0., -1., 1.])
 
@@ -138,11 +138,11 @@ def test_edges_extract_sigma_line(edges):
     
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 19
-    assert gdf.columns.to_list() == ["geometry", "u1", 'TKE']
+    assert gdf.columns.to_list() == ["geometry", "u1", '$k$']
     assert gdf["u1"].min() > -0.9
     assert gdf["u1"].max() < 0.9
-    assert gdf["TKE"].min() > 0.0035
-    assert gdf["TKE"].max() < 0.0049
+    assert gdf["$k$"].min() > 0.0035
+    assert gdf["$k$"].max() < 0.0049
     assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
                                                         set(['Point'])
     

@@ -55,7 +55,7 @@ class Edges(_TimeStepResolver):
         level (:code:`sigma`). Available data is:
         
         * :code:`u1`: velocity, in metres per second
-        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+        * :code:`k`: turbulent kinetic energy, in metres squared per second
           squared
         * :code:`n0`: edge normal x-coordinate
         * :code:`n1`: edge normal y-coordinate
@@ -70,7 +70,7 @@ class Edges(_TimeStepResolver):
         >>> result = Result(data_dir)
         >>> line = LineString([(6, 2), (10, 2)])
         >>> result.edges.extract_sigma(-1, 0.5, line)
-                           geometry        u1       TKE
+                           geometry        u1       $k$
         0  POINT (10.00000 2.00000)  0.991826 -0.004130
         1   POINT (6.00000 2.00000)  0.991709 -0.004194
         2   POINT (7.00000 2.00000)  0.974911 -0.004177
@@ -123,7 +123,7 @@ class Edges(_TimeStepResolver):
             
             data["geometry"].append(geometry)
             data["u1"].append(svalues["u1"])
-            data["TKE"].append(svalues["turkin1"])
+            data["$k$"].append(svalues["turkin1"])
             data["n0"].append(n0)
             data["n1"].append(n1)
         
@@ -136,7 +136,7 @@ class Edges(_TimeStepResolver):
         
         pdata["geometry"] = gframe.intersection(goem)[pfilter]
         pdata["u1"] = gframe[pfilter]["u1"]
-        pdata["TKE"] = gframe[pfilter]["TKE"]
+        pdata["$k$"] = gframe[pfilter]["$k$"]
         
         gframe = gpd.GeoDataFrame(pdata)
         gframe["wkt"] = gframe["geometry"].apply(lambda geom: geom.wkt)

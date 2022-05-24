@@ -90,8 +90,8 @@ class Faces(ABC, _FacesDataClassMixin):
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
     
-    Note that for structured simulations the data variable "TKE" is also
-    included.
+    Note that for structured simulations the data variable "$k$" (the 
+    turbulent kinetic energy) is also returned.
     
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -112,7 +112,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
-        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+        * :code:`k`: turbulent kinetic energy, in metres squared per second
           squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. For example:
@@ -184,7 +184,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
-        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+        * :code:`k`: turbulent kinetic energy, in metres squared per second
           squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. Use the ``x_step``
@@ -255,7 +255,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
-        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+        * :code:`k`: turbulent kinetic energy, in metres squared per second
           squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`.For example:
@@ -310,7 +310,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
-        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+        * :code:`k`: turbulent kinetic energy, in metres squared per second
           squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
@@ -384,7 +384,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`u`: velocity in the x-direction, in metres per second
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
-        * :code:`TKE`: turbulent kinetic energy, in metres squared per second
+        * :code:`k`: turbulent kinetic energy, in metres squared per second
           squared (for structured grids only)
         
         Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
@@ -573,7 +573,7 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
                 "v": "$v$",
                 "w": "$w$",
                 "sigma": r"$\sigma$"}
-    if "tke" in data: name_map["tke"] = "TKE"
+    if "tke" in data: name_map["tke"] = "$k$"
     
     ds = ds.rename(name_map)
     
@@ -660,8 +660,6 @@ class _StructuredFaces(Faces):
 
 def _trim_to_faces_frame(trim_path: StrOrPath,
                          t_step: int = None) -> pd.DataFrame:
-    
-    # RTUR1 LTUR=0 is the TKE
     
     Content = Union[Num, pd.Timestamp]
     data: Dict[str, List[Content]] = collections.defaultdict(list)

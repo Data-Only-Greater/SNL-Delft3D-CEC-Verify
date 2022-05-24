@@ -106,9 +106,9 @@ def test_faces_frame_structured_to_slice_sigma(faces_frame_structured):
     assert ds["$v$"].max() <= faces_frame_structured["v"].max()
     assert ds["$w$"].min() >= faces_frame_structured["w"].min()
     assert ds["$w$"].max() <= faces_frame_structured["w"].max()
-    assert ds["TKE"].min() >= 0
-    assert ds["TKE"].min() >= faces_frame_structured["tke"].min()
-    assert ds["TKE"].max() <= faces_frame_structured["tke"].max()
+    assert ds["$k$"].min() >= 0
+    assert ds["$k$"].min() >= faces_frame_structured["tke"].min()
+    assert ds["$k$"].max() <= faces_frame_structured["tke"].max()
 
 
 def test_faces_frame_to_slice_sigma_extrapolate_forward(faces_frame_fm):
