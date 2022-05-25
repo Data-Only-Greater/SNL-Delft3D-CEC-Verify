@@ -439,6 +439,7 @@ class Transect():
         $u$       (dim_0) float64 0.7793 0.7776 0.7766 0.7757
         $v$       (dim_0) float64 1.193e-17 4.679e-17 2.729e-17 -2.519e-17
         $w$       (dim_0) float64 -0.001658 0.0001347 -0.00114 0.0002256
+        $k$       (dim_0) float64 0.004756 0.004067 0.003406 0.003925
     
     :param z: z-level of the transect, in meters
     :param x: x-coordinates of the transect, in meters

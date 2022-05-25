@@ -275,6 +275,8 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
         
         new_gdf = pd.concat([new_gdf, group])
     
+    new_gdf = new_gdf.reset_index(drop=True)
+    
     return new_gdf[["geometry",
                     "sigma",
                     "time",

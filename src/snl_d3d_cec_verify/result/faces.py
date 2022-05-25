@@ -19,8 +19,10 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd # type: ignore
 import xarray as xr
+from scipy import interpolate # type: ignore
 
 from .base import _TimeStepResolver
+from .edges import _map_to_edges_geoframe
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
@@ -89,9 +91,7 @@ class Faces(ABC, _FacesDataClassMixin):
         $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-    
-    Note that for structured simulations the data variable "$k$" (the 
-    turbulent kinetic energy) is also returned.
+        $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.003683 0.003683
     
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -113,7 +113,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
         * :code:`k`: turbulent kinetic energy, in metres squared per second
-          squared (for structured grids only)
+          squared
         
         Results are returned as a :class:`xarray.Dataset`. For example:
         
@@ -135,6 +135,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748
             $v$       (dim_0) float64 -2.942e-17
             $w$       (dim_0) float64 0.0002786
+            $k$       (dim_0) float64 0.004307
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -185,7 +186,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
         * :code:`k`: turbulent kinetic energy, in metres squared per second
-          squared (for structured grids only)
+          squared
         
         Results are returned as a :class:`xarray.Dataset`. Use the ``x_step``
         argument to control the frequency of samples. For example:
@@ -208,6 +209,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
             $v$       (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
             $w$       (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
+            $k$       (dim_0) float64 0.004307 0.004222 0.004162 ... 0.003691 nan
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -256,7 +258,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
         * :code:`k`: turbulent kinetic energy, in metres squared per second
-          squared (for structured grids only)
+          squared
         
         Results are returned as a :class:`xarray.Dataset`.For example:
         
@@ -277,6 +279,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
+            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.003683 0.003683
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
@@ -311,7 +314,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
         * :code:`k`: turbulent kinetic energy, in metres squared per second
-          squared (for structured grids only)
+          squared
         
         Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
         ``y`` parameters are defined, then the results are interpolated onto
@@ -336,6 +339,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
             $v$       (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
             $w$       (dim_0) float64 0.0002786 -0.0004764 ... -0.0002754 0.0003252
+            $k$       (dim_0) float64 0.003764 0.003686 0.004169 0.004107 0.003526
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -353,6 +357,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
+            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.003683 0.003683
         
         :param t_step: Time step index
         :param z: z-level at which to extract data
@@ -385,7 +390,7 @@ class Faces(ABC, _FacesDataClassMixin):
         * :code:`v`: velocity in the x-direction, in metres per second
         * :code:`w`: velocity in the x-direction, in metres per second
         * :code:`k`: turbulent kinetic energy, in metres squared per second
-          squared (for structured grids only)
+          squared
         
         Results are returned as a :class:`xarray.Dataset`. If the ``x`` and 
         ``y`` parameters are defined, then the results are interpolated onto
@@ -410,6 +415,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7747 0.7746 0.7744 0.7745 0.7745
             $v$       (dim_0) float64 -3.88e-18 4.267e-17 5.452e-17 5.002e-17 8.013e-17
             $w$       (dim_0) float64 0.0002791 -0.0004769 ... -0.0002756 0.0003256
+            $k$       (dim_0) float64 0.003767 0.003689 0.004172 0.004109 0.003528
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -427,6 +433,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01473 -0.01473 ... 0.001343 0.001343
+            $k$       ($x$, $y$) float64 0.004803 0.004803 ... 0.003683 0.003683
         
         :param t_step: Time step index
         :param sigma: sigma-level at which to extract data
@@ -558,7 +565,7 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
         
         if "tke" in zvalues:
             data["tke"].append(zvalues["tke"])
-        
+    
     zframe = pd.DataFrame(data)
     zframe = zframe.set_index(['x', 'y'])
     ds = zframe.to_xarray()
@@ -600,7 +607,93 @@ def _faces_frame_to_depth(frame: pd.DataFrame,
 
 class _FMFaces(Faces):
     def _get_faces_frame(self, t_step: int) -> pd.DataFrame:
-        return  _map_to_faces_frame(self.nc_path, t_step)
+        return  _map_to_faces_frame_with_tke(self.nc_path, t_step)
+
+
+def _map_to_faces_frame_with_tke(map_path: StrOrPath,
+                                 t_step: int = None) -> pd.DataFrame:
+    
+    faces = _map_to_faces_frame(map_path, t_step)
+    edges = _map_to_edges_geoframe(map_path, t_step)
+    
+    times = faces["time"].unique()
+    facesi = faces.set_index("time")
+    edgesi = edges.set_index("time")
+    
+    faces_final = pd.DataFrame()
+    
+    for time in times:
+        
+        facest = facesi.loc[time]
+        edgest = edgesi.loc[time]
+        
+        facest = facest.reset_index(drop=True)
+        edgest = edgest.reset_index(drop=True)
+        
+        edgest["x"] = edgest['geometry'].apply(
+                    lambda line: np.array(line.centroid.coords[0])[0])
+        edgest["y"] = edgest['geometry'].apply(
+                    lambda line: np.array(line.centroid.coords[0])[1])
+        edgesdf = pd.DataFrame(edgest[["x", "y", "sigma", "u1", "turkin1"]])
+        edgesdf['turkin1'] = edgesdf['turkin1'].fillna(0)
+        
+        facest = facest.set_index(["x", "y", "sigma"])
+        facest = facest.sort_index()
+        
+        x = facest.index.get_level_values(0).unique().values
+        y = facest.index.get_level_values(1).unique().values
+        grid_x, grid_y = np.meshgrid(x, y)
+        
+        facest_new = facest.copy()
+        
+        for sigma, group in edgesdf.groupby(by="sigma"):
+            
+            points = np.array(list(zip(group.x, group.y)))
+            values = group.turkin1.values
+            
+            grid_z = interpolate.griddata(points,
+                                          values,
+                                          (grid_x, grid_y),
+                                          method='linear')
+            
+            data = {"x": grid_x.ravel(),
+                    "y": grid_y.ravel(),
+                    "tke": grid_z.ravel()}
+            kdf = pd.DataFrame(data)
+            kdf["sigma"] = sigma
+            kdf = kdf.set_index(["x", "y", "sigma"])
+            
+            facest_new = facest_new.combine_first(kdf)
+        
+        facest_final = pd.DataFrame()
+        
+        for (x, y), group in facest_new.groupby(level=[0, 1]):
+            
+            group = group.reset_index(["x", "y"], drop=True)
+            group = group.sort_index()
+            
+            group = group.interpolate('slinear',
+                                      fill_value="extrapolate",
+                                      limit_direction="both")
+            group = group.reset_index()
+            group["x"] = x
+            group["y"] = y
+            
+            facest_final = pd.concat([facest_final, group])
+        
+        facest_final["time"] = time
+        faces_final = pd.concat([faces_final, facest_final])
+    
+    return faces_final[["x",
+                        "y",
+                        "z",
+                        "sigma",
+                        "time",
+                        "depth",
+                        "u",
+                        "v",
+                        "w",
+                        "tke"]]
 
 
 def _map_to_faces_frame(map_path: StrOrPath,
