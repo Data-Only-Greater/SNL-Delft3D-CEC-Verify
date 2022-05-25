@@ -58,8 +58,8 @@ class Result:
     (0.0, 18.0)
     
     >>> result.edges.extract_sigma(-1, 0.5) #doctest: +ELLIPSIS
-                                            geometry            u1   n0   n1
-    0      LINESTRING (0.00000 1.00000, 0.00000 2.00000)  9.753143e-01  1.0 -0.0
+                                               geometry            u1  ...   n0   n1
+    0     LINESTRING (0.00000 1.00000, 0.00000 2.00000)  9.753143e-01  ...  1.0 -0.0
     ...
     
     :param project_path: path to the Delft3D project directory
@@ -439,6 +439,7 @@ class Transect():
         $u$       (dim_0) float64 0.7793 0.7776 0.7766 0.7757
         $v$       (dim_0) float64 1.193e-17 4.679e-17 2.729e-17 -2.519e-17
         $w$       (dim_0) float64 -0.001658 0.0001347 -0.00114 0.0002256
+        $k$       (dim_0) float64 0.004756 0.004067 0.003406 0.003925
     
     :param z: z-level of the transect, in meters
     :param x: x-coordinates of the transect, in meters
