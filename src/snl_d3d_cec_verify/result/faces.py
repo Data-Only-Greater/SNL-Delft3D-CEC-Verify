@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+import itertools
 import collections
 from abc import ABC, abstractmethod
 from typing import (cast,
@@ -635,7 +637,6 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
         edgest["y"] = edgest['geometry'].apply(
                     lambda line: np.array(line.centroid.coords[0])[1])
         edgesdf = pd.DataFrame(edgest[["x", "y", "sigma", "u1", "turkin1"]])
-        edgesdf['turkin1'] = edgesdf['turkin1'].fillna(0)
         
         facest = facest.set_index(["x", "y", "sigma"])
         facest = facest.sort_index()
@@ -648,13 +649,44 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
         
         for sigma, group in edgesdf.groupby(by="sigma"):
             
+            # Fill missing values
+            groupna = group[pd.isna(group["turkin1"])]
+            group = group[~pd.isna(group["turkin1"])]
+            
             points = np.array(list(zip(group.x, group.y)))
             values = group.turkin1.values
             
-            grid_z = interpolate.griddata(points,
-                                          values,
-                                          (grid_x, grid_y),
-                                          method='linear')
+            group_x = sorted(groupna.x.unique())
+            group_y = sorted(groupna.y.unique())
+            group_grid_x, group_grid_y = np.meshgrid(group_x, group_y)
+            
+            group_grid_z = interpolate.griddata(points,
+                                                values,
+                                                (group_grid_x, group_grid_y),
+                                                method='nearest')
+            
+            turkin1 = []
+            
+            for i, j in itertools.product(range(len(group_x)),
+                                          range(len(group_y))):
+                turkin1.append(group_grid_z[j, i])
+            
+            groupna = groupna.set_index(["x", "y"])
+            groupna = groupna.sort_index()
+            groupna["turkin1"] = turkin1
+            group = pd.concat([group, groupna.reset_index()])
+            
+            # Interpolate onto faces grid
+            points = np.array(list(zip(group.x, group.y)))
+            values = group.turkin1.values
+            
+            # Can warn about s being too low
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', RuntimeWarning)
+                f = interpolate.interp2d(points[:, 0],
+                                         points[:, 1],
+                                         values)
+                grid_z = f(x, y)
             
             data = {"x": grid_x.ravel(),
                     "y": grid_y.ravel(),
