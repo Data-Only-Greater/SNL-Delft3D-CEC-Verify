@@ -440,7 +440,7 @@ def test_map_to_faces_frame_with_tke(data_dir):
     assert faces_frame["w"].min() > -0.02
     assert faces_frame["w"].max() < 0.02
     assert faces_frame["tke"].min() > 0
-    assert faces_frame["tke"].max() < 0.0085
+    assert faces_frame["tke"].max() < 0.0088
     
     sigma_slice = _faces_frame_to_slice(faces_frame,
                                         pd.Timestamp('2001-01-01 01:00:00'), 
@@ -448,6 +448,7 @@ def test_map_to_faces_frame_with_tke(data_dir):
                                         -0.75)
     
     assert np.isclose(sigma_slice["$z$"].values.mean(), -1.5009617997833038)
+    assert np.isclose(sigma_slice["$k$"].values.mean(), 0.0062885901056671505)
 
 
 def test_map_to_faces_frame_with_tke_none(data_dir):
@@ -496,7 +497,7 @@ def test_map_to_faces_frame_with_tke_none(data_dir):
     assert faces_frame["w"].min() > -0.02
     assert faces_frame["w"].max() < 0.02
     assert faces_frame["tke"].min() > 0
-    assert faces_frame["tke"].max() < 0.0085
+    assert faces_frame["tke"].max() < 0.0088
 
 
 def test_map_to_faces_frame(data_dir):
