@@ -64,26 +64,26 @@ def main(template_type):
             
             turbz = result.faces.extract_turbine_z(-1, case)
             
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(6, 3))
             turbz["$u$"].plot(ax=ax, x="$x$", y="$y$")
             plot_name = f"discharge_case_{i}_u.png"
             plot_path = report_dir / plot_name
-            plt.savefig(plot_path)
+            plt.savefig(plot_path, bbox_inches="tight")
             
             report.content.add_image(plot_name, 
                                      "Velocity, $u$ (m/s)",
-                                     width="4in")
+                                     width="5.4in")
             
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(6, 3))
             turbz["$k$"].plot(ax=ax, x="$x$", y="$y$")
             plot_name = f"discharge_case_{i}_k.png"
             plot_path = report_dir / plot_name
-            plt.savefig(plot_path)
+            plt.savefig(plot_path, bbox_inches="tight")
             
             report.content.add_image(plot_name,
                                      "Turbulent kinetic energy, $k$ "
                                      "(m^2^/s^2^)",
-                                     width="4in")
+                                     width="5.7in")
     
     df = pd.DataFrame(data)
     
