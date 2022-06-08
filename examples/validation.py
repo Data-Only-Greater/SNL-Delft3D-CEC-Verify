@@ -88,6 +88,8 @@ def main(template_type):
         
         for i, transect in enumerate(validate):
             
+            if transect.name not in ["$u$", "$u_0$"]: continue
+            
             # Compare transect
             transect_sim = result.faces.extract_z(-1, **transect)
             transect_true = transect.to_xarray()
@@ -182,7 +184,8 @@ def main(template_type):
                               extra_args=['-C',
                                           f'--resource-path={report_dir}',
                                           '--bibliography=examples.bib',
-                                          '--reference-doc=reference.docx'])
+                                          '--reference-doc=reference.docx'],
+                              sandbox=False)
     
     except ImportError:
         
