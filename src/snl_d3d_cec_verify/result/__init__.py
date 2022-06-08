@@ -381,7 +381,7 @@ class Validate():
     
     def __iter__(self):
         return self
- 
+    
     def __next__(self):
         
         keys = sorted(self._transects.keys())
