@@ -33,7 +33,7 @@ From a conda prompt create a named environment in which to install the
 for future updates:
 
 ```
-(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.7.0
+(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.8.0
 (base) > conda activate snld3d
 (snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
 (snld3d) > conda config --env --set channel_priority strict
@@ -119,7 +119,7 @@ can be optionally converted to Word format if the `pypandoc` package is
 installed. To install it, type:
 
 ```
-(snld3d) > conda install -y pypandoc pandoc=2.12
+(snld3d) > conda install -y pypandoc pandoc
 ```
 
 Currently, a compiled copy of SNL-Delft3D-CEC or SNL-Delft3D-FM-CEC must be 

@@ -50,30 +50,49 @@ def main(template_type):
             result = Result(tmpdirname)
             turb_ds = result.faces.extract_turbine_centre(-1, case)
             turb_u = turb_ds["$u$"].values.take(0)
+            turb_k = turb_ds["$k$"].values.take(0)
             
             # Record data for table
             data["discharge"].append(case.discharge)
             data["u"].append(turb_u)
+            data["k"].append(turb_k)
             
             # Add report section with plot
             report.content.add_heading(
                 f"Discharge: {case.discharge} (cubic meters per second)",
                 level=2)
             
-            fig, ax = plt.subplots()
             turbz = result.faces.extract_turbine_z(-1, case)
-            turbz["$u$"].plot(ax=ax, x="$x$", y="$y$")
-            plot_name = f"discharge_case_{i}.png"
-            plot_path = report_dir / plot_name
-            plt.savefig(plot_path)
             
-            report.content.add_image(plot_name, "u-velocity (m/s)")
+            fig, ax = plt.subplots(figsize=(6, 3))
+            turbz["$u$"].plot(ax=ax, x="$x$", y="$y$")
+            plot_name = f"discharge_case_{i}_u.png"
+            plot_path = report_dir / plot_name
+            plt.savefig(plot_path, bbox_inches="tight")
+            
+            report.content.add_image(plot_name, 
+                                     "Velocity, $u$ (m/s)",
+                                     width="5.4in")
+            
+            fig, ax = plt.subplots(figsize=(6, 3))
+            turbz["$k$"].plot(ax=ax, x="$x$", y="$y$")
+            plot_name = f"discharge_case_{i}_k.png"
+            plot_path = report_dir / plot_name
+            plt.savefig(plot_path, bbox_inches="tight")
+            
+            report.content.add_image(plot_name,
+                                     "Turbulent kinetic energy, $k$ "
+                                     "(m^2^/s^2^)",
+                                     width="5.7in")
     
     df = pd.DataFrame(data)
+    
     report.content.add_heading("Results", level=2)
+    
     report.content.add_table(df,
                              index=False,
-                             caption="Turbine centre velocity per discharge level")
+                             caption="Turbine centre velocity and TKE per "
+                                     "discharge level")
     
     os_name = platform.system()
     report.title = f"Basic Example ({os_name})"
@@ -91,7 +110,8 @@ def main(template_type):
                               'docx',
                               outputfile=f"{report_dir / 'report.docx'}",
                               extra_args=[f'--resource-path={report_dir}',
-                                          '--reference-doc=reference.docx'])
+                                          '--reference-doc=reference.docx'],
+                              sandbox=False)
     
     except ImportError:
         

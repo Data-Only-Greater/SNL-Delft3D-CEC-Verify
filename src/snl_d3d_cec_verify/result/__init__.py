@@ -7,6 +7,7 @@ import csv
 import itertools
 from abc import abstractmethod
 from typing import (Any,
+                    Dict,
                     Hashable,
                     List,
                     Mapping,
@@ -289,7 +290,9 @@ class Validate():
     Validate(0: Centreline velocity (3\\% TI)
              1: Centreline velocity (15\\% TI)
              2: Axial velocity at $x^*=5$ (3\\% TI)
-             3: Axial velocity at $x^*=5$ (15\\% TI))
+             3: Axial velocity at $x^*=5$ (15\\% TI)
+             4: Centreline turbulence intensity (3\\% TI)
+             5: Centreline turbulence intensity (15\\% TI))
     
     >>> validate[0].to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray '$u_0$' (dim_0: 10)>
@@ -326,7 +329,8 @@ class Validate():
     
     """
     
-    _transects: List[Transect] = field(default_factory=list, init=False)
+    _transects: Dict[Any, Transect] = field(default_factory=dict, init=False)
+    _last_key_idx: int = field(default=-1, init=False)
     case: InitVar[Optional[CaseStudy]] = None #: :meta private:
     data_dir: InitVar[Optional[StrOrPath]] = None #: :meta private:
     
@@ -354,7 +358,7 @@ class Validate():
             turb_pos_z = case.turb_pos_z
         
         translation = (turb_pos_x, turb_pos_y, turb_pos_z)
-        transects = []
+        transects = {}
         
         for item in sorted(data_dir.iterdir()):
             
@@ -362,12 +366,32 @@ class Validate():
             if not item.suffix == '.yaml': continue
             
             transect = Transect.from_yaml(item, translation)
-            transects.append(transect)
+            
+            if transect.id in transects:
+                err_msg = (f"Transect ID '{transect.id}' given in {str(item)} "
+                           "is already used")
+                raise RuntimeError(err_msg)
+            
+            transects[transect.id] = transect
         
         object.__setattr__(self, '_transects', transects)
     
     def __getitem__(self, item: int) -> Transect:
         return self._transects[item]
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        
+        keys = sorted(self._transects.keys())
+        object.__setattr__(self, '_last_key_idx', self._last_key_idx + 1)
+        
+        if self._last_key_idx == len(keys):
+            object.__setattr__(self, '_last_key_idx', -1)
+            raise StopIteration
+        else:
+            return self._transects[keys[self._last_key_idx]]
     
     def __len__(self) -> int:
         return len(self._transects)
@@ -379,12 +403,15 @@ class Validate():
         
         if self._transects:
             
-            transect = self._transects[0]
-            msg += f"0: {transect.attrs['description']}"
+            keys = sorted(self._transects.keys())
             
-            for i, transect in enumerate(self._transects[1:]):
+            transect = self._transects[keys[0]]
+            msg += f"{transect.id}: {transect.attrs['description']}"
+            
+            for key in keys[1:]:
+                transect = self._transects[key]
                 msg += "\n" + " " * indent
-                msg += f"{i + 1}: {transect.attrs['description']}"
+                msg += f"{transect.id}: {transect.attrs['description']}"
         
         msg += ")"
         
@@ -409,7 +436,7 @@ class Transect():
     
     Data is stored for each x and y pair, in order. For example:
     
-    >>> x = Transect(-1, [1, 2, 3, 4], [2, 2, 2, 2], [5, 4, 3, 2])
+    >>> x = Transect(0, -1, [1, 2, 3, 4], [2, 2, 2, 2], [5, 4, 3, 2])
     >>> x.to_xarray() #doctest: +ELLIPSIS
     <xarray.DataArray (dim_0: 4)>
     array([5, 4, 3, 2])
@@ -439,8 +466,9 @@ class Transect():
         $u$       (dim_0) float64 0.7793 0.7776 0.7766 0.7757
         $v$       (dim_0) float64 1.193e-17 4.679e-17 2.729e-17 -2.519e-17
         $w$       (dim_0) float64 -0.001658 0.0001347 -0.00114 0.0002256
-        $k$       (dim_0) float64 0.004756 0.004067 0.003406 0.003925
+        $k$       (dim_0) float64 0.0047... 0.0046... 0.004... 0.0045...
     
+    :param id: integer identifier for the transect
     :param z: z-level of the transect, in meters
     :param x: x-coordinates of the transect, in meters
     :param y: y-coordinates of the transect, in meters
@@ -454,6 +482,9 @@ class Transect():
         match
     
     """
+    
+    #: id for the transect
+    id: int
     
     #: z-level of the transect, in meters
     z: Num = field(repr=False) 
@@ -500,6 +531,7 @@ class Transect():
     @docstringtemplate
     @classmethod
     def from_csv(cls: Type[T], path: StrOrPath,
+                               id: int,
                                name: Optional[str] = None,
                                attrs: Optional[dict[str, str]] = None,
                                translation: Vector = (0, 0, 0)) -> T:
@@ -514,6 +546,7 @@ class Transect():
             9, 3, 0, 3
         
         :param path: path to the CSV file to load
+        :param id: integer identifier
         :param name: name of data in the resulting :class:`.Transect` object
         :param attrs: attributes for the resulting :class:`.Transect` object
         :param translation: translation of the transect origin, defaults to
@@ -546,7 +579,8 @@ class Transect():
         if attrs is None: attrs = {}
         attrs["path"] = str(path)
         
-        return cls(z[0],
+        return cls(id,
+                   z[0],
                    np.array(cols["x"]),
                    np.array(cols["y"]),
                    data=data,
@@ -560,8 +594,9 @@ class Transect():
                                 translation: Vector = (0, 0, 0)) -> T:
         """Create a new :class:`.Transect` object from a YAML file. 
         
-        The YAML file must have ``z`` , ``x`` and ``y``, and keys where ``z``
-        is a single value and ``x`` and ``y`` are arrays.
+        The YAML file must have ``id``, ``z`` , ``x`` and ``y``, and keys 
+        where ``id`` is an integer identifier, ``z`` is a single value and 
+        ``x`` and ``y`` are arrays.
         
         Optionally, a ``data`` key can be given as an array, ``name`` key as a
         single value (treated as a string) and an ``attrs`` key with a nested
@@ -598,7 +633,8 @@ class Transect():
         if "attrs" in raw: attrs = raw["attrs"]
         attrs["path"] = str(path)
         
-        return cls(raw["z"],
+        return cls(raw["id"],
+                   raw["z"],
                    x=np.array(raw["x"]),
                    y=np.array(raw["y"]),
                    data=data,

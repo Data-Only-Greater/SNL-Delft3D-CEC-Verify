@@ -248,6 +248,8 @@ def main(template_type, max_experiments, omp_num_threads):
     
     for i, transect in enumerate(global_validate):
         
+        if transect.name not in ["$u$", "$u_0$"]: continue
+        
         description = transect.attrs['description']
         transect_df = transect_grouped.get_group(description).drop("Transect",
                                                                    axis=1)
@@ -362,6 +364,8 @@ def main(template_type, max_experiments, omp_num_threads):
     
     for i, transect in enumerate(global_validate):
         
+        if transect.name not in ["$u$", "$u_0$"]: continue
+        
         description = transect.attrs['description']
         report.content.add_heading(description, level=3)
         
@@ -446,7 +450,8 @@ def main(template_type, max_experiments, omp_num_threads):
                               extra_args=['-C',
                                           f'--resource-path={report_dir}',
                                           '--bibliography=examples.bib',
-                                          '--reference-doc=reference.docx'])
+                                          '--reference-doc=reference.docx'],
+                              sandbox=False)
     
     except ImportError:
         
@@ -533,6 +538,8 @@ def plot_transects(case,
     
     for i, transect in enumerate(validate):
         
+        if transect.name not in ["$u$", "$u_0$"]: continue
+        
         transect_true = transect.to_xarray()
         
         # Compare transect
@@ -569,8 +576,10 @@ def get_rmse(estimated, observed):
 
 
 def get_transect_error(case, validate, result, factor, data):
-        
+    
     for i, transect in enumerate(validate):
+        
+        if transect.name not in ["$u$", "$u_0$"]: continue
         
         transect_true = transect.to_xarray()
         

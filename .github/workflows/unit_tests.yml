@@ -4,12 +4,18 @@ jobs:
   pytest:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
         python-version: ['3.9', '3.10']
+        include:
+          - os: windows-latest
+            shell: pwsh
+          - os: ubuntu-latest
+            shell: bash -l {0}
     defaults:
       run:
-        shell: bash -l {0}
+        shell: ${{ matrix.shell }}
     steps:
       - uses: actions/checkout@v2
         with:

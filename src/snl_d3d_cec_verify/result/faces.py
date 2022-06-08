@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+import itertools
 import collections
 from abc import ABC, abstractmethod
 from typing import (cast,
@@ -91,7 +93,7 @@ class Faces(ABC, _FacesDataClassMixin):
         $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-        $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.003683 0.003683
+        $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
     
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -135,7 +137,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748
             $v$       (dim_0) float64 -2.942e-17
             $w$       (dim_0) float64 0.0002786
-            $k$       (dim_0) float64 0.004307
+            $k$       (dim_0) float64 0.004...
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -209,7 +211,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
             $v$       (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
             $w$       (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
-            $k$       (dim_0) float64 0.004307 0.004222 0.004162 ... 0.003691 nan
+            $k$       (dim_0) float64 0.004... 0.0042... 0.00417... 0.00370... nan
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -279,7 +281,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.003683 0.003683
+            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
@@ -339,7 +341,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
             $v$       (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
             $w$       (dim_0) float64 0.0002786 -0.0004764 ... -0.0002754 0.0003252
-            $k$       (dim_0) float64 0.003764 0.003686 0.004169 0.004107 0.003526
+            $k$       (dim_0) float64 0.004... 0.0042... 0.00417... 0.004... 0.00402...
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -357,7 +359,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.003683 0.003683
+            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
         
         :param t_step: Time step index
         :param z: z-level at which to extract data
@@ -415,7 +417,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7747 0.7746 0.7744 0.7745 0.7745
             $v$       (dim_0) float64 -3.88e-18 4.267e-17 5.452e-17 5.002e-17 8.013e-17
             $w$       (dim_0) float64 0.0002791 -0.0004769 ... -0.0002756 0.0003256
-            $k$       (dim_0) float64 0.003767 0.003689 0.004172 0.004109 0.003528
+            $k$       (dim_0) float64 0.004... 0.0042... 0.0041... 0.004... 0.0040...
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -433,7 +435,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01473 -0.01473 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004803 0.004803 ... 0.003683 0.003683
+            $k$       ($x$, $y$) float64 0.004803 0.004803 ... 0.00368... 0.00368...
         
         :param t_step: Time step index
         :param sigma: sigma-level at which to extract data
@@ -635,7 +637,6 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
         edgest["y"] = edgest['geometry'].apply(
                     lambda line: np.array(line.centroid.coords[0])[1])
         edgesdf = pd.DataFrame(edgest[["x", "y", "sigma", "u1", "turkin1"]])
-        edgesdf['turkin1'] = edgesdf['turkin1'].fillna(0)
         
         facest = facest.set_index(["x", "y", "sigma"])
         facest = facest.sort_index()
@@ -648,13 +649,44 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
         
         for sigma, group in edgesdf.groupby(by="sigma"):
             
+            # Fill missing values
+            groupna = group[pd.isna(group["turkin1"])]
+            group = group[~pd.isna(group["turkin1"])]
+            
             points = np.array(list(zip(group.x, group.y)))
             values = group.turkin1.values
             
-            grid_z = interpolate.griddata(points,
-                                          values,
-                                          (grid_x, grid_y),
-                                          method='linear')
+            group_x = sorted(groupna.x.unique())
+            group_y = sorted(groupna.y.unique())
+            group_grid_x, group_grid_y = np.meshgrid(group_x, group_y)
+            
+            group_grid_z = interpolate.griddata(points,
+                                                values,
+                                                (group_grid_x, group_grid_y),
+                                                method='nearest')
+            
+            turkin1 = []
+            
+            for i, j in itertools.product(range(len(group_x)),
+                                          range(len(group_y))):
+                turkin1.append(group_grid_z[j, i])
+            
+            groupna = groupna.set_index(["x", "y"])
+            groupna = groupna.sort_index()
+            groupna["turkin1"] = turkin1
+            group = pd.concat([group, groupna.reset_index()])
+            
+            # Interpolate onto faces grid
+            points = np.array(list(zip(group.x, group.y)))
+            values = group.turkin1.values
+            
+            # Can warn about s being too low
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', RuntimeWarning)
+                f = interpolate.interp2d(points[:, 0],
+                                         points[:, 1],
+                                         values)
+                grid_z = f(x, y)
             
             data = {"x": grid_x.ravel(),
                     "y": grid_y.ravel(),
