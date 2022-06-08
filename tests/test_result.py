@@ -200,7 +200,7 @@ def test_result__repr__(result, data_dir):
 def test_transect_xy_length_mismatch():
     
     with pytest.raises(ValueError) as excinfo:
-        Transect(z=1, x=[1, 2, 3], y=[1, 1])
+        Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1])
     
     assert "Length of x and y must match" in str(excinfo)
 
@@ -208,59 +208,68 @@ def test_transect_xy_length_mismatch():
 def test_transect_data_length_mismatch():
     
     with pytest.raises(ValueError) as excinfo:
-        Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], data=[2])
+        Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], data=[2])
     
     assert "Length of data must match x and y" in str(excinfo)
 
 
 @pytest.mark.parametrize("other, expected", [
                     (1, False),
-                    (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1]), True),
-                    (Transect(z=0, x=[1, 2, 3], y=[1, 1, 1]), False),
-                    (Transect(z=1, x=[0, 2, 3], y=[1, 1, 1]), False),
-                    (Transect(z=1, x=[1, 2, 3], y=[0, 1, 1]), False),
-                    (Transect(z=1,
+                    (Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1]), True),
+                    (Transect(id=0, z=0, x=[1, 2, 3], y=[1, 1, 1]), False),
+                    (Transect(id=0, z=1, x=[0, 2, 3], y=[1, 1, 1]), False),
+                    (Transect(id=0, z=1, x=[1, 2, 3], y=[0, 1, 1]), False),
+                    (Transect(id=0,
+                              z=1,
                               x=[1, 2, 3],
                               y=[1, 1, 1],
                               data=[0, 0, 0]), False)])
 def test_transect_eq(other, expected):
-    test = Transect(z=1, x=[1, 2, 3], y=[1, 1, 1])
+    test = Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1])
     assert (test == other) is expected
 
 
 @pytest.mark.parametrize("other, expected", [
-        (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], data=[0, 0, 0]), True),
-        (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], data=[1, 0, 0]), False)])
+    (Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], data=[0, 0, 0]), True),
+    (Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], data=[1, 0, 0]), False)])
 def test_transect_eq_data(other, expected):
-    test = Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], data=[0, 0, 0])
+    test = Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], data=[0, 0, 0])
     assert (test == other) is expected
 
 
 @pytest.mark.parametrize("other, expected", [
-        (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], name="mock"), True),
-        (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], name="not mock"), False),
-        (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1]), False)])
+    (Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], name="mock"), True),
+    (Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], name="not mock"), False),
+    (Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1]), False)])
 def test_transect_eq_name(other, expected):
-    test = Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], name="mock")
+    test = Transect(id=0, z=1, x=[1, 2, 3], y=[1, 1, 1], name="mock")
     assert (test == other) is expected
 
 
 @pytest.mark.parametrize("other, expected", [
-        (Transect(z=1,
+        (Transect(id=0,
+                  z=1,
                   x=[1, 2, 3],
                   y=[1, 1, 1],
                   attrs={"mock": "mock"}), True),
-        (Transect(z=1,
+        (Transect(id=0,
+                  z=1,
                   x=[1, 2, 3],
                   y=[1, 1, 1],
                   attrs={"mock": "not mock"}), False),
-        (Transect(z=1,
+        (Transect(id=0,
+                  z=1,
                   x=[1, 2, 3],
                   y=[1, 1, 1],
                   attrs={"not mock": "mock"}), False),
-        (Transect(z=1, x=[1, 2, 3], y=[1, 1, 1]), False)])
+        (Transect(id=0,
+                  z=1, x=[1, 2, 3], y=[1, 1, 1]), False)])
 def test_transect_eq_attrs(other, expected):
-    test = Transect(z=1, x=[1, 2, 3], y=[1, 1, 1], attrs={"mock": "mock"})
+    test = Transect(id=0,
+                    z=1,
+                    x=[1, 2, 3],
+                    y=[1, 1, 1],
+                    attrs={"mock": "mock"})
     assert (test == other) is expected
 
 
@@ -277,8 +286,9 @@ def test_transect_from_csv(tmp_path, mocker):
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv(d, name="mock")
-    expected = Transect(z=0,
+    test = Transect.from_csv(d, 0, name="mock")
+    expected = Transect(id=0,
+                        z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         name="mock",
@@ -301,10 +311,12 @@ def test_transect_from_csv_attrs(tmp_path, mocker):
                  mocker.mock_open(read_data=csv))
     
     test = Transect.from_csv(d,
+                             0,
                              name="mock",
                              attrs={"mock": "mock",
                                     "path": "mock"})
-    expected = Transect(z=0,
+    expected = Transect(id=0,
+                        z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         name="mock",
@@ -327,8 +339,9 @@ def test_transect_from_csv_translation(tmp_path, mocker):
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv(d, translation=(6, 2, -1))
-    expected = Transect(z=0,
+    test = Transect.from_csv(d, 0, translation=(6, 2, -1))
+    expected = Transect(id=0,
+                        z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         attrs={"path": str(d.resolve())})
@@ -349,8 +362,9 @@ def test_transect_from_csv_with_data(tmp_path, mocker):
     mocker.patch('snl_d3d_cec_verify.result.open',
                  mocker.mock_open(read_data=csv))
     
-    test = Transect.from_csv(d)
-    expected = Transect(z=0,
+    test = Transect.from_csv(d, 0)
+    expected = Transect(id=0,
+                        z=0,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         data=[1, 2, 3],
@@ -373,14 +387,15 @@ def test_transect_from_csv_multi_z_error(tmp_path, mocker):
                  mocker.mock_open(read_data=csv))
     
     with pytest.raises(ValueError) as excinfo:
-        Transect.from_csv(d)
+        Transect.from_csv(d, 0)
     
     assert "only supports fixed z-value" in str(excinfo)
 
 
 def test_transect_from_yaml(tmp_path, mocker):
     
-    text = ("z: -1.0\n"
+    text = ("id: 0\n"
+            "z: -1.0\n"
             "x: [7, 8, 9]\n"
             "y: [3, 3, 3]\n")
      
@@ -391,7 +406,8 @@ def test_transect_from_yaml(tmp_path, mocker):
                  mocker.mock_open(read_data=text))
     
     test = Transect.from_yaml(d)
-    expected = Transect(z=-1,
+    expected = Transect(id=0,
+                        z=-1,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         attrs={"path": str(d.resolve())})
@@ -401,7 +417,8 @@ def test_transect_from_yaml(tmp_path, mocker):
 
 def test_transect_from_yaml_optional(tmp_path, mocker):
     
-    text = ("z: -1.0\n"
+    text = ("id: 0\n"
+            "z: -1.0\n"
             "x: [7, 8, 9]\n"
             "y: [3, 3, 3]\n"
             "data: [1, 2, 3]\n"
@@ -417,7 +434,8 @@ def test_transect_from_yaml_optional(tmp_path, mocker):
                   mocker.mock_open(read_data=text))
     
     test = Transect.from_yaml(d)
-    expected = Transect(z=-1,
+    expected = Transect(id=0,
+                        z=-1,
                         x=[7, 8, 9],
                         y=[3, 3, 3],
                         data=[1, 2, 3],
@@ -425,14 +443,12 @@ def test_transect_from_yaml_optional(tmp_path, mocker):
                         attrs={"path": str(d.resolve()),
                                "mock": "mock"})
     
-    print(test)
-    print(expected)
-    
     assert test == expected
 
 @pytest.fixture
 def transect():
-    return Transect(z=1,
+    return Transect(id=0,
+                    z=1,
                     x=[1, 2, 3],
                     y=[1, 1, 1],
                     data=[0, 0, 1],
@@ -471,7 +487,8 @@ def test_trasect_to_xarray(dataarray, transect):
 
 def test_trasect_to_xarray_no_data():
     
-    transect = Transect(z=1,
+    transect = Transect(id=0,
+                        z=1,
                         x=[1, 2, 3],
                         y=[1, 1, 1])
     result = transect.to_xarray()
@@ -496,6 +513,17 @@ def test_validate_empty(tmp_path):
     assert repr(test) == "Validate()"
 
 
+def test_validate_id_clash(data_dir):
+    
+    transects_path = data_dir / "transects_bad"
+    
+    with pytest.raises(RuntimeError) as excinfo:
+        Validate(data_dir=transects_path)
+    
+    assert "Transect ID '0'" in str(excinfo)
+    assert "is already used" in str(excinfo)
+
+
 def test_validate_mycek():
     test = Validate()
     assert len(test) >= 0
@@ -516,7 +544,8 @@ def test_validate_repr(validate):
 def test_validate_get_item(validate):
     
     transect = validate[0]
-    expected = Transect(z=-1,
+    expected = Transect(id=0,
+                        z=-1,
                         x=[7, 8, 9],
                         y=[4, 4, 4],
                         data=[0, 0, 1],
@@ -524,6 +553,12 @@ def test_validate_get_item(validate):
                                "path": transect.attrs["path"]})
     
     assert transect == expected
+
+
+def test_validate_iterate(validate):
+    test = [i for i, _ in enumerate(validate)]
+    expected = [0, 1]
+    assert test == expected
 
 
 def test_get_reset_origin(dataarray):
@@ -558,7 +593,8 @@ def test_get_normalised_data(dataarray):
 
 def test_get_normalised_data_latex():
     
-    transect = Transect(z=1,
+    transect = Transect(id=0,
+                        z=1,
                         x=[1, 2, 3],
                         y=[1, 1, 1],
                         data=[0, 0, 1],
