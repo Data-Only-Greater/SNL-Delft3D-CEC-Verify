@@ -93,7 +93,7 @@ class Faces(ABC, _FacesDataClassMixin):
         $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-        $k$       ($x$, $y$) float64 0.004796 0.004796 0.004796 ... 0.00368 0.00368
+        $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
     
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -137,7 +137,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748
             $v$       (dim_0) float64 -2.942e-17
             $w$       (dim_0) float64 0.0002786
-            $k$       (dim_0) float64 0.00434
+            $k$       (dim_0) float64 0.004...
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -211,7 +211,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
             $v$       (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
             $w$       (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
-            $k$       (dim_0) float64 0.00434 0.004257 0.004171 ... 0.003702 nan
+            $k$       (dim_0) float64 0.004... 0.0042... 0.00417... 0.00370... nan
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -281,7 +281,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004796 0.004796 0.004796 ... 0.00368 0.00368
+            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
@@ -341,7 +341,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
             $v$       (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
             $w$       (dim_0) float64 0.0002786 -0.0004764 ... -0.0002754 0.0003252
-            $k$       (dim_0) float64 0.00434 0.004257 0.004171 0.004093 0.004022
+            $k$       (dim_0) float64 0.004... 0.0042... 0.00417... 0.004... 0.00402...
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -417,7 +417,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7747 0.7746 0.7744 0.7745 0.7745
             $v$       (dim_0) float64 -3.88e-18 4.267e-17 5.452e-17 5.002e-17 8.013e-17
             $w$       (dim_0) float64 0.0002791 -0.0004769 ... -0.0002756 0.0003256
-            $k$       (dim_0) float64 0.004343 0.004261 0.004174 0.004096 0.004024
+            $k$       (dim_0) float64 0.004... 0.0042... 0.0041... 0.004... 0.0040...
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.

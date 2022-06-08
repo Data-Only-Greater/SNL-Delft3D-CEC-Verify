@@ -448,7 +448,7 @@ def test_map_to_faces_frame_with_tke(data_dir):
                                         -0.75)
     
     assert np.isclose(sigma_slice["$z$"].values.mean(), -1.5009617997833038)
-    assert np.isclose(sigma_slice["$k$"].values.mean(), 0.0062885901056671505)
+    assert round(sigma_slice["$k$"].values.mean(), 6) == 0.006289
 
 
 def test_map_to_faces_frame_with_tke_none(data_dir):
