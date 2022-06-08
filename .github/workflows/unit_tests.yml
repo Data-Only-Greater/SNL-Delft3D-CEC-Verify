@@ -12,6 +12,7 @@ jobs:
             shell: pwsh
           - os: ubuntu-latest
             shell: bash -l {0}
+        fail-fast: false
     defaults:
       run:
         shell: ${{ matrix.shell }}
