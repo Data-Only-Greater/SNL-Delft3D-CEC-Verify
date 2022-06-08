@@ -7,6 +7,14 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
         python-version: ['3.9', '3.10']
+        include:
+          - os: windows-latest
+            shell: pwsh
+          - os: ubuntu-latest
+            shell: bash -l {0}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     steps:
       - uses: actions/checkout@v2
         with:
