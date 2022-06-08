@@ -359,7 +359,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004796 0.004796 0.004796 ... 0.00368 0.00368
+            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
         
         :param t_step: Time step index
         :param z: z-level at which to extract data
@@ -435,7 +435,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01473 -0.01473 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004803 0.004803 0.004803 ... 0.00368 0.00368
+            $k$       ($x$, $y$) float64 0.004803 0.004803 ... 0.00368... 0.00368...
         
         :param t_step: Time step index
         :param sigma: sigma-level at which to extract data
