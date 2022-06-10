@@ -78,9 +78,11 @@ def main(template_type, max_experiments, omp_num_threads):
     
     u_infty_data = defaultdict(list)
     u_wake_data = defaultdict(list)
+    ti_wake_data = defaultdict(list)
     transect_data = defaultdict(list)
     u_infty_convergence = Convergence()
     u_wake_convergence = Convergence()
+    ti_wake_convergence = Convergence()
     
     case_counter = 0
     
@@ -185,21 +187,34 @@ def main(template_type, max_experiments, omp_num_threads):
         
         result = Result(turb_dir)
         
-        # Collect wake velocity at 1.2D downstream
-        u_wake_ds = result.faces.extract_turbine_centre(-1,
-                                                        case,
-                                                        offset_x=0.84)
-        u_wake = u_wake_ds["$u$"].values.take(0)
+        # Collect wake data at 1.2D downstream
+        wake_ds = result.faces.extract_turbine_centre(-1,
+                                                      case,
+                                                      offset_x=0.84)
         
+        # Velocity
+        u_wake = wake_ds["$u$"].values.take(0)
         u_wake_data["resolution (m)"].append(case.dx)
         u_wake_data["# cells"].append(ncells)
         u_wake_data["$U_{1.2D}$"].append(u_wake)
         
-        # Record
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore",
                                     message="Insufficient grids for analysis")
             u_wake_convergence.add_grids([(case.dx, u_wake)])
+        
+        # TI
+        ti_wake_ds = wake_ds.assign({"$I$": get_TI})
+        ti_wake = ti_wake_ds["$I$"].values.take(0)
+        
+        ti_wake_data["resolution (m)"].append(case.dx)
+        ti_wake_data["# cells"].append(ncells)
+        ti_wake_data["$U_{1.2D}$"].append(ti_wake)
+        
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",
+                                    message="Insufficient grids for analysis")
+            ti_wake_convergence.add_grids([(case.dx, ti_wake)])
         
         plot_transects(case, validate, result, u_infty, ustar_axs, gamma_axs)
         get_transect_error(case,
@@ -237,6 +252,12 @@ def main(template_type, max_experiments, omp_num_threads):
     gamma0_true = 100 * (1 - centreline.data[0] /
                                              centreline.attrs["$U_\infty$"])
     gamma0_err = abs((gamma0_sim - gamma0_true) / gamma0_true)
+    
+    ti_wake_exact = ti_wake_convergence[0].fine.f_exact
+    ti_wake_gci = ti_wake_convergence.get_resolution(gci_required)
+    err = [abs((f0 / ti_wake_exact) - 1) for f0 in ti_wake_data["$U_{1.2D}$"]]
+    ti_wake_data["error"] = err
+    ti_wake_df = pd.DataFrame(ti_wake_data)
     
     transect_df = pd.DataFrame(transect_data)
     transect_grouped = transect_df.groupby(["Transect"])
@@ -344,7 +365,41 @@ def main(template_type, max_experiments, omp_num_threads):
     
     # Add figure with caption
     caption = ("Wake velocity error against value at zero grid resolution "
-               "per grid resolution ")
+               "per grid resolution")
+    report.content.add_image(plot_name, caption, width="3.64in")
+    
+    report.content.add_heading("Turbulence Intensity", level=3)
+    
+    report.content.add_text(
+        "This section presents the convergence study for the wake centerline "
+        "turbulence intensity (TI) measured 1.2 diameters downstream from the "
+        "turbine ($U_{1.2D}$). For the final case, with grid resolution of "
+        f"{case.dx}m, an asymptotic ratio of "
+        f"{ti_wake_convergence[0].asymptotic_ratio:.4g} was achieved "
+        "(asymptotic range is indicated by a value $\\approx 1$). The free "
+        f"stream velocity at zero grid resolution is {ti_wake_exact:.4g}m/s. "
+        "The grid resolution required for a fine-grid GCI of "
+        f"{gci_required * 100}\% is {ti_wake_gci:.4g}m.")
+    
+    caption = ("Wake centerline TI 1.2 diameters downstream "
+               "($U_{1.2D}$) per grid resolution with computational cells and "
+               "error against value at zero grid resolution")
+    report.content.add_table(ti_wake_df,
+                             index=False,
+                             caption=caption)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    ti_wake_df.plot(ax=ax, x="# cells", y="error", marker='x')
+    plt.yscale("log")
+    plt.xscale("log")
+    
+    plot_name = "ti_wake_convergence.png"
+    plot_path = report_dir / plot_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Wake TI error against value at zero grid resolution "
+               "per grid resolution")
     report.content.add_image(plot_name, caption, width="3.64in")
     
     report.content.add_heading("Validation", level=3)
@@ -499,6 +554,11 @@ def get_unique_dir(path, max_tries=1e6):
         if not child.exists(): return child
     
     raise RuntimeError("Could not find unique directory name")
+
+
+def get_TI(ds):
+    velmag = np.sqrt(ds["$u$"]**2 + ds["$v$"]**2 + ds["$w$"]**2)
+    return (100 / velmag) * np.sqrt(2 * ds["$k$"] / 3)
 
 
 def get_u0(da, transect, factor, case=None):

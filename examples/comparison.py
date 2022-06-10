@@ -502,7 +502,8 @@ def main(grid_resolution, omp_num_threads):
                                           '-N',
                                           f'--resource-path={report_dir}',
                                           '--bibliography=examples.bib',
-                                          '--reference-doc=reference.docx'])
+                                          '--reference-doc=reference.docx'],
+                              sandbox=False)
     
     except ImportError:
         
