@@ -155,7 +155,7 @@ def test_Result_missing_files(tmp_path):
 
 def test_Result_FM(data_dir):
     test = Result(data_dir)
-    assert isinstance(test._model_result, _FMModelResults)
+    assert isinstance(test._faces, _FMFaces)
 
 
 def test_Result_structured(mocker, data_dir):
@@ -164,7 +164,7 @@ def test_Result_structured(mocker, data_dir):
                  return_value=False)
     test = Result(data_dir)
     
-    assert isinstance(test._model_result, _StructuredModelResults)
+    assert isinstance(test._faces, _StructuredFaces)
 
 
 @pytest.fixture

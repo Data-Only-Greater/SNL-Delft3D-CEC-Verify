@@ -77,7 +77,12 @@ class Result:
             msg = "No valid model result files detected"
             raise FileNotFoundError(msg)
         
-        self._model_result = model_result
+        self._project_path = model_result.project_path
+        self._x_lim = model_result.x_lim
+        self._y_lim = model_result.y_lim
+        self._times = model_result.times
+        self._edges = model_result.edges
+        self._faces = model_result.faces
     
     @property
     def x_lim(self) -> Tuple[float, float]:
@@ -89,7 +94,7 @@ class Result:
         (0.0, 18.0)
         
         """
-        result = self._model_result.x_lim
+        result = self._x_lim
         assert result is not None
         return result
     
@@ -103,7 +108,7 @@ class Result:
         (1.0, 5.0)
         
         """
-        result = self._model_result.y_lim
+        result = self._y_lim
         assert result is not None
         return result
     
@@ -118,7 +123,7 @@ class Result:
         dtype='datetime64[ns]')
         
         """
-        result = self._model_result.times
+        result = self._times
         assert result is not None
         return result
     
@@ -127,7 +132,7 @@ class Result:
         """Results on the grid edges for flexible mesh (``'fm'``) models . See 
         the :class:`.Edges` documentation for usage.
         """
-        result = self._model_result.edges
+        result = self._edges
         assert result is not None
         return result
     
@@ -136,12 +141,12 @@ class Result:
         """Results on the grid faces. See the :class:`.Faces` documentation
         for usage.
         """
-        result = self._model_result.faces
+        result = self._faces
         assert result is not None
         return result
     
     def __repr__(self):
-        return f"Result(path={repr(self._model_result.project_path)})"
+        return f"Result(path={repr(self._project_path)})"
 
 
 class _BaseModelResults(_BaseModelFinder):
