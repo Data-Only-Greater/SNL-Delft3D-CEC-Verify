@@ -26,7 +26,9 @@ def test_map_to_edges_geoframe(data_dir):
                                      "u1",
                                      "turkin1",
                                      "n0",
-                                     "n1"]
+                                     "n1",
+                                     "f0",
+                                     "f1"]
     assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
                                                         set(['LineString'])
     assert set(gdf["sigma"]) == set([-1.0,
@@ -56,7 +58,9 @@ def test_map_to_edges_geoframe_none(data_dir):
                                      "u1",
                                      "turkin1",
                                      "n0",
-                                     "n1"]
+                                     "n1",
+                                     "f0",
+                                     "f1"]
     assert set(gdf["geometry"].apply(lambda x: x.geom_type)) == \
                                                         set(['LineString'])
     assert set(gdf["sigma"]) == set([-1.0,

@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd # type: ignore
 import xarray as xr
 from scipy import interpolate # type: ignore
+from scipy.optimize import fsolve # type: ignore
 
 from .base import _TimeStepResolver
 from .edges import _map_to_edges_geoframe
@@ -93,7 +94,7 @@ class Faces(ABC, _FacesDataClassMixin):
         $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-        $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
+        $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.003681
     
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -211,7 +212,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 ... 0.7759 0.7762 nan
             $v$       (dim_0) float64 -2.942e-17 4.192e-17 9.126e-17 ... -8.523e-17 nan
             $w$       (dim_0) float64 0.0002786 -0.0004764 0.0003097 ... -7.294e-05 nan
-            $k$       (dim_0) float64 0.004... 0.0042... 0.00417... 0.00370... nan
+            $k$       (dim_0) float64 0.004307 0.004229 0.004157 ... 0.003691 nan
         
         The position extracted can also be shifted using the ``offset_x``,
         ``offset_y`` and ``offset_z`` parameters.
@@ -281,7 +282,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
+            $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.003681
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
@@ -341,7 +342,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
             $v$       (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
             $w$       (dim_0) float64 0.0002786 -0.0004764 ... -0.0002754 0.0003252
-            $k$       (dim_0) float64 0.004... 0.0042... 0.00417... 0.004... 0.00402...
+            $k$       (dim_0) float64 0.004317 0.00424 0.004166 0.004097 0.004033
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -359,7 +360,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004796 0.004796 ... 0.00368... 0.00368...
+            $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.003681
         
         :param t_step: Time step index
         :param z: z-level at which to extract data
@@ -435,7 +436,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01473 -0.01473 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004803 0.004803 ... 0.00368... 0.00368...
+            $k$       ($x$, $y$) float64 0.004809 0.004772 ... 0.003674 0.003682
         
         :param t_step: Time step index
         :param sigma: sigma-level at which to extract data
@@ -552,7 +553,17 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
     
     for (x, y), group in frame.groupby(level=[0, 1]):
         
-        gframe = group.set_index(key)
+        group_copy = group.copy()
+        
+        # Fill z-values based on sigma if the key is z
+        if key == "z":
+            sframe = group[["sigma", "z"]].set_index("sigma")
+            sframe = sframe.interpolate('slinear',
+                                        fill_value="extrapolate",
+                                        limit_direction="both")
+            group_copy["z"] = sframe["z"].values
+        
+        gframe = group_copy.set_index(key)
         zvalues = gframe.reindex(gframe.index.union([value])
                             ).interpolate('slinear',
                                           fill_value="extrapolate",
@@ -592,13 +603,11 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
 def _faces_frame_to_depth(frame: pd.DataFrame,
                           sim_time: pd.Timestamp) -> xr.DataArray:
     
-    to_drop = ["z", "u", "v", "w"]
-    if "tke" in frame: to_drop.append("tke")
-    
+    frame = frame[['x', 'y', 'sigma', 'time', 'depth']]
+    frame = frame.dropna()
     sigma = frame["sigma"].unique().take(0)
     frame = frame.set_index(['x', 'y', 'sigma', 'time'])
     frame = frame.xs((sigma, sim_time), level=(2, 3))
-    frame = frame.drop(to_drop, axis=1)
     ds = frame.to_xarray()
     ds = ds.assign_coords({"time": sim_time})
     ds = ds.rename({"x": "$x$",
@@ -636,7 +645,12 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
                     lambda line: np.array(line.centroid.coords[0])[0])
         edgest["y"] = edgest['geometry'].apply(
                     lambda line: np.array(line.centroid.coords[0])[1])
-        edgesdf = pd.DataFrame(edgest[["x", "y", "sigma", "u1", "turkin1"]])
+        edgesdf = pd.DataFrame(edgest[["x", 
+                                       "y",
+                                       "sigma",
+                                       "turkin1",
+                                       "f0",
+                                       "f1"]])
         
         facest = facest.set_index(["x", "y", "sigma"])
         facest = facest.sort_index()
@@ -652,6 +666,7 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
             # Fill missing values
             groupna = group[pd.isna(group["turkin1"])]
             group = group[~pd.isna(group["turkin1"])]
+            if group.empty: continue
             
             points = np.array(list(zip(group.x, group.y)))
             values = group.turkin1.values
@@ -677,44 +692,28 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
             group = pd.concat([group, groupna.reset_index()])
             
             # Interpolate onto faces grid
-            points = np.array(list(zip(group.x, group.y)))
-            values = group.turkin1.values
+            data = collections.defaultdict(list)
+            maxf = group[["f0", "f1"]].max().max()
             
-            # Can warn about s being too low
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore', RuntimeWarning)
-                f = interpolate.interp2d(points[:, 0],
-                                         points[:, 1],
-                                         values)
-                grid_z = f(x, y)
-            
-            data = {"x": grid_x.ravel(),
-                    "y": grid_y.ravel(),
-                    "tke": grid_z.ravel()}
+            for i in range(maxf + 1):
+                
+                quad_df = group[(group["f0"] == i) | (group["f1"] == i)]
+                quad_df = quad_df.reset_index(drop=True)
+                mean_x, mean_y, turkin1 = _interpolate_quatrilateral(quad_df)
+                
+                data["x"].append(mean_x)
+                data["y"].append(mean_y)
+                data["tke"].append(turkin1)
+                
             kdf = pd.DataFrame(data)
             kdf["sigma"] = sigma
             kdf = kdf.set_index(["x", "y", "sigma"])
             
             facest_new = facest_new.combine_first(kdf)
         
-        facest_final = pd.DataFrame()
-        
-        for (x, y), group in facest_new.groupby(level=[0, 1]):
-            
-            group = group.reset_index(["x", "y"], drop=True)
-            group = group.sort_index()
-            
-            group = group.interpolate('slinear',
-                                      fill_value="extrapolate",
-                                      limit_direction="both")
-            group = group.reset_index()
-            group["x"] = x
-            group["y"] = y
-            
-            facest_final = pd.concat([facest_final, group])
-        
-        facest_final["time"] = time
-        faces_final = pd.concat([faces_final, facest_final])
+        facest_new = facest_new.reset_index()
+        facest_new["time"] = time
+        faces_final = pd.concat([faces_final, facest_new])
     
     return faces_final[["x",
                         "y",
@@ -776,6 +775,62 @@ def _map_to_faces_frame(map_path: StrOrPath,
                     data["w"].append(w)
     
     return pd.DataFrame(data)
+
+
+def _interpolate_quatrilateral(quad_df):
+    '''Interpolates a value in a quatrilateral figure defined by 4 points. 
+    Each point is a tuple with 3 elements, x-coo,y-coo and value.
+    point1 is the lower left corner, point 2 the lower right corner,
+    point 3 the upper right corner and point 4 the upper left corner.
+    args is a list of coordinates in the following order:
+     x1,x2,x3,x4 and x (x-coo of point to be interpolated) and y1,y2...
+     code based on the theory found here:
+     https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch16.d/IFEM.Ch16.pdf'''
+    
+    pts = np.array([quad_df.x, quad_df.y, quad_df.turkin1]).T
+    pt = pts[:, 0:2].mean(axis=0)
+    
+    coos = (pts[0][0], pts[1][0], pts[2][0], pts[3][0], pt[0],
+            pts[0][1], pts[1][1], pts[2][1], pts[3][1], pt[1]) #coordinates of the points merged in tuple
+    guess = np.array([0,0]) #The center of the quadrilateral seem like a good place to start
+    [eta, mu] = fsolve(func=_find_local_coo_equations, x0=guess, args=coos)
+
+    densities = (pts[0][2], pts[1][2], pts[2][2], pts[3][2])
+    density = _find_density(eta,mu,densities)
+
+    return pt[0], pt[1], density
+
+def _find_local_coo_equations(guess, *args):
+    '''This function creates the transformed coordinate equations of the quatrilateral.'''
+
+    eta = guess[0]
+    mu = guess[1]
+
+    eq=[0,0]#Initialize eq
+    eq[0] = 1 / 4 * (args[0] + args[1] + args[2] + args[3]) - args[4] + \
+            1 / 4 * (-args[0] - args[1] + args[2] + args[3]) * mu + \
+            1 / 4 * (-args[0] + args[1] + args[2] - args[3]) * eta + \
+            1 / 4 * (args[0] - args[1] + args[2] - args[3]) * mu * eta
+    eq[1] = 1 / 4 * (args[5] + args[6] + args[7] + args[8]) - args[9] + \
+            1 / 4 * (-args[5] - args[6] + args[7] + args[8]) * mu + \
+            1 / 4 * (-args[5] + args[6] + args[7] - args[8]) * eta + \
+            1 / 4 * (args[5] - args[6] + args[7] - args[8]) * mu * eta
+    return eq
+
+def _find_density(eta,mu,densities):
+    '''Finds the final density based on the eta and mu local coordinates calculated
+    earlier and the densities of the 4 points'''
+    
+    N1 = 1/4*(1-eta)*(1-mu)
+    N2 = 1/4*(1+eta)*(1-mu)
+    N3 = 1/4*(1+eta)*(1+mu)
+    N4 = 1/4*(1-eta)*(1+mu)
+    density = np.nanprod([densities[0], N1]) + \
+              np.nanprod([densities[1], N2]) + \
+              np.nanprod([densities[2], N3]) + \
+              np.nanprod([densities[3], N4])
+    return density
+
 
 
 class _StructuredFaces(Faces):

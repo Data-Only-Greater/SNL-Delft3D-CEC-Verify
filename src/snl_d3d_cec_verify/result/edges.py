@@ -204,6 +204,7 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
                 normvec = np.array((-linevec[1], linevec[0]))
                 
                 points = []
+                faces = []
                 
                 for iface in two:
                     
@@ -217,6 +218,7 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
                         p = np.array((x, y))
                     
                     points.append(p)
+                    faces.append(index)
                 
                 facevec = points[1] - points[0]
                 normvec *= np.dot(facevec, normvec)
@@ -235,6 +237,8 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
                     data["turkin1"].append(tke)
                     data["n0"].append(normvec[0])
                     data["n1"].append(normvec[1])
+                    data["f0"].append(faces[0])
+                    data["f1"].append(faces[1])
                 
                 u1 = np.nan
                 
@@ -250,37 +254,17 @@ def _map_to_edges_geoframe(map_path: StrOrPath,
                     data["turkin1"].append(tke)
                     data["n0"].append(normvec[0])
                     data["n1"].append(normvec[1])
+                    data["f0"].append(faces[0])
+                    data["f1"].append(faces[1])
     
     gdf = gpd.GeoDataFrame(data)
-    gdf['wkt'] = gdf['geometry'].apply(lambda geom: geom.wkt)
-    gdf = gdf.set_index(['wkt', 'time', 'sigma'])
-    gdf = gdf.sort_index()
-    new_gdf = gpd.GeoDataFrame()
     
-    for (_, time), group in gdf.groupby(level=[0, 1]):
-        
-        group = group.reset_index(["wkt", "time"], drop=True)
-        geometry = group["geometry"].unique()[0]
-        group = group.drop("geometry", axis=1)
-        
-        df = pd.DataFrame(group)
-        df = df.interpolate('slinear',
-                            fill_value="extrapolate",
-                            limit_direction="both")
-        
-        group = gpd.GeoDataFrame(df)
-        group["geometry"] = geometry
-        group["time"] = time
-        group = group.reset_index()
-        
-        new_gdf = pd.concat([new_gdf, group])
-    
-    new_gdf = new_gdf.reset_index(drop=True)
-    
-    return new_gdf[["geometry",
-                    "sigma",
-                    "time",
-                    "u1",
-                    "turkin1",
-                    "n0",
-                    "n1"]]
+    return gdf[["geometry",
+                "sigma",
+                "time",
+                "u1",
+                "turkin1",
+                "n0",
+                "n1",
+                "f0",
+                "f1"]]
