@@ -14,7 +14,8 @@ from typing import (cast,
                     Optional,
                     Sequence,
                     TypeVar,
-                    Union)
+                    Union,
+                    TYPE_CHECKING)
 from functools import wraps
 from dataclasses import dataclass, field
 
@@ -29,6 +30,9 @@ from .edges import _map_to_edges_geoframe
 from ..cases import CaseStudy
 from ..types import Num, StrOrPath
 from .._docs import docstringtemplate
+
+if TYPE_CHECKING: # pragma: no cover
+    import numpy.typing as npt
 
 # Generic for decorators
 F = TypeVar('F', bound=Callable[..., Any])
@@ -94,7 +98,7 @@ class Faces(ABC, _FacesDataClassMixin):
         $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
         $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
         $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-        $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.003681
+        $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.0036...
     
     :param nc_path: path to the ``.nc`` file containing results
     :param n_steps: number of time steps in the simulation
@@ -282,7 +286,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.781 0.781 0.781 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.237e-18 1.423e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01472 -0.01472 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.003681
+            $k$       ($x$, $y$) float64 0.004802 0.004765 ... 0.003674 0.0036...
         
         The z-plane can be shifted using the ``offset_z`` parameter.
         
@@ -342,7 +346,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       (dim_0) float64 0.7748 0.7747 0.7745 0.7745 0.7746
             $v$       (dim_0) float64 -3.877e-18 4.267e-17 5.452e-17 5.001e-17 8.011e-17
             $w$       (dim_0) float64 0.0002786 -0.0004764 ... -0.0002754 0.0003252
-            $k$       (dim_0) float64 0.004317 0.00424 0.004166 0.004097 0.004033
+            $k$       (dim_0) float64 0.004317 0.0042... 0.00416... 0.00409... 0.00403...
         
         If ``x`` and ``y`` are not given, then the results are returned at the
         face centres.
@@ -436,7 +440,7 @@ class Faces(ABC, _FacesDataClassMixin):
             $u$       ($x$, $y$) float64 0.7809 0.7809 0.7809 ... 0.7763 0.7763 0.7763
             $v$       ($x$, $y$) float64 -3.29e-18 1.419e-17 ... -8.598e-17 -4.824e-17
             $w$       ($x$, $y$) float64 -0.01473 -0.01473 ... 0.001343 0.001343
-            $k$       ($x$, $y$) float64 0.004809 0.004772 ... 0.003674 0.003682
+            $k$       ($x$, $y$) float64 0.004809 0.004772 ... 0.003674 0.0036...
         
         :param t_step: Time step index
         :param sigma: sigma-level at which to extract data
@@ -699,11 +703,19 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
                 
                 quad_df = group[(group["f0"] == i) | (group["f1"] == i)]
                 quad_df = quad_df.reset_index(drop=True)
-                mean_x, mean_y, turkin1 = _interpolate_quatrilateral(quad_df)
+                quad_df = quad_df.sort_values(by=['y'], ignore_index=True)
                 
-                data["x"].append(mean_x)
-                data["y"].append(mean_y)
-                data["tke"].append(turkin1)
+                coords = np.array([quad_df.x, quad_df.y]).T
+                densities = quad_df.turkin1.values
+                target = coords.mean(axis=0)
+                
+                target_tke = _interpolate_quadrilateral(coords,
+                                                        densities,
+                                                        target)
+                
+                data["x"].append(target[0])
+                data["y"].append(target[1])
+                data["tke"].append(target_tke)
                 
             kdf = pd.DataFrame(data)
             kdf["sigma"] = sigma
@@ -777,60 +789,63 @@ def _map_to_faces_frame(map_path: StrOrPath,
     return pd.DataFrame(data)
 
 
-def _interpolate_quatrilateral(quad_df):
-    '''Interpolates a value in a quatrilateral figure defined by 4 points. 
-    Each point is a tuple with 3 elements, x-coo,y-coo and value.
-    point1 is the lower left corner, point 2 the lower right corner,
-    point 3 the upper right corner and point 4 the upper left corner.
-    args is a list of coordinates in the following order:
-     x1,x2,x3,x4 and x (x-coo of point to be interpolated) and y1,y2...
-     code based on the theory found here:
-     https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch16.d/IFEM.Ch16.pdf'''
+def _interpolate_quadrilateral(coords: npt.NDArray[np.float64],
+                               densities: npt.NDArray[np.float64],
+                               target: npt.NDArray[np.float64]) -> float:
+    '''Interpolates a value in a quadrilateral figure defined by 4 points. 
+    https://stackoverflow.com/questions/49071685/python-implementation-of-bilinear-quadrilateral-interpolation
+    https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch16.d/IFEM.Ch16.pdf
+    '''
     
-    pts = np.array([quad_df.x, quad_df.y, quad_df.turkin1]).T
-    pt = pts[:, 0:2].mean(axis=0)
+    guess = np.array([0, 0])
+    [eta, mu] = fsolve(func=_transform_quadrilateral_coordinates,
+                       x0=guess,
+                       args=(coords, target))
     
-    coos = (pts[0][0], pts[1][0], pts[2][0], pts[3][0], pt[0],
-            pts[0][1], pts[1][1], pts[2][1], pts[3][1], pt[1]) #coordinates of the points merged in tuple
-    guess = np.array([0,0]) #The center of the quadrilateral seem like a good place to start
-    [eta, mu] = fsolve(func=_find_local_coo_equations, x0=guess, args=coos)
+    return _get_quadrilateral_density(eta, mu, densities)
 
-    densities = (pts[0][2], pts[1][2], pts[2][2], pts[3][2])
-    density = _find_density(eta,mu,densities)
 
-    return pt[0], pt[1], density
-
-def _find_local_coo_equations(guess, *args):
-    '''This function creates the transformed coordinate equations of the quatrilateral.'''
-
+def _transform_quadrilateral_coordinates(
+                guess: npt.NDArray[np.float64],
+                coords: npt.NDArray[np.float64],
+                target: npt.NDArray[np.float64]) -> tuple[float, float]:
+    '''This function creates the transformed coordinate equations of the 
+    quadrilateral.'''
+    
     eta = guess[0]
     mu = guess[1]
-
-    eq=[0,0]#Initialize eq
-    eq[0] = 1 / 4 * (args[0] + args[1] + args[2] + args[3]) - args[4] + \
-            1 / 4 * (-args[0] - args[1] + args[2] + args[3]) * mu + \
-            1 / 4 * (-args[0] + args[1] + args[2] - args[3]) * eta + \
-            1 / 4 * (args[0] - args[1] + args[2] - args[3]) * mu * eta
-    eq[1] = 1 / 4 * (args[5] + args[6] + args[7] + args[8]) - args[9] + \
-            1 / 4 * (-args[5] - args[6] + args[7] + args[8]) * mu + \
-            1 / 4 * (-args[5] + args[6] + args[7] - args[8]) * eta + \
-            1 / 4 * (args[5] - args[6] + args[7] - args[8]) * mu * eta
-    return eq
-
-def _find_density(eta,mu,densities):
-    '''Finds the final density based on the eta and mu local coordinates calculated
-    earlier and the densities of the 4 points'''
+    quarter = 0.25
     
-    N1 = 1/4*(1-eta)*(1-mu)
-    N2 = 1/4*(1+eta)*(1-mu)
-    N3 = 1/4*(1+eta)*(1+mu)
-    N4 = 1/4*(1-eta)*(1+mu)
-    density = np.nanprod([densities[0], N1]) + \
-              np.nanprod([densities[1], N2]) + \
-              np.nanprod([densities[2], N3]) + \
-              np.nanprod([densities[3], N4])
-    return density
+    get_equation = lambda x, t: \
+                        quarter * (x[0] + x[1] + x[2] + x[3]) - t + \
+                        quarter * (-x[0] - x[1] + x[2] + x[3]) * mu + \
+                        quarter * (-x[0] + x[1] + x[2] - x[3]) * eta + \
+                        quarter * (x[0] - x[1] + x[2] - x[3]) * mu * eta
+    
+    return (get_equation(coords[:, 0], target[0]),
+            get_equation(coords[:, 1], target[1]))
 
+
+def _get_quadrilateral_density(eta: float,
+                               mu: float,
+                               densities: npt.NDArray[np.float64]) -> float:
+    '''Finds the final density based on the eta and mu local coordinates 
+    calculated earlier and the densities of the 4 points'''
+    
+    N = np.empty(4)
+    
+    quarter = 0.25
+    one_minus_eta = 1 - eta
+    one_plus_eta = 1 + eta
+    one_minus_mu = 1 - mu
+    one_plus_mu = 1 + mu
+    
+    N[0] = quarter * one_minus_eta * one_minus_mu
+    N[1] = quarter * one_plus_eta * one_minus_mu
+    N[2] = quarter * one_plus_eta * one_plus_mu
+    N[3] = quarter * one_minus_eta * one_plus_mu
+    
+    return np.dot(densities, N)
 
 
 class _StructuredFaces(Faces):

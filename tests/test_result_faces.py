@@ -16,6 +16,7 @@ from snl_d3d_cec_verify.result.faces import (_check_case_study,
                                              _faces_frame_to_depth,
                                              _map_to_faces_frame_with_tke,
                                              _map_to_faces_frame,
+                                             _interpolate_quadrilateral,
                                              _FMFaces,
                                              _trim_to_faces_frame,
                                              _StructuredFaces)
@@ -448,7 +449,7 @@ def test_map_to_faces_frame_with_tke(data_dir):
                                         -0.75)
     
     assert np.isclose(sigma_slice["$z$"].values.mean(), -1.5009617997833038)
-    assert round(sigma_slice["$k$"].values.mean(), 6) == 0.006271
+    assert round(sigma_slice["$k$"].values.mean(), 5) == 0.00627
 
 
 def test_map_to_faces_frame_with_tke_none(data_dir):
@@ -586,6 +587,28 @@ def test_map_to_faces_frame_none(data_dir):
     assert faces_frame["v"].max() < 1e-15
     assert faces_frame["w"].min() > -0.02
     assert faces_frame["w"].max() < 0.02
+
+
+def test_interpolate_quadrilateral():
+    
+    coords = np.array([[0, 0], [1, 0], [1, 1], [0, 1]])
+    densities = np.array([0, 0, 1, 1])
+    target = np.array([0.5, 0.5])
+    
+    result = _interpolate_quadrilateral(coords, densities, target)
+    
+    assert result == 0.5
+
+
+def test_interpolate_quadrilateral_reversed():
+    
+    coords = np.array([[0, 0], [0, 1], [1, 1], [1, 0]])
+    densities = np.array([0, 0, 1, 1])
+    target = np.array([0.5, 0.5])
+    
+    result = _interpolate_quadrilateral(coords, densities, target)
+    
+    assert result == 0.5
 
 
 def test_FMFaces(mocker):
