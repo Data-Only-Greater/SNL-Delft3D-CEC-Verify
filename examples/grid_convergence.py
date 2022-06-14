@@ -98,14 +98,26 @@ def main(template_type, max_experiments, omp_num_threads):
     ustar_axs = []
     gamma_figs = []
     gamma_axs = []
+    ti_figs = []
+    ti_axs = []
     
-    for _ in global_validate:
-        ustar_fig, ustar_ax = plt.subplots(figsize=(5, 3.5), dpi=300)
-        gamma_fig, gamma_ax = plt.subplots(figsize=(5, 3.5), dpi=300)
-        ustar_figs.append(ustar_fig)
-        ustar_axs.append(ustar_ax)
-        gamma_figs.append(gamma_fig)
-        gamma_axs.append(gamma_ax)
+    for transect in global_validate:
+        
+        if transect.name in ["$u$", "$u_0$"]:
+            
+            ustar_fig, ustar_ax = plt.subplots(figsize=(5, 3.5), dpi=300)
+            gamma_fig, gamma_ax = plt.subplots(figsize=(5, 3.5), dpi=300)
+            
+            ustar_figs.append(ustar_fig)
+            ustar_axs.append(ustar_ax)
+            gamma_figs.append(gamma_fig)
+            gamma_axs.append(gamma_ax)
+        
+        if transect.name in ["$I_0$"]:
+            
+            ti_fig, ti_ax = plt.subplots(figsize=(5, 3.5), dpi=300)
+            ti_figs.append(ti_fig)
+            ti_axs.append(ti_ax)
     
     while True:
         
@@ -209,14 +221,20 @@ def main(template_type, max_experiments, omp_num_threads):
         
         ti_wake_data["resolution (m)"].append(case.dx)
         ti_wake_data["# cells"].append(ncells)
-        ti_wake_data["$k_{1.2D}$"].append(ti_wake)
+        ti_wake_data["$I_{1.2D}$"].append(ti_wake)
         
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore",
                                     message="Insufficient grids for analysis")
             ti_wake_convergence.add_grids([(case.dx, ti_wake)])
         
-        plot_transects(case, validate, result, u_infty, ustar_axs, gamma_axs)
+        plot_transects(case,
+                       validate,
+                       result,
+                       u_infty,
+                       ustar_axs,
+                       gamma_axs,
+                       ti_axs)
         get_transect_error(case,
                            validate,
                            result,
@@ -255,7 +273,7 @@ def main(template_type, max_experiments, omp_num_threads):
     
     ti_wake_exact = ti_wake_convergence[0].fine.f_exact
     ti_wake_gci = ti_wake_convergence.get_resolution(gci_required)
-    err = [abs((f0 / ti_wake_exact) - 1) for f0 in ti_wake_data["$k_{1.2D}$"]]
+    err = [abs((f0 / ti_wake_exact) - 1) for f0 in ti_wake_data["$I_{1.2D}$"]]
     ti_wake_data["error"] = err
     ti_wake_df = pd.DataFrame(ti_wake_data)
     
@@ -373,7 +391,7 @@ def main(template_type, max_experiments, omp_num_threads):
     report.content.add_text(
         "This section presents the convergence study for the wake centerline "
         "turbulence intensity (TI) measured 1.2 diameters downstream from the "
-        "turbine ($k_{1.2D}$). For the final case, with grid resolution of "
+        "turbine ($I_{1.2D}$). For the final case, with grid resolution of "
         f"{case.dx}m, an asymptotic ratio of "
         f"{ti_wake_convergence[0].asymptotic_ratio:.4g} was achieved "
         "(asymptotic range is indicated by a value $\\approx 1$). TI "
@@ -382,7 +400,7 @@ def main(template_type, max_experiments, omp_num_threads):
         f"{gci_required * 100}\% is {ti_wake_gci:.4g}m.")
     
     caption = ("Wake centerline TI 1.2 diameters downstream "
-               "($k_{1.2D}$) per grid resolution with computational cells and "
+               "($I_{1.2D}$) per grid resolution with computational cells and "
                "error against value at zero grid resolution")
     report.content.add_table(ti_wake_df,
                              index=False,
@@ -417,7 +435,10 @@ def main(template_type, max_experiments, omp_num_threads):
         "centreline and at cross-sections along the $y$-axis. Errors are "
         "reported relative to the experimental data given in [@mycek2014].")
     
-    for i, transect in enumerate(global_validate):
+    u_idx = 0
+    ti_idx = 0
+    
+    for transect in global_validate:
         
         if transect.name not in ["$u$", "$u_0$"]: continue
         
@@ -442,17 +463,17 @@ def main(template_type, max_experiments, omp_num_threads):
         major_axis = f"${transect.attrs['major_axis']}^*$"
         
         transect_true_u0 = get_u0(transect_true, transect_true, 0.8)
-        transect_true_u0.plot(ax=ustar_axs[i],
+        transect_true_u0.plot(ax=ustar_axs[u_idx],
                               x=major_axis,
                               label='Experiment')
         
-        ustar_axs[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ustar_axs[i].grid()
-        ustar_axs[i].set_title("")
+        ustar_axs[u_idx].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ustar_axs[u_idx].grid()
+        ustar_axs[u_idx].set_title("")
         
-        plot_name = f"transect_u0_{i}.png"
+        plot_name = f"transect_u0_{u_idx}.png"
         plot_path = report_dir / plot_name
-        ustar_figs[i].savefig(plot_path, bbox_inches='tight')
+        ustar_figs[u_idx].savefig(plot_path, bbox_inches='tight')
         
         # Add figure with caption
         caption = ("Normalised velocity, $u^*_0$, (m/s) per grid resolution "
@@ -462,17 +483,17 @@ def main(template_type, max_experiments, omp_num_threads):
         
         transect_true_gamma0 = get_gamma0(transect_true,
                                           transect_true)
-        transect_true_gamma0.plot(ax=gamma_axs[i],
+        transect_true_gamma0.plot(ax=gamma_axs[u_idx],
                                   x=major_axis,
                                   label='Experiment')
         
-        gamma_axs[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        gamma_axs[i].grid()
-        gamma_axs[i].set_title("")
+        gamma_axs[u_idx].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        gamma_axs[u_idx].grid()
+        gamma_axs[u_idx].set_title("")
         
-        plot_name = f"transect_gamma0_{i}.png"
+        plot_name = f"transect_gamma0_{u_idx}.png"
         plot_path = report_dir / plot_name
-        gamma_figs[i].savefig(plot_path, bbox_inches='tight')
+        gamma_figs[u_idx].savefig(plot_path, bbox_inches='tight')
         
         # Add figure with caption
         caption = ("Normalised velocity deficit, $\gamma_0$, (%) per grid "
@@ -480,6 +501,55 @@ def main(template_type, max_experiments, omp_num_threads):
                    "engineered from [@mycek2014, fig. "
                    f"{transect.attrs['figure']}].")
         report.content.add_image(plot_name, caption, width="5.68in")
+        
+        u_idx += 1
+    
+    for transect in global_validate:
+        
+        if transect.name != "$I_0$": continue
+        
+        description = transect.attrs['description']
+        report.content.add_heading(description, level=3)
+        
+        transect_df = transect_grouped.get_group(description).drop("Transect",
+                                                                   axis=1)
+        transect_rmse = transect_df.iloc[-1, 1]
+        
+        report.content.add_text(
+            "The root mean square error (RMSE) for this transect at the "
+            f"finest grid resolution of {case.dx}m was {transect_rmse:.4g}.")
+        
+        caption = ("Root mean square error (RMSE) for the turbulence "
+                   "intensity, $I_0$, per grid resolution.")
+        report.content.add_table(transect_df,
+                                 index=False,
+                                 caption=caption)
+        
+        transect_true = transect.to_xarray()
+        major_axis = f"${transect.attrs['major_axis']}^*$"
+        
+        transect_true_I0 = get_normalised(transect_true,
+                                          case,
+                                          transect_true)
+        transect_true_I0.plot(ax=ti_axs[ti_idx],
+                              x=major_axis,
+                              label='Experiment')
+        
+        ti_axs[ti_idx].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ti_axs[ti_idx].grid()
+        ti_axs[ti_idx].set_title("")
+        
+        plot_name = f"transect_I0_{ti_idx}.png"
+        plot_path = report_dir / plot_name
+        ti_figs[ti_idx].savefig(plot_path, bbox_inches='tight')
+        
+        # Add figure with caption
+        caption = ("Turbulence intensity, $I_0$, (\%) per grid resolution "
+                   "comparison. Experimental data reverse engineered from "
+                   f"[@mycek2014, fig. {transect.attrs['figure']}].")
+        report.content.add_image(plot_name, caption, width="5.68in")
+        
+        ti_idx += 1
     
     # Add section for the references
     report.content.add_heading("References", level=2)
@@ -589,14 +659,25 @@ def get_gamma0(da, transect, case=None):
     return da
 
 
+def get_normalised(da, case, transect):
+    da = get_reset_origin(da,
+                          (case.turb_pos_x, case.turb_pos_y, case.turb_pos_z))
+    da = get_normalised_dims(da, transect.attrs["$D$"])
+    return da
+
+
 def plot_transects(case,
                    validate,
                    result,
                    factor,
                    ustar_ax,
-                   gamma_ax):
+                   gamma_ax,
+                   ti_ax):
     
-    for i, transect in enumerate(validate):
+    u_idx = 0
+    ti_idx = 0
+    
+    for transect in validate:
         
         if transect.name not in ["$u$", "$u_0$"]: continue
         
@@ -608,24 +689,49 @@ def plot_transects(case,
         # Determine plot x-axis
         major_axis = f"${transect.attrs['major_axis']}^*$"
         
-        # Create and save a u0 figure
+        # Create u0 figure
         transect_sim_u0 = get_u0(transect_sim["$u$"],
                                  transect_true,
                                  factor,
                                  case)
         
-        transect_sim_u0.plot(ax=ustar_ax[i],
+        transect_sim_u0.plot(ax=ustar_ax[u_idx],
                              x=major_axis,
                              label=f'{case.dx}m')
         
-        # Create and save a gamma0 figure
+        # Create gamma0 figure
         transect_sim_gamma0 = get_gamma0(transect_sim["$u$"],
                                          transect_true,
                                          case)
         
-        transect_sim_gamma0.plot(ax=gamma_ax[i],
+        transect_sim_gamma0.plot(ax=gamma_ax[u_idx],
                                  x=major_axis,
                                  label=f'{case.dx}m')
+        
+        u_idx += 1
+    
+    for transect in validate:
+        
+        if transect.name != "$I_0$": continue
+        
+        # Compare transect
+        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_sim = transect_sim.assign({"$I$": get_TI})
+        transect_true = transect.to_xarray()
+        
+        # Determine plot x-axis
+        major_axis = f"${transect.attrs['major_axis']}^*$"
+        
+        # Create I0 figure
+        transect_sim_I0 = get_normalised(transect_sim["$I$"],
+                                         case,
+                                         transect_true)
+        
+        transect_sim_I0.plot(ax=ti_ax[ti_idx],
+                             x=major_axis,
+                             label=f'{case.dx}m')
+        
+        ti_idx += 1
 
 
 def get_rmse(estimated, observed):
@@ -637,7 +743,7 @@ def get_rmse(estimated, observed):
 
 def get_transect_error(case, validate, result, factor, data):
     
-    for i, transect in enumerate(validate):
+    for transect in validate:
         
         if transect.name not in ["$u$", "$u_0$"]: continue
         
@@ -658,6 +764,29 @@ def get_transect_error(case, validate, result, factor, data):
         
         # Calculate RMS error and store
         rmse = get_rmse(transect_sim_u0.values, transect_true_u0.values)
+        data["resolution (m)"].append(case.dx)
+        data["Transect"].append(transect.attrs['description'])
+        data["RMSE"].append(rmse)
+    
+    for transect in validate:
+        
+        if transect.name != "$I_0$": continue
+        
+        transect_true = transect.to_xarray()
+        
+        # Compare transect
+        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_sim = transect_sim.assign({"$I$": get_TI})
+        
+        transect_sim_I0 = get_normalised(transect_sim["$I$"],
+                                         case,
+                                         transect_true)
+        transect_true_I0 = get_normalised(transect_true,
+                                          case,
+                                          transect_true)
+        
+        # Calculate RMS error and store
+        rmse = get_rmse(transect_sim_I0.values, transect_true_I0.values)
         data["resolution (m)"].append(case.dx)
         data["Transect"].append(transect.attrs['description'])
         data["RMSE"].append(rmse)
