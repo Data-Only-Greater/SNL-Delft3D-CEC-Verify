@@ -209,7 +209,7 @@ def main(template_type, max_experiments, omp_num_threads):
         
         ti_wake_data["resolution (m)"].append(case.dx)
         ti_wake_data["# cells"].append(ncells)
-        ti_wake_data["$U_{1.2D}$"].append(ti_wake)
+        ti_wake_data["$k_{1.2D}$"].append(ti_wake)
         
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore",
@@ -255,7 +255,7 @@ def main(template_type, max_experiments, omp_num_threads):
     
     ti_wake_exact = ti_wake_convergence[0].fine.f_exact
     ti_wake_gci = ti_wake_convergence.get_resolution(gci_required)
-    err = [abs((f0 / ti_wake_exact) - 1) for f0 in ti_wake_data["$U_{1.2D}$"]]
+    err = [abs((f0 / ti_wake_exact) - 1) for f0 in ti_wake_data["$k_{1.2D}$"]]
     ti_wake_data["error"] = err
     ti_wake_df = pd.DataFrame(ti_wake_data)
     
@@ -373,16 +373,16 @@ def main(template_type, max_experiments, omp_num_threads):
     report.content.add_text(
         "This section presents the convergence study for the wake centerline "
         "turbulence intensity (TI) measured 1.2 diameters downstream from the "
-        "turbine ($U_{1.2D}$). For the final case, with grid resolution of "
+        "turbine ($k_{1.2D}$). For the final case, with grid resolution of "
         f"{case.dx}m, an asymptotic ratio of "
         f"{ti_wake_convergence[0].asymptotic_ratio:.4g} was achieved "
-        "(asymptotic range is indicated by a value $\\approx 1$). The free "
-        f"stream velocity at zero grid resolution is {ti_wake_exact:.4g}m/s. "
+        "(asymptotic range is indicated by a value $\\approx 1$). TI "
+        f"at zero grid resolution is {ti_wake_exact:.4g}\%. "
         "The grid resolution required for a fine-grid GCI of "
         f"{gci_required * 100}\% is {ti_wake_gci:.4g}m.")
     
     caption = ("Wake centerline TI 1.2 diameters downstream "
-               "($U_{1.2D}$) per grid resolution with computational cells and "
+               "($k_{1.2D}$) per grid resolution with computational cells and "
                "error against value at zero grid resolution")
     report.content.add_table(ti_wake_df,
                              index=False,
