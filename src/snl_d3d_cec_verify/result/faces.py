@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 import itertools
 import collections
 from abc import ABC, abstractmethod
@@ -23,7 +22,6 @@ import numpy as np
 import pandas as pd # type: ignore
 import xarray as xr
 from scipy import interpolate # type: ignore
-from scipy.optimize import fsolve # type: ignore
 
 from .base import _TimeStepResolver
 from .edges import _map_to_edges_geoframe
@@ -554,34 +552,60 @@ def _faces_frame_to_slice(frame: pd.DataFrame,
     frame = frame.xs(sim_time, level=2)
     
     data = collections.defaultdict(list)
+    remove_nans = lambda a: a[:, ~np.isnan(a).any(axis=0)]
     
     for (x, y), group in frame.groupby(level=[0, 1]):
         
-        group_copy = group.copy()
+        cols = ["z", "sigma", "u", "v", "w"]
+        if "tke" in group: cols.append("tke")
         
-        # Fill z-values based on sigma if the key is z
+        group = group.reset_index(drop=True)
+        group_values = group[cols].to_numpy().T
+        
+        zsig = group_values[:2, :]
+        zsig = remove_nans(zsig)
+        
         if key == "z":
-            sframe = group[["sigma", "z"]].set_index("sigma")
-            sframe = sframe.interpolate('slinear',
-                                        fill_value="extrapolate",
-                                        limit_direction="both")
-            group_copy["z"] = sframe["z"].values
+            
+            get_sigma = interpolate.interp1d(zsig[0, :],
+                                             zsig[1, :],
+                                             fill_value="extrapolate")
+            sigma = float(get_sigma(value))
+            other = sigma
         
-        gframe = group_copy.set_index(key)
-        zvalues = gframe.reindex(gframe.index.union([value])
-                            ).interpolate('slinear',
-                                          fill_value="extrapolate",
-                                          limit_direction="both").loc[value]
+        else:
+            
+            get_z = interpolate.interp1d(zsig[1, :],
+                                         zsig[0, :],
+                                         fill_value="extrapolate")
+            other = float(get_z(value))
+            sigma = value
+        
+        sigvel = group_values[1:5, :]
+        sigvel = remove_nans(sigvel)
+        get_vel = interpolate.interp1d(sigvel[0, :],
+                                       sigvel[1:, :],
+                                       fill_value="extrapolate")
+        vel = get_vel(sigma)
+        
+        if "tke" in group:
+            
+            sigtke = group_values[[1, 5], :]
+            sigtke = remove_nans(sigtke)
+            get_tke = interpolate.interp1d(sigtke[0, :],
+                                           sigtke[1:, :],
+                                           fill_value="extrapolate")
+            tke = get_tke(sigma)
         
         data["x"].append(x)
         data["y"].append(y)
-        data[other_key].append(zvalues[other_key])
-        data["u"].append(zvalues["u"])
-        data["v"].append(zvalues["v"])
-        data["w"].append(zvalues["w"])
+        data[other_key].append(other)
+        data["u"].append(vel[0])
+        data["v"].append(vel[1])
+        data["w"].append(vel[2])
         
-        if "tke" in zvalues:
-            data["tke"].append(zvalues["tke"])
+        if "tke" in group:
+            data["tke"].append(tke[0])
     
     zframe = pd.DataFrame(data)
     zframe = zframe.set_index(['x', 'y'])
@@ -709,10 +733,7 @@ def _map_to_faces_frame_with_tke(map_path: StrOrPath,
                 densities = quad_df.turkin1.values
                 target = coords.mean(axis=0)
                 
-                target_tke = _interpolate_quadrilateral(coords,
-                                                        densities,
-                                                        target)
-                
+                target_tke = _get_quadrilateral_centre(densities)
                 data["x"].append(target[0])
                 data["y"].append(target[1])
                 data["tke"].append(target_tke)
@@ -789,63 +810,8 @@ def _map_to_faces_frame(map_path: StrOrPath,
     return pd.DataFrame(data)
 
 
-def _interpolate_quadrilateral(coords: npt.NDArray[np.float64],
-                               densities: npt.NDArray[np.float64],
-                               target: npt.NDArray[np.float64]) -> float:
-    '''Interpolates a value in a quadrilateral figure defined by 4 points. 
-    https://stackoverflow.com/questions/49071685/python-implementation-of-bilinear-quadrilateral-interpolation
-    https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch16.d/IFEM.Ch16.pdf
-    '''
-    
-    guess = np.array([0, 0])
-    [eta, mu] = fsolve(func=_transform_quadrilateral_coordinates,
-                       x0=guess,
-                       args=(coords, target))
-    
-    return _get_quadrilateral_density(eta, mu, densities)
-
-
-def _transform_quadrilateral_coordinates(
-                guess: npt.NDArray[np.float64],
-                coords: npt.NDArray[np.float64],
-                target: npt.NDArray[np.float64]) -> tuple[float, float]:
-    '''This function creates the transformed coordinate equations of the 
-    quadrilateral.'''
-    
-    eta = guess[0]
-    mu = guess[1]
-    quarter = 0.25
-    
-    get_equation = lambda x, t: \
-                        quarter * (x[0] + x[1] + x[2] + x[3]) - t + \
-                        quarter * (-x[0] - x[1] + x[2] + x[3]) * mu + \
-                        quarter * (-x[0] + x[1] + x[2] - x[3]) * eta + \
-                        quarter * (x[0] - x[1] + x[2] - x[3]) * mu * eta
-    
-    return (get_equation(coords[:, 0], target[0]),
-            get_equation(coords[:, 1], target[1]))
-
-
-def _get_quadrilateral_density(eta: float,
-                               mu: float,
-                               densities: npt.NDArray[np.float64]) -> float:
-    '''Finds the final density based on the eta and mu local coordinates 
-    calculated earlier and the densities of the 4 points'''
-    
-    N = np.empty(4)
-    
-    quarter = 0.25
-    one_minus_eta = 1 - eta
-    one_plus_eta = 1 + eta
-    one_minus_mu = 1 - mu
-    one_plus_mu = 1 + mu
-    
-    N[0] = quarter * one_minus_eta * one_minus_mu
-    N[1] = quarter * one_plus_eta * one_minus_mu
-    N[2] = quarter * one_plus_eta * one_plus_mu
-    N[3] = quarter * one_minus_eta * one_plus_mu
-    
-    return np.dot(densities, N)
+def _get_quadrilateral_centre(densities: npt.NDArray[np.float64]) -> float:
+    return np.sum(0.25 * densities)
 
 
 class _StructuredFaces(Faces):
