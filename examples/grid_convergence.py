@@ -77,10 +77,12 @@ def main(template_type, max_experiments, omp_num_threads):
                         omp_num_threads=omp_num_threads)
     
     u_infty_data = defaultdict(list)
+    ti_infty_data = defaultdict(list)
     u_wake_data = defaultdict(list)
     ti_wake_data = defaultdict(list)
     transect_data = defaultdict(list)
     u_infty_convergence = Convergence()
+    ti_infty_convergence = Convergence()
     u_wake_convergence = Convergence()
     ti_wake_convergence = Convergence()
     
@@ -159,18 +161,29 @@ def main(template_type, max_experiments, omp_num_threads):
                     spin(line)
         
         result = Result(no_turb_dir)
+        infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
         
-        u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
-        u_infty = u_infty_ds["$u$"].values.take(0)
-        
+        u_infty = infty_ds["$u$"].values.take(0)
         u_infty_data["resolution (m)"].append(case.dx)
         u_infty_data["# cells"].append(ncells)
-        u_infty_data["$U_\\infty$"].append(u_infty)
+        u_infty_data["$U_\\infty$ (m/s)"].append(u_infty)
         
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore",
                                     message="Insufficient grids for analysis")
             u_infty_convergence.add_grids([(case.dx, u_infty)])
+        
+        ti_infty_ds = infty_ds.assign({"$I$": get_TI})
+        ti_infty = ti_infty_ds["$I$"].values.take(0)
+        
+        ti_infty_data["resolution (m)"].append(case.dx)
+        ti_infty_data["# cells"].append(ncells)
+        ti_infty_data["$I_\\infty$ (\%)"].append(ti_infty)
+        
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",
+                                    message="Insufficient grids for analysis")
+            ti_infty_convergence.add_grids([(case.dx, ti_infty)])
         
         turb_dir = find_project_dir(run_directory, case)
         
@@ -208,7 +221,7 @@ def main(template_type, max_experiments, omp_num_threads):
         u_wake = wake_ds["$u$"].values.take(0)
         u_wake_data["resolution (m)"].append(case.dx)
         u_wake_data["# cells"].append(ncells)
-        u_wake_data["$U_{1.2D}$"].append(u_wake)
+        u_wake_data["$U_{1.2D}$ (m/s)"].append(u_wake)
         
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore",
@@ -221,7 +234,7 @@ def main(template_type, max_experiments, omp_num_threads):
         
         ti_wake_data["resolution (m)"].append(case.dx)
         ti_wake_data["# cells"].append(ncells)
-        ti_wake_data["$I_{1.2D}$"].append(ti_wake)
+        ti_wake_data["$I_{1.2D} (\%)$"].append(ti_wake)
         
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore",
@@ -255,27 +268,41 @@ def main(template_type, max_experiments, omp_num_threads):
     
     u_infty_exact = u_infty_convergence[0].fine.f_exact
     u_infty_gci = u_infty_convergence.get_resolution(gci_required)
-    err = [abs((f0 / u_infty_exact) - 1) for f0 in u_infty_data["$U_\\infty$"]]
-    u_infty_data["error"] = err
+    u_infty_err = [abs((f0 / u_infty_exact) - 1)
+                                  for f0 in u_infty_data["$U_\\infty$ (m/s)"]]
+    u_infty_data["error"] = u_infty_err
     u_infty_df = pd.DataFrame(u_infty_data)
+    
+    ti_infty_exact = ti_infty_convergence[0].fine.f_exact
+    ti_infty_gci = ti_infty_convergence.get_resolution(gci_required)
+    ti_infty_err = [abs((f0 / ti_infty_exact) - 1)
+                                   for f0 in ti_infty_data["$I_\\infty$ (\%)"]]
+    ti_infty_data["error"] = ti_infty_err
+    ti_infty_df = pd.DataFrame(ti_infty_data)
     
     u_wake_exact = u_wake_convergence[0].fine.f_exact
     u_wake_gci = u_wake_convergence.get_resolution(gci_required)
-    err = [abs((f0 / u_wake_exact) - 1) for f0 in u_wake_data["$U_{1.2D}$"]]
-    u_wake_data["error"] = err
+    u_wake_err = [abs((f0 / u_wake_exact) - 1)
+                                  for f0 in u_wake_data["$U_{1.2D}$ (m/s)"]]
+    u_wake_data["error"] = u_wake_err
     u_wake_df = pd.DataFrame(u_wake_data)
     
     gamma0_sim = 100 * (1 - u_wake_exact / u_infty_exact)
-    centreline = global_validate[0]
-    gamma0_true = 100 * (1 - centreline.data[0] /
-                                             centreline.attrs["$U_\infty$"])
+    u_centreline = global_validate[0]
+    gamma0_true = 100 * (1 - u_centreline.data[0] /
+                                         u_centreline.attrs["$U_\infty$"])
     gamma0_err = abs((gamma0_sim - gamma0_true) / gamma0_true)
     
     ti_wake_exact = ti_wake_convergence[0].fine.f_exact
     ti_wake_gci = ti_wake_convergence.get_resolution(gci_required)
-    err = [abs((f0 / ti_wake_exact) - 1) for f0 in ti_wake_data["$I_{1.2D}$"]]
-    ti_wake_data["error"] = err
+    ti_wake_err = [abs((f0 / ti_wake_exact) - 1)
+                                   for f0 in ti_wake_data["$I_{1.2D} (\%)$"]]
+    ti_wake_data["error"] = ti_wake_err
     ti_wake_df = pd.DataFrame(ti_wake_data)
+    
+    ti_centreline = global_validate[4]
+    ti_wake_true = ti_centreline.data[0]
+    ti_wake_true_err = ti_wake_exact / ti_wake_true
     
     transect_df = pd.DataFrame(transect_data)
     transect_grouped = transect_df.groupby(["Transect"])
@@ -287,17 +314,20 @@ def main(template_type, max_experiments, omp_num_threads):
     
     for i, transect in enumerate(global_validate):
         
-        if transect.name not in ["$u$", "$u_0$"]: continue
-        
         description = transect.attrs['description']
         transect_df = transect_grouped.get_group(description).drop("Transect",
                                                                    axis=1)
         transect_rmse = transect_df.iloc[-1, 1]
         
+        if transect.name in ["$u$", "$u_0$"]:
+            units = "m/s"
+        else:
+            units = "\%"
+        
         transect_summary += (
             f"For the {lower_first(description)} transect, the root mean "
             "square error at the lowest grid resolution was "
-            f"{transect_rmse:.4g}.")
+            f"{transect_rmse:.4g} ({units}).")
         
         if (i + 1) < n_transects:
             transect_summary += " "
@@ -312,10 +342,16 @@ def main(template_type, max_experiments, omp_num_threads):
         "grid resolution, the normalised velocity deficit measured 1.2 "
         f"diameters downstream from the turbine was {gamma0_sim:.4g}\%, a "
         f"{gamma0_err * 100:.4g}\% error against the measured value of "
-        f"{gamma0_true:.4g}\%. ")
-    summary_text += transect_summary
+        f"{gamma0_true:.4g}\% for the 3\% ambient turbulence intensity (TI) "
+        "experiment. At zero grid resolution the turbulence intensity "
+        "measured 1.2 diameters downstream from the turbine was "
+        f"{ti_wake_exact:.4g}\%, an error of {ti_wake_true_err * 100:.4g}\% "
+        f"against the measured value of {ti_wake_true:.4g}\% for the 3\% "
+        "ambient TI experiment. The simulated ambient TI, at zero grid "
+        f"resolution, is {ti_infty_exact:.4g}\%.")
     
     report.content.add_text(summary_text)
+    report.content.add_text(transect_summary)
     
     report.content.add_heading("Grid Convergence Studies", level=2)
     
@@ -352,6 +388,39 @@ def main(template_type, max_experiments, omp_num_threads):
                "resolution per grid resolution ")
     report.content.add_image(plot_name, caption, width="3.64in")
     
+    report.content.add_heading("Free Stream Turbulence Intensity", level=3)
+    
+    report.content.add_text(
+        "This section presents the convergence study for the free stream "
+        "turbulence intensity ($I_\\infty$). For the final case, with grid "
+        f"resolution of {case.dx}m, an asymptotic ratio of "
+        f"{ti_infty_convergence[0].asymptotic_ratio:.4g} was achieved "
+        "(asymptotic range is indicated by a value $\\approx 1$). The free "
+        f"stream velocity at zero grid resolution is {ti_infty_exact:.4g}\%. "
+        "The grid resolution required for a fine-grid GCI of "
+        f"{gci_required * 100}\% is {ti_infty_gci:.4g}m.")
+    
+    caption = ("Free stream turbulence intensity ($I_\\infty$) per grid "
+               "resolution with computational cells and error against value "
+               "at zero grid resolution")
+    report.content.add_table(ti_infty_df,
+                             index=False,
+                             caption=caption)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    ti_infty_df.plot(ax=ax, x="# cells", y="error", marker='x')
+    plt.yscale("log")
+    plt.xscale("log")
+    
+    plot_name = "ti_infty_convergence.png"
+    plot_path = report_dir / plot_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    
+    # Add figure with caption
+    caption = ("Free stream turbulence intensity error against value at zero "
+               "grid resolution per grid resolution ")
+    report.content.add_image(plot_name, caption, width="3.64in")
+    
     report.content.add_heading("Wake Velocity", level=3)
     
     report.content.add_text(
@@ -386,7 +455,7 @@ def main(template_type, max_experiments, omp_num_threads):
                "per grid resolution")
     report.content.add_image(plot_name, caption, width="3.64in")
     
-    report.content.add_heading("Turbulence Intensity", level=3)
+    report.content.add_heading("Wake Turbulence Intensity", level=3)
     
     report.content.add_text(
         "This section presents the convergence study for the wake centerline "
@@ -451,10 +520,12 @@ def main(template_type, max_experiments, omp_num_threads):
         
         report.content.add_text(
             "The root mean square error (RMSE) for this transect at the "
-            f"finest grid resolution of {case.dx}m was {transect_rmse:.4g}.")
+            f"finest grid resolution of {case.dx}m was {transect_rmse:.4g} "
+            "(m/s).")
         
         caption = ("Root mean square error (RMSE) for the normalised "
                    "velocity, $u^*_0$, per grid resolution.")
+        transect_df = transect_df.rename(columns={"RMSE": "RMSE (m/s)"})
         report.content.add_table(transect_df,
                                  index=False,
                                  caption=caption)
@@ -517,10 +588,12 @@ def main(template_type, max_experiments, omp_num_threads):
         
         report.content.add_text(
             "The root mean square error (RMSE) for this transect at the "
-            f"finest grid resolution of {case.dx}m was {transect_rmse:.4g}.")
+            f"finest grid resolution of {case.dx}m was {transect_rmse:.4g} "
+            "(\%).")
         
         caption = ("Root mean square error (RMSE) for the turbulence "
                    "intensity, $I_0$, per grid resolution.")
+        transect_df = transect_df.rename(columns={"RMSE": "RMSE (\%)"})
         report.content.add_table(transect_df,
                                  index=False,
                                  caption=caption)
@@ -529,7 +602,6 @@ def main(template_type, max_experiments, omp_num_threads):
         major_axis = f"${transect.attrs['major_axis']}^*$"
         
         transect_true_I0 = get_normalised(transect_true,
-                                          case,
                                           transect_true)
         transect_true_I0.plot(ax=ti_axs[ti_idx],
                               x=major_axis,
@@ -659,10 +731,15 @@ def get_gamma0(da, transect, case=None):
     return da
 
 
-def get_normalised(da, case, transect):
-    da = get_reset_origin(da,
-                          (case.turb_pos_x, case.turb_pos_y, case.turb_pos_z))
+def get_normalised(da, transect, case=None):
+    
+    if case is not None:
+        da = get_reset_origin(da, (case.turb_pos_x,
+                                   case.turb_pos_y,
+                                   case.turb_pos_z))
+    
     da = get_normalised_dims(da, transect.attrs["$D$"])
+    
     return da
 
 
@@ -724,8 +801,8 @@ def plot_transects(case,
         
         # Create I0 figure
         transect_sim_I0 = get_normalised(transect_sim["$I$"],
-                                         case,
-                                         transect_true)
+                                         transect_true,
+                                         case)
         
         transect_sim_I0.plot(ax=ti_ax[ti_idx],
                              x=major_axis,
@@ -779,11 +856,11 @@ def get_transect_error(case, validate, result, factor, data):
         transect_sim = transect_sim.assign({"$I$": get_TI})
         
         transect_sim_I0 = get_normalised(transect_sim["$I$"],
-                                         case,
-                                         transect_true)
+                                         transect_true,
+                                         case)
         transect_true_I0 = get_normalised(transect_true,
-                                          case,
-                                          transect_true)
+                                          transect_true,
+                                          case)
         
         # Calculate RMS error and store
         rmse = get_rmse(transect_sim_I0.values, transect_true_I0.values)
