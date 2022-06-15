@@ -241,16 +241,17 @@ def main(template_type, max_experiments, omp_num_threads):
                                     message="Insufficient grids for analysis")
             ti_wake_convergence.add_grids([(case.dx, ti_wake)])
         
+        centre_slices = extract_level(validate, result, -1)
         plot_transects(case,
                        validate,
-                       result,
+                       centre_slices,
                        u_infty,
                        ustar_axs,
                        gamma_axs,
                        ti_axs)
         get_transect_error(case,
                            validate,
-                           result,
+                           centre_slices,
                            u_infty,
                            transect_data)
         
@@ -743,9 +744,20 @@ def get_normalised(da, transect, case=None):
     return da
 
 
+def extract_level(validate, result, level):
+    
+    da_dict = {}
+    
+    for transect in validate:
+        transect_sim = result.faces.extract_z(level, **transect)
+        da_dict[transect.id] = transect_sim
+    
+    return da_dict
+
+
 def plot_transects(case,
                    validate,
-                   result,
+                   centre_slices,
                    factor,
                    ustar_ax,
                    gamma_ax,
@@ -761,7 +773,7 @@ def plot_transects(case,
         transect_true = transect.to_xarray()
         
         # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_sim = centre_slices[transect.id]
         
         # Determine plot x-axis
         major_axis = f"${transect.attrs['major_axis']}^*$"
@@ -792,7 +804,7 @@ def plot_transects(case,
         if transect.name != "$I_0$": continue
         
         # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_sim = centre_slices[transect.id]
         transect_sim = transect_sim.assign({"$I$": get_TI})
         transect_true = transect.to_xarray()
         
@@ -818,7 +830,7 @@ def get_rmse(estimated, observed):
     return np.sqrt(((estimated - observed[:len(estimated)]) ** 2).mean())
 
 
-def get_transect_error(case, validate, result, factor, data):
+def get_transect_error(case, validate, centre_slices, factor, data):
     
     for transect in validate:
         
@@ -827,7 +839,7 @@ def get_transect_error(case, validate, result, factor, data):
         transect_true = transect.to_xarray()
         
         # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_sim = centre_slices[transect.id]
         
         transect_sim_u0 = get_u0(transect_sim["$u$"],
                                  transect_true,
@@ -852,7 +864,7 @@ def get_transect_error(case, validate, result, factor, data):
         transect_true = transect.to_xarray()
         
         # Compare transect
-        transect_sim = result.faces.extract_z(-1, **transect)
+        transect_sim = centre_slices[transect.id]
         transect_sim = transect_sim.assign({"$I$": get_TI})
         
         transect_sim_I0 = get_normalised(transect_sim["$I$"],
