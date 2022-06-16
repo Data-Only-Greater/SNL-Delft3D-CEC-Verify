@@ -82,10 +82,11 @@ Coordinates:
     $y$      (dim_0) int32 3
 Dimensions without coordinates: dim_0
 Data variables:
-    k        (dim_0) float64 0.9993
-    $u$      (dim_0) float64 0.7147
-    $v$      (dim_0) float64 4.467e-17
-    $w$      (dim_0) float64 -0.002604
+    $\sigma$  (dim_0) float64 -0.5002
+    $u$       (dim_0) float64 0.7147
+    $v$       (dim_0) float64 4.472e-17
+    $w$       (dim_0) float64 -0.002604
+    $k$       (dim_0) float64 0.005182
 
 ```
 
