@@ -50,6 +50,19 @@ jobs:
          raw=$(git branch -r --contains ${{ github.ref }})
          branch=${raw##*/}
          echo "BRANCH=$branch" >> $GITHUB_ENV
+      - name: Get latest tag
+        uses: oprypin/find-latest-tag@v1
+        with:
+          repository: Data-Only-Greater/SNL-Delft3D-CEC-Verify
+          releases-only: true
+        id: latest_tag
+      - name: Write redirect file
+        uses: cuchi/jinja2-action@v1.2.0
+        with:
+          template: docs/_assets/gh-pages-redirect.html.template
+          output_file: docs/_assets/gh-pages-redirect.html
+        env:
+          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
       - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: _snld3d

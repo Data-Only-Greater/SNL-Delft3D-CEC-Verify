@@ -25,7 +25,7 @@ copyright = '2022, Mathew Topper'
 author = 'Mathew Topper'
 
 # The full version, including alpha/beta/rc tags
-release = '0.8.0'
+release = '0.8.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -57,7 +57,7 @@ smv_branch_whitelist = r'(main)$'
 smv_remote_whitelist = r'^(origin)$'
 smv_tag_whitelist = r'^v(\d+\.\d+\.\d+)$' # r'^v(?!0.4.0|0.4.1|0.4.2)\d+\.\d+\.\d+$'
 smv_released_pattern = r'^refs/tags/.*$'
-smv_latest_version = 'v0.8.0'
+smv_latest_version = 'v0.8.1'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

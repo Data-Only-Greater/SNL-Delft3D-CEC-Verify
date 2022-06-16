@@ -33,7 +33,7 @@ From a conda prompt create a named environment in which to install the
 for future updates:
 
 ```
-(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.8.0
+(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.8.1
 (base) > conda activate snld3d
 (snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
 (snld3d) > conda config --env --set channel_priority strict
@@ -82,10 +82,11 @@ Coordinates:
     $y$      (dim_0) int32 3
 Dimensions without coordinates: dim_0
 Data variables:
-    k        (dim_0) float64 0.9993
-    $u$      (dim_0) float64 0.7147
-    $v$      (dim_0) float64 4.467e-17
-    $w$      (dim_0) float64 -0.002604
+    $\sigma$  (dim_0) float64 -0.5002
+    $u$       (dim_0) float64 0.7147
+    $v$       (dim_0) float64 4.472e-17
+    $w$       (dim_0) float64 -0.002604
+    $k$       (dim_0) float64 0.005182
 
 ```
 
@@ -189,9 +190,9 @@ Required files:
 
 This is the first "production" example, designed to generate meaningful 
 results. A grid convergence study (see e.g. [[2]](#2)) is conducted to 
-determine the free stream and turbine wake velocities at infinite grid 
-resolution. The results are then compared to the results of Mycek et 
-al.[[1]](#1).
+determine the free stream and turbine wake velocities and turbulence 
+intensities at infinite grid resolution. The results are then compared to the 
+results of Mycek et al.[[1]](#1).
 
 This example requires the [convergence][109] package to be installed. Issue 
 the following command in the conda environment:
@@ -253,7 +254,7 @@ and figures within the generated report. To install the package (for converting
 to Word format with pypandoc) issue the following command:
 
 ```
-(snld3d) > conda install pandoc-crossref=0.3.10.0
+(snld3d) > conda install pandoc-crossref
 ```
 
 For the example to run, two environment variable **must be set**. For path to 
