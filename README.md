@@ -189,9 +189,9 @@ Required files:
 
 This is the first "production" example, designed to generate meaningful 
 results. A grid convergence study (see e.g. [[2]](#2)) is conducted to 
-determine the free stream and turbine wake velocities at infinite grid 
-resolution. The results are then compared to the results of Mycek et 
-al.[[1]](#1).
+determine the free stream and turbine wake velocities and turbulence 
+intensities at infinite grid resolution. The results are then compared to the 
+results of Mycek et al.[[1]](#1).
 
 This example requires the [convergence][109] package to be installed. Issue 
 the following command in the conda environment:
