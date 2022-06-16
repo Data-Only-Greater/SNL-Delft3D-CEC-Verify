@@ -49,8 +49,11 @@ jobs:
          branch=${raw##*/}
          echo "BRANCH=$branch" >> $GITHUB_ENV
       - name: Get latest tag
+        uses: oprypin/find-latest-tag@v1
+        with:
+          repository: Data-Only-Greater/SNL-Delft3D-CEC-Verify
+          releases-only: true
         id: latest_tag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
       - name: Write redirect file
         uses: cuchi/jinja2-action@v1.2.0
         with:
