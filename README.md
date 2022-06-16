@@ -253,7 +253,7 @@ and figures within the generated report. To install the package (for converting
 to Word format with pypandoc) issue the following command:
 
 ```
-(snld3d) > conda install pandoc-crossref=0.3.10.0
+(snld3d) > conda install pandoc-crossref
 ```
 
 For the example to run, two environment variable **must be set**. For path to 
