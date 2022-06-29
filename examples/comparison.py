@@ -451,6 +451,44 @@ def main(grid_resolution, omp_num_threads):
                              label=fig_label_diffv,
                              width="3.64in")
     
+    # Turbulence intensity
+    section = "Turbulence Intensity Comparison"
+    report.content.add_heading(section, label="sec:TI")
+    
+    tis = {}
+    
+    plot_names = []
+    captions = []
+    fig_labels = []
+    
+    for template_type in template_types:
+        
+        turb_z = turb_zs[template_type]
+        ti_turb_z = turb_z.assign({"$I$": get_TI})
+        tis[template_type] = ti_turb_z
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        ti_turb_z["$I$"].plot(x="$x$", y="$y$", vmin=4, vmax=15)
+        
+        plot_name = f"turb_z_ti_{template_type}"
+        plot_file_name = f"{plot_name}.png"
+        plot_names.append(plot_file_name)
+        plot_path = report_dir / plot_file_name
+        fig.savefig(plot_path, bbox_inches='tight')
+        
+        caption = (f"Turbulence intensity (\%) for the {template_type} model "
+                   "type")
+        captions.append(caption)
+        
+        fig_label = f"fig:{plot_name}"
+        fig_labels.append(fig_label)
+    
+    for plot_name, caption, fig_label in zip(plot_names, captions, fig_labels):
+        report.content.add_image(plot_name,
+                                 caption,
+                                 label=fig_label,
+                                 width="3.64in")
+    
     # Conclusion
     report.content.add_heading("Conclusion")
     
@@ -548,6 +586,11 @@ def get_env(variable):
         raise ValueError(f'{variable} not found')
     
     return root.resolve()
+
+
+def get_TI(ds):
+    velmag = np.sqrt(ds["$u$"]**2 + ds["$v$"]**2 + ds["$w$"]**2)
+    return (100 / velmag) * np.sqrt(2 * ds["$k$"] / 3)
 
 
 def check_positive(value):
