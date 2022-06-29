@@ -489,6 +489,25 @@ def main(grid_resolution, omp_num_threads):
                                  label=fig_label,
                                  width="3.64in")
     
+    # Plot the diff
+    diffti = (tis["structured"] - tis["fm"])
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    diffti["$I$"].plot(ax=ax, x="$x$", y="$y$")
+    
+    plot_name = "turb_z_ti_diff"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    fig_label_diffti = f"fig:{plot_name}"
+    
+    # Add figure with caption
+    caption = ("Difference in TI between the structured and FM simulations")
+    report.content.add_image(plot_file_name,
+                             caption,
+                             label=fig_label_diffti,
+                             width="3.64in")
+    
     # Conclusion
     report.content.add_heading("Conclusion")
     
