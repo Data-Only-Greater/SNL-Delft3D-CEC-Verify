@@ -33,6 +33,7 @@ def main(grid_resolution, omp_num_threads):
     
     cases = {}
     u_infty = {}
+    ti_infty = {}
     results = {}
     
     template_types = ["fm", "structured"]
@@ -116,8 +117,10 @@ def main(grid_resolution, omp_num_threads):
         
             result = Result(no_turb_dir)
         
-        u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
-        u_infty[template_type] = u_infty_ds["$u$"].values.take(0)
+        infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
+        infty_ds = infty_ds.assign({"$I$": get_TI})
+        u_infty[template_type] = infty_ds["$u$"].values.take(0)
+        ti_infty[template_type] = infty_ds["$I$"].values.take(0)
         
         # Run with turbines
         turb_case = cases[template_type]
@@ -465,10 +468,12 @@ def main(grid_resolution, omp_num_threads):
         
         turb_z = turb_zs[template_type]
         ti_turb_z = turb_z.assign({"$I$": get_TI})
+        ti_turb_z = get_normalised_data(ti_turb_z["$I$"],
+                                        ti_infty[template_type])
         tis[template_type] = ti_turb_z
         
         fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-        ti_turb_z["$I$"].plot(x="$x$", y="$y$", vmin=4, vmax=15)
+        ti_turb_z.plot(x="$x$", y="$y$", vmin=0.75, vmax=3)
         
         plot_name = f"turb_z_ti_{template_type}"
         plot_file_name = f"{plot_name}.png"
@@ -476,8 +481,9 @@ def main(grid_resolution, omp_num_threads):
         plot_path = report_dir / plot_file_name
         fig.savefig(plot_path, bbox_inches='tight')
         
-        caption = (f"Turbulence intensity (\%) for the {template_type} model "
-                   "type")
+        caption = ("Turbulence intensity normalised by the free-stream "
+                   "value measured at the turbine hub, $I^*$, for the "
+                   f"{template_type} model type")
         captions.append(caption)
         
         fig_label = f"fig:{plot_name}"
@@ -493,7 +499,7 @@ def main(grid_resolution, omp_num_threads):
     diffti = (tis["structured"] - tis["fm"])
     
     fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
-    diffti["$I$"].plot(ax=ax, x="$x$", y="$y$")
+    diffti.plot(ax=ax, x="$x$", y="$y$", cmap='RdBu_r')
     
     plot_name = "turb_z_ti_diff"
     plot_file_name = f"{plot_name}.png"
@@ -502,7 +508,8 @@ def main(grid_resolution, omp_num_threads):
     fig_label_diffti = f"fig:{plot_name}"
     
     # Add figure with caption
-    caption = ("Difference in TI between the structured and FM simulations")
+    caption = ("Difference in normalised TI between the structured and FM "
+               "simulations")
     report.content.add_image(plot_file_name,
                              caption,
                              label=fig_label_diffti,
