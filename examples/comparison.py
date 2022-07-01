@@ -515,6 +515,50 @@ def main(grid_resolution, omp_num_threads):
                              label=fig_label_diffti,
                              width="3.64in")
     
+    # Centerline TI
+    transect3 = validate[4]
+    transect15 = validate[5]
+    
+    transect_fm = results["fm"].faces.extract_z(-1, **transect3)
+    transect_structured = results["structured"].faces.extract_z(-1,
+                                                                **transect3)
+    transect_fm = transect_fm.assign({"$I$": get_TI})
+    transect_structured = transect_structured.assign({"$I$": get_TI})
+    
+    transect3_true = transect3.to_xarray()
+    transect15_true = transect15.to_xarray()
+    
+    transect_fm_unorm = get_normalised_data(transect_fm["$I$"], ti_infty["fm"])
+    transect_structured_unorm = get_normalised_data(transect_structured["$I$"],
+                                                    ti_infty["structured"])
+    transect3_true_unorm = get_normalised_data(transect3_true, 3)
+    transect15_true_unorm = get_normalised_data(transect15_true, 15)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    transect_fm_unorm.plot(ax=ax, x="$x$", label='fm')
+    transect_structured_unorm.plot(ax=ax, x="$x$", label='structured')
+    transect3_true_unorm.plot(ax=ax, x="$x$", label='experiment (3% TI)')
+    transect15_true_unorm.plot(ax=ax, x="$x$", label='experiment (15% TI)')
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    ax.grid()
+    ax.set_title("")
+    
+    plot_name = "transect_ti"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    fig_label_transect = f"fig:{plot_name}"
+    
+    # Add figure with caption
+    caption = ("Comparison of the normalised turbine centerline tubulence "
+                "intensity. Experimental data reverse engineered from "
+                f"[@mycek2014, figs. {transect3.attrs['figure']} \& "
+                f"{transect15.attrs['figure']}].")
+    report.content.add_image(plot_file_name,
+                              caption,
+                              label=fig_label_transect,
+                              width="5.5in")
+    
     # Conclusion
     report.content.add_heading("Conclusion")
     
