@@ -33,6 +33,7 @@ def main(grid_resolution, omp_num_threads):
     
     cases = {}
     u_infty = {}
+    ti_infty = {}
     results = {}
     
     template_types = ["fm", "structured"]
@@ -116,8 +117,10 @@ def main(grid_resolution, omp_num_threads):
         
             result = Result(no_turb_dir)
         
-        u_infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
-        u_infty[template_type] = u_infty_ds["$u$"].values.take(0)
+        infty_ds = result.faces.extract_turbine_centre(-1, no_turb_case)
+        infty_ds = infty_ds.assign({"$I$": get_TI})
+        u_infty[template_type] = infty_ds["$u$"].values.take(0)
+        ti_infty[template_type] = infty_ds["$I$"].values.take(0)
         
         # Run with turbines
         turb_case = cases[template_type]
@@ -171,8 +174,9 @@ def main(grid_resolution, omp_num_threads):
             "(FM) and structured grid solvers for Delft3D. The simulation "
             "settings are mirrored between the two methods as much as "
             "possible. The chosen grid resolution for this study is "
-            f"{grid_resolution}m. Axial and radial velocities in the "
-            "horizontal plane intersecting the turbine hub will be examined.")
+            f"{grid_resolution}m. Axial and radial velocities and turbulence "
+            "intensity (TI) in the horizontal plane intersecting the turbine "
+            "hub will be examined.")
     report.content.add_text(text)
     
     section = "Axial Velocity Comparison"
@@ -451,6 +455,168 @@ def main(grid_resolution, omp_num_threads):
                              label=fig_label_diffv,
                              width="3.64in")
     
+    # Turbulence intensity
+    section = "Turbulence Intensity Comparison"
+    report.content.add_heading(section, label="sec:TI")
+    
+    tis = {}
+    
+    plot_names = []
+    captions = []
+    fig_labels = []
+    
+    for template_type in template_types:
+        
+        turb_z = turb_zs[template_type]
+        ti_turb_z = turb_z.assign({"$I$": get_TI})
+        ti_turb_z = get_normalised_data(ti_turb_z["$I$"],
+                                        ti_infty[template_type])
+        tis[template_type] = ti_turb_z
+        
+        fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+        ti_turb_z.plot(x="$x$", y="$y$", vmin=0.75, vmax=3)
+        
+        plot_name = f"turb_z_ti_{template_type}"
+        plot_file_name = f"{plot_name}.png"
+        plot_names.append(plot_file_name)
+        plot_path = report_dir / plot_file_name
+        fig.savefig(plot_path, bbox_inches='tight')
+        
+        caption = ("Turbulence intensity normalised by the free-stream "
+                   "value measured at the turbine hub, $I^*$, for the "
+                   f"{template_type} model type")
+        captions.append(caption)
+        
+        fig_label = f"fig:{plot_name}"
+        fig_labels.append(fig_label)
+    
+    # Plot the diff
+    diffti = (tis["structured"] - tis["fm"])
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    diffti.plot(ax=ax, x="$x$", y="$y$", cmap='RdBu_r')
+    ax.annotate('Higher TI in FM simulation',
+                xy=(10, 3.75),
+                xytext=(-75, 25),
+                textcoords='offset points',
+                color='k',
+                arrowprops=dict(arrowstyle=('simple,'
+                                            'head_width=0.7,'
+                                            'head_length=0.8,'
+                                            'tail_width=0.1'),
+                                lw=0.2,
+                                facecolor='k',
+                                shrinkB=circle_rad * 2))
+    ax.annotate('Higher TI in structured simulation',
+                xy=(15, 3),
+                xytext=(-120, -60),
+                textcoords='offset points',
+                color='k',
+                arrowprops=dict(arrowstyle=('simple,'
+                                            'head_width=0.7,'
+                                            'head_length=0.8,'
+                                            'tail_width=0.1'),
+                                lw=0.2,
+                                facecolor='k',
+                                shrinkB=circle_rad * 2))
+    
+    plot_name = "turb_z_ti_diff"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    fig_label_diffti = f"fig:{plot_name}"
+    fig_labels_extra = fig_labels + [fig_label_diffti]
+    
+    label_text = "; ".join([f"@{x.capitalize()}" for x in fig_labels])
+    label_text = f"[{label_text}]"
+    text = ("This section compares turbulence intensity (TI) values between "
+            f"the FM and structured grid models. {label_text} show the "
+            "normalized TI over the horizontal plane intersecting the "
+            "turbine hub for the FM and structured gird models, "
+            "respectively. The units are non-dimensionalized by the "
+            "free-stream TI measured at the "
+            "hub location without the presence of the turbine. For the "
+            "structured grid simulation the free stream TI is "
+            f"{ti_infty['structured']:.4g} \% and for the FM simulation it is "
+            f"{ti_infty['fm']:.4g} \%. If $I$ is the dimensional TI, then the "
+            "normalized TI $I^* =  I / I_\infty$. Note the increased "
+            "levels of TI over wider radial distances from the wake "
+            "centreline for the FM model, while the increased TI is "
+            "concentrated directly downstream of the turbine for the "
+            "structured grid simulation. This differing behaviour is "
+            "confirmed when differencing the two simulations, as shown in "
+            f"[@{fig_label_diffti}].")
+    report.content.add_text(text)
+    
+    for plot_name, caption, fig_label in zip(plot_names, captions, fig_labels):
+        report.content.add_image(plot_name,
+                                 caption,
+                                 label=fig_label,
+                                 width="3.64in")
+    
+    # Add diff figure with caption
+    caption = ("Difference in normalised TI between the structured and FM "
+               "simulations")
+    report.content.add_image(plot_file_name,
+                             caption,
+                             label=fig_label_diffti,
+                             width="3.64in")
+    
+    # Centerline TI
+    transect3 = validate[4]
+    transect15 = validate[5]
+    
+    transect_fm = results["fm"].faces.extract_z(-1, **transect3)
+    transect_structured = results["structured"].faces.extract_z(-1,
+                                                                **transect3)
+    transect_fm = transect_fm.assign({"$I$": get_TI})
+    transect_structured = transect_structured.assign({"$I$": get_TI})
+    
+    transect3_true = transect3.to_xarray()
+    transect15_true = transect15.to_xarray()
+    
+    transect_fm_unorm = get_normalised_data(transect_fm["$I$"], ti_infty["fm"])
+    transect_structured_unorm = get_normalised_data(transect_structured["$I$"],
+                                                    ti_infty["structured"])
+    transect3_true_unorm = get_normalised_data(transect3_true, 3)
+    transect15_true_unorm = get_normalised_data(transect15_true, 15)
+    
+    fig, ax = plt.subplots(figsize=(4, 2.75), dpi=300)
+    transect_fm_unorm.plot(ax=ax, x="$x$", label='fm')
+    transect_structured_unorm.plot(ax=ax, x="$x$", label='structured')
+    transect3_true_unorm.plot(ax=ax, x="$x$", label='experiment (3% TI)')
+    transect15_true_unorm.plot(ax=ax, x="$x$", label='experiment (15% TI)')
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    ax.grid()
+    ax.set_title("")
+    
+    plot_name = "transect_ti"
+    plot_file_name = f"{plot_name}.png"
+    plot_path = report_dir / plot_file_name
+    fig.savefig(plot_path, bbox_inches='tight')
+    fig_label_transect = f"fig:{plot_name}"
+    
+    text = ("The non-dimensional TI values along the wake centerline are "
+            "compared with the experimental data (published in [@mycek2014]) "
+            "for two turbulence intensity (TI) levels in "
+            f"[@{fig_label_transect}]. Both the structured and FM models "
+            "more closely represent the results from the 15\% TI "
+            "experimental data, although both simulations fail to capture "
+            "the mixing behaviour in the far wake. Neither simulation "
+            "resembles the very large increases in normalized TI seen in "
+            "the 3\% TI experimental data.")
+    report.content.add_text(text)
+    
+    # Add figure with caption
+    caption = ("Comparison of the normalised turbine centerline tubulence "
+                "intensity. Experimental data reverse engineered from "
+                f"[@mycek2014, figs. {transect3.attrs['figure']} \& "
+                f"{transect15.attrs['figure']}].")
+    report.content.add_image(plot_file_name,
+                              caption,
+                              label=fig_label_transect,
+                              width="5.5in")
+    
     # Conclusion
     report.content.add_heading("Conclusion")
     
@@ -462,18 +628,39 @@ def main(grid_resolution, omp_num_threads):
             "and at the turbine edges. When comparing to the experimental "
             f"data, as in [@{fig_label_diffu}], it was observed that the "
             "structured grid simulation performs better in the near wake, "
-            "while the FM simulation is better in the far wake. In "
-            "[@sec:radial], radial velocities were compared with differences "
-            "seen immediately upstream and downstream of the turbine (see "
-            f"[@{fig_label_diffv}]). Notably, the maximum relative errors "
-            "between the two simulations were much larger for the radial "
-            f"velocities than then axial velocities, {maxdiffv:.4g} and "
-            f"{maxdiffu:.4g} respectively. This discrepancy may account for "
-            "some of the differences seen in the axial flows, although the "
-            "underlying mechanisms are not yet known. Other factors may also "
-            "be contributing, including interpretation of the simulation "
-            "parameters or selection of the time step for the structured grid "
-            "simulations.")
+            "while the FM simulation is better in the far wake.")
+    report.content.add_text(text)
+    
+    text = ("In [@sec:radial], radial velocities were compared with "
+            "differences seen immediately upstream and downstream of the "
+            f"turbine (see [@{fig_label_diffv}]). Notably, the maximum "
+            "relative errors between the two simulations were much larger for "
+            f"the radial velocities than then axial velocities, {maxdiffv:.4g} "
+            f"and {maxdiffu:.4g} respectively.")
+    report.content.add_text(text)
+    
+    label_text = "; ".join([f"@{x}" for x in fig_labels_extra])
+    label_text = f"[{label_text}]"
+    text = ("In [@sec:TI] turbulence intensity (TI) values are compared "
+            "between the two simulation types and the experimental data. "
+            "The distribution of TI in the turbine wake clearly differs "
+            "between the FM and structured simulations, with increased TI "
+            "seen at much greater radial distances from the turbine "
+            f"centerline in the FM simulations (see {label_text}). "
+            "Compared to the experimental data both simulation types are "
+            "similar to the 15% TI experimental data in the near wake "
+            "although they fail to capture the amount of mixing in the far "
+            "wake. The large increases in normalized TI of the 3% TI "
+            "experiment are not recreated. Failure to precisely match the "
+            "TI values of the experiments in the simulations may account "
+            "for some of the differences seen.")
+    report.content.add_text(text)
+    
+    text = ("These discrepancies may account for some of the differences "
+            "seen in the axial flows, although the underlying mechanisms "
+            "are not yet known. Other factors may also be contributing, "
+            "including interpretation of the simulation parameters or "
+            "selection of the time step for the structured grid simulations.")
     report.content.add_text(text)
     
     # Add section for the references
@@ -548,6 +735,11 @@ def get_env(variable):
         raise ValueError(f'{variable} not found')
     
     return root.resolve()
+
+
+def get_TI(ds):
+    velmag = np.sqrt(ds["$u$"]**2 + ds["$v$"]**2 + ds["$w$"]**2)
+    return (100 / velmag) * np.sqrt(2 * ds["$k$"] / 3)
 
 
 def check_positive(value):
