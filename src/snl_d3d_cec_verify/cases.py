@@ -65,6 +65,8 @@ class CaseStudy:
     :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    :param bed_roughness: uniform bed roughness coefficient, as a Manning 
+        number, in seconds over metres cube rooted. Defaults to {bed_roughness}
     :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
         metres squared per second. Defaults to {horizontal_eddy_viscosity}
     :param horizontal_eddy_diffusivity: uniform horizontal eddy diffusivity,
@@ -75,6 +77,21 @@ class CaseStudy:
         in metres squared per second. Defaults to {vertical_eddy_diffusivity}
     :param simulate_turbines: simulate turbines, defaults to
         {simulate_turbines}
+    :param turbine_turbulence_model: turbine turbulence model. Set to 
+        ``'delft'`` for the default model or ``'canopy'`` to use the 
+        Réthoré (2009) canopy model. Defaults to {turbine_turbulence_model}
+    :param beta_p: turbine turbulence canopy model "production" coefficient, 
+        :math:`\\beta_p`. Applies to the ``'canopy'`` turbine turbulence model 
+        only. Defaults to {beta_p}.
+    :param beta_d: turbine turbulence canopy model "dissipation" coefficient, 
+        :math:`\\beta_d`. Applies to the ``'canopy'`` turbine turbulence model 
+        only. Defaults to {beta_d}.
+    :param c_epp: turbine turbulence canopy model "production" closure 
+        coefficient, :math:`C_{{\\varepsilon p}}`. Applies to the 
+        ``'canopy'`` turbine turbulence model only. Defaults to {c_epp}.
+    :param c_epd: turbine turbulence canopy model "dissipation" closure 
+        coefficient, :math:`C_{{\\varepsilon d}}`. Applies to the 
+        ``'canopy'`` turbine turbulence model only. Defaults to {c_epd}.
     :param horizontal_momentum_filter: use high-order horizontal momentum 
         filter. Applies to the ``'fm'`` model only. Defaults to 
         {horizontal_momentum_filter}
@@ -102,7 +119,7 @@ class CaseStudy:
     dt_max: OneOrMany[Num] = 1
     
     #: initial time step, in seconds. For the ``'structured'`` model, this 
-    # is the fixed time step
+    #: is the fixed time step
     dt_init: OneOrMany[Num] = 1
     
     turb_pos_x: OneOrMany[Num] = 6 #: turbine x-position, in meters
@@ -111,6 +128,10 @@ class CaseStudy:
     
     #: inlet boundary discharge, in cubic meters per second
     discharge: OneOrMany[Num] = 6.0574
+    
+    #: uniform bed roughness coefficient, as a Manning number, in seconds
+    #: over metres cube rooted
+    bed_roughness: OneOrMany[Num] = 0.023
     
     #: uniform horizontal eddy viscosity, in metres squared per second
     horizontal_eddy_viscosity: OneOrMany[Num] = 1e-06
@@ -127,12 +148,36 @@ class CaseStudy:
     #: simulate turbines
     simulate_turbines: OneOrMany[bool] = True
     
+    #: turbine turbulence model. Set to ``'delft'`` for the default model or
+    #: ``'canopy'`` to use the Réthoré (2009) canopy model.
+    turbine_turbulence_model: OneOrMany[str] = 'delft'
+    
+    #: turbine turbulence canopy model "production" coefficient, 
+    #: :math:`\beta_p`. Applies to the ``'canopy'`` turbine turbulence model 
+    #: only.
+    beta_p: OneOrMany[Num] = 1.
+    
+    #: turbine turbulence canopy model "dissipation" coefficient, 
+    #: :math:`\beta_d`. Applies to the ``'canopy'`` turbine turbulence model 
+    #: only.
+    beta_d: OneOrMany[Num] = 1.84
+    
+    #: turbine turbulence canopy model "production" closure coefficient, 
+    #: :math:`C_{\varepsilon p}`. Applies to the ``'canopy'`` turbine 
+    #: turbulence model only.
+    c_epp: OneOrMany[Num] =  0.77
+    
+    #: turbine turbulence canopy model "dissipation" closure coefficient, 
+    #: :math:`C_{\varepsilon d}`. Applies to the ``'canopy'`` turbine 
+    #: turbulence model only.
+    c_epd: OneOrMany[Num] = 0.13
+    
     #: use high-order horizontal momentum filter. Applies to the ``'fm'`` 
-    # model only
+    #: model only
     horizontal_momentum_filter: OneOrMany[bool] = True
     
     #: interval for simulation progress output, in seconds. Applies to the 
-    # ``'fm'`` model only
+    #: ``'fm'`` model only
     stats_interval: OneOrManyOptional[Num] = None
     
     #:interval for restart file output, in seconds
@@ -141,7 +186,7 @@ class CaseStudy:
     def __post_init__(self):
         
         mutli_values = {n: v for n, v in zip(self.fields, self.values)
-                                                if isinstance(v, Sequence)}
+                                                        if is_sequence(v)}
         
         # Unpack single length sequences
         for name, value in mutli_values.copy().items():
@@ -189,7 +234,7 @@ class CaseStudy:
             return CaseStudy(*self.values)
         
         self._multi_index_check(index)
-        case_values = [value[index] if isinstance(value, Sequence) else value
+        case_values = [value[index] if is_sequence(value) else value
                                                    for value in self.values]
         
         return CaseStudy(*case_values)
@@ -248,7 +293,7 @@ class CaseStudy:
             
             other_v = other_dict[f]
             
-            if isinstance(v, Sequence):
+            if is_sequence(v):
                 if tuple(v) != tuple(other_v): return False
             else:
                 if v != other_v: return False
@@ -263,6 +308,8 @@ class CaseStudy:
         if not (-1 * length <= index <= length - 1):
             raise IndexError("index out of range")
     
+
+    
     def __eq__(self, other: object) -> bool:
         return self.is_equal(other)
     
@@ -271,10 +318,14 @@ class CaseStudy:
     
     def __len__(self) -> int:
         
-        mutli_values = [v for v in self.values if isinstance(v, Sequence)]
+        mutli_values = [v for v in self.values if is_sequence(v)]
         
         if not mutli_values: return 1
         return len(mutli_values[0])
+
+
+def is_sequence(x):
+    return isinstance(x, Sequence) and not isinstance(x, str)
 
 
 @docstringtemplate

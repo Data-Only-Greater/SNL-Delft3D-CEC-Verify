@@ -78,9 +78,9 @@ Epshu                             = 0.0001          # Threshold water depth for 
 HorizontalMomentumFilter          = {{ '{:<15}'.format(horizontal_momentum_filter) }} # Use high-order horizontal momentum filter  (1: yes, 0: no)
 
 [physics]
-UnifFrictCoef                     = 0.023           # Uniform friction coefficient (0: no friction)
+UnifFrictCoef                     = {{ '{:<15.9G}'.format(bed_roughness) }} # Uniform friction coefficient (0: no friction)
 UnifFrictType                     = 1               # Uniform friction type (0: Chezy, 1: Manning, 2: White-Colebrook)
-UnifFrictCoef1D                   = 0.023           # Uniform friction coefficient in 1D links (0: no friction)
+UnifFrictCoef1D                   = {{ '{:<15.9G}'.format(bed_roughness) }} # Uniform friction coefficient in 1D links (0: no friction)
 UnifFrictCoefLin                  = 0               # Uniform linear friction coefficient for ocean models (0: no friction)
 Umodlin                           = 0               # Linear friction umod, for ifrctyp=4,5,6
 Vicouv                            = {{ '{:<15.9G}'.format(horizontal_eddy_viscosity) }} # Uniform horizontal eddy viscosity

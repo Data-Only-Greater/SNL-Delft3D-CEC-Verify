@@ -33,7 +33,7 @@ From a conda prompt create a named environment in which to install the
 for future updates:
 
 ```
-(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.8.1
+(base) > conda create -y -n snld3d --override-channels -c conda-forge -c dataonlygreater snl-delft3d-cec-verify=0.8.2
 (base) > conda activate snld3d
 (snld3d) > conda config --env --add channels conda-forge --add channels dataonlygreater
 (snld3d) > conda config --env --set channel_priority strict
@@ -158,6 +158,14 @@ the second argument. For instance, for the flexible mesh model call:
 If successful, the report files (and images) will be placed into a 
 sub-directory based on the model type. For the flexible mesh model, this is 
 `fm/basic_report`.
+
+By default, the temporary directories in which the models are run are deleted
+upon completion. To keep these directories, use the `--persistent` flag. For 
+example:
+
+```
+(snld3d) > python basic.py structured --persistent
+```
 
 ### Validation Example
 
