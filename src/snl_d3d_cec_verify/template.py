@@ -88,9 +88,10 @@ class Template:
     #: variables to ignore in the given :class:`.CaseStudy` objects when
     #: filling templates
     no_template: List[str] = field(
-                                default_factory=lambda: ["dx",
-                                                         "dy",
-                                                         "simulate_turbines"])
+                        default_factory=lambda: ["dx",
+                                                 "dy",
+                                                 "simulate_turbines",
+                                                 "turbine_turbulence_model"])
     
     _template_tmp: tempfile.TemporaryDirectory = field(init=False, repr=False)
     _extras: _BaseTemplateExtras = field(init=False, repr=False)
@@ -218,6 +219,10 @@ class _FMTemplateExtras(_BaseTemplateExtras):
             simulate_turbines = ""
         
         data["simulate_turbines"] = simulate_turbines
+        
+        turbine_turbulence_code = _get_turbine_turbulence_code(
+                                            case.turbine_turbulence_model)
+        data["turbine_turbulence_code"] = turbine_turbulence_code
     
     def write_grid(self, project_path: StrOrPath,
                          dx: Num,
@@ -239,11 +244,19 @@ class _StructuredTemplateExtras(_BaseTemplateExtras):
         data["version"] = f"{version('SNL-Delft3D-CEC-Verify')}"
         data["os"] = f"{platform.system()}"
         
-        if not case.simulate_turbines:
-            data["simulate_turbines"] = ""
-            return
+        if case.simulate_turbines:
+            simulate_turbines = "Filtrb = #turbines.ini#"
+        else:
+            simulate_turbines = ""
         
-        data["simulate_turbines"] = "Filtrb = #turbines.ini#"
+        data["simulate_turbines"] = simulate_turbines
+        
+        turbine_turbulence_code = _get_turbine_turbulence_code(
+                                            case.turbine_turbulence_model)
+        data["turbine_turbulence_code"] = turbine_turbulence_code
+        
+        if not case.simulate_turbines:
+            return
         
         # Inform the type checker that we have Num for single value cases
         dx = cast(Num, case.dx)
@@ -285,3 +298,15 @@ class _StructuredTemplateExtras(_BaseTemplateExtras):
 def _package_template_path(template_type) -> Path:
     this_dir = os.path.dirname(os.path.realpath(__file__))
     return Path(this_dir) / "templates" / template_type
+
+
+def _get_turbine_turbulence_code(turbine_turbulence_model: str) -> int:
+    
+    if turbine_turbulence_model == "delft":
+        return 0
+    elif turbine_turbulence_model == "canopy":
+        return 1
+    
+    err_msg = ("Unrecognised turbine turbulence model "
+               f"'{turbine_turbulence_model}'")
+    raise ValueError(err_msg)

@@ -133,6 +133,28 @@ class CaseStudy:
     #: simulate turbines
     simulate_turbines: OneOrMany[bool] = True
     
+    #: turbine turbulence model. Set to ``'delft'`` for the default model or
+    #: ``'canopy'`` to use the Réthoré (2009) canopy model.
+    turbine_turbulence_model: OneOrMany[str] = 'delft'
+    
+    #: turbine turbulence canopy model "production" coefficient, $\beta_p$.
+    #: Applies to the ``'canopy'`` turbine turbulence model only.
+    beta_p: OneOrMany[Num] = 1.
+    
+    #: turbine turbulence canopy model "dissipation" coefficient, $\beta_d$.
+    #: Applies to the ``'canopy'`` turbine turbulence model only.
+    beta_d: OneOrMany[Num] = 1.84
+    
+    #: turbine turbulence canopy model "production" closure coefficient, 
+    #: $\beta_{\varepsilon p}$. Applies to the ``'canopy'`` turbine turbulence 
+    #: model only.
+    c_epp: OneOrMany[Num] =  0.77
+    
+    #: turbine turbulence canopy model "dissipation" closure coefficient, 
+    #: $\beta_{\varepsilon d}$. Applies to the ``'canopy'`` turbine turbulence 
+    #: model only.
+    c_epd: OneOrMany[Num] = 0.13
+    
     #: use high-order horizontal momentum filter. Applies to the ``'fm'`` 
     #: model only
     horizontal_momentum_filter: OneOrMany[bool] = True
@@ -147,7 +169,7 @@ class CaseStudy:
     def __post_init__(self):
         
         mutli_values = {n: v for n, v in zip(self.fields, self.values)
-                                                if isinstance(v, Sequence)}
+                                                        if is_sequence(v)}
         
         # Unpack single length sequences
         for name, value in mutli_values.copy().items():
@@ -195,7 +217,7 @@ class CaseStudy:
             return CaseStudy(*self.values)
         
         self._multi_index_check(index)
-        case_values = [value[index] if isinstance(value, Sequence) else value
+        case_values = [value[index] if is_sequence(value) else value
                                                    for value in self.values]
         
         return CaseStudy(*case_values)
@@ -254,7 +276,7 @@ class CaseStudy:
             
             other_v = other_dict[f]
             
-            if isinstance(v, Sequence):
+            if is_sequence(v):
                 if tuple(v) != tuple(other_v): return False
             else:
                 if v != other_v: return False
@@ -269,6 +291,8 @@ class CaseStudy:
         if not (-1 * length <= index <= length - 1):
             raise IndexError("index out of range")
     
+
+    
     def __eq__(self, other: object) -> bool:
         return self.is_equal(other)
     
@@ -277,10 +301,14 @@ class CaseStudy:
     
     def __len__(self) -> int:
         
-        mutli_values = [v for v in self.values if isinstance(v, Sequence)]
+        mutli_values = [v for v in self.values if is_sequence(v)]
         
         if not mutli_values: return 1
         return len(mutli_values[0])
+
+
+def is_sequence(x):
+    return isinstance(x, Sequence) and not isinstance(x, str)
 
 
 @docstringtemplate
