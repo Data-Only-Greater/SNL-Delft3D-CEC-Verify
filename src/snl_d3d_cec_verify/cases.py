@@ -65,6 +65,8 @@ class CaseStudy:
     :param turb_pos_z: turbine z-position, in meters. Defaults to {turb_pos_z}
     :param discharge: inlet boundary discharge, in cubic meters per second.
         Defaults to {discharge}
+    :param bed_roughness: uniform bed roughness coefficient, as a Manning 
+        number, in seconds over metres cube rooted. Defaults to {bed_roughness}
     :param horizontal_eddy_viscosity: uniform horizontal eddy viscosity, in
         metres squared per second. Defaults to {horizontal_eddy_viscosity}
     :param horizontal_eddy_diffusivity: uniform horizontal eddy diffusivity,
@@ -102,7 +104,7 @@ class CaseStudy:
     dt_max: OneOrMany[Num] = 1
     
     #: initial time step, in seconds. For the ``'structured'`` model, this 
-    # is the fixed time step
+    #: is the fixed time step
     dt_init: OneOrMany[Num] = 1
     
     turb_pos_x: OneOrMany[Num] = 6 #: turbine x-position, in meters
@@ -111,6 +113,10 @@ class CaseStudy:
     
     #: inlet boundary discharge, in cubic meters per second
     discharge: OneOrMany[Num] = 6.0574
+    
+    #: uniform bed roughness coefficient, as a Manning number, in seconds
+    #: over metres cube rooted
+    bed_roughness: OneOrMany[Num] = 0.023
     
     #: uniform horizontal eddy viscosity, in metres squared per second
     horizontal_eddy_viscosity: OneOrMany[Num] = 1e-06
@@ -128,11 +134,11 @@ class CaseStudy:
     simulate_turbines: OneOrMany[bool] = True
     
     #: use high-order horizontal momentum filter. Applies to the ``'fm'`` 
-    # model only
+    #: model only
     horizontal_momentum_filter: OneOrMany[bool] = True
     
     #: interval for simulation progress output, in seconds. Applies to the 
-    # ``'fm'`` model only
+    #: ``'fm'`` model only
     stats_interval: OneOrManyOptional[Num] = None
     
     #:interval for restart file output, in seconds
