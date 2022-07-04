@@ -40,6 +40,11 @@ def test_casestudy_fields():
                                 'vertical_eddy_viscosity',
                                 'vertical_eddy_diffusivity',
                                 'simulate_turbines',
+                                'turbine_turbulence_model',
+                                'beta_p',
+                                'beta_d',
+                                'c_epp',
+                                'c_epd',
                                 'horizontal_momentum_filter',
                                 'stats_interval',
                                 'restart_interval']
@@ -78,6 +83,11 @@ def test_casestudy_values(cases):
                             1e-06,
                             1e-06,
                             True,
+                            'delft',
+                            1.,
+                            1.84,
+                            0.77,
+                            0.13,
                             True,
                             None,
                             0]

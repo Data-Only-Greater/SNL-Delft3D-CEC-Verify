@@ -12,6 +12,7 @@ from snl_d3d_cec_verify.cases import CaseStudy
 from snl_d3d_cec_verify.template import (_FMTemplateExtras,
                                          _StructuredTemplateExtras,
                                          _package_template_path,
+                                         _get_turbine_turbulence_code,
                                          Template)
 
 
@@ -131,6 +132,21 @@ def test_package_template_path():
     assert str(expected) in str(result)
 
 
+@pytest.mark.parametrize("turbine_turbulence_model, expected", [
+                            ("delft", 0),
+                            ("canopy", 1)])
+def test_get_turbine_turbulence_code(turbine_turbulence_model, expected):
+    assert _get_turbine_turbulence_code(turbine_turbulence_model) == expected
+
+
+def test_get_turbine_turbulence_code_bad_model():
+    
+    with pytest.raises(ValueError) as excinfo:
+        _get_turbine_turbulence_code("mock")
+    
+    assert "Unrecognised turbine turbulence model 'mock'" in str(excinfo)
+
+
 def test_template_bad_type():
     
     with pytest.raises(ValueError) as excinfo:
@@ -161,7 +177,7 @@ def test_template_fm_call(mocker, tmp_path):
     case = CaseStudy()
     project_path = "mock_template"
     
-    excluded_fields = ["dx", "dy"]
+    excluded_fields = ["dx", "dy", "turbine_turbulence_model"]
     expected_fields = [field for field in case.fields
                                            if field not in excluded_fields]
     
@@ -203,7 +219,7 @@ def test_template_structured_call(mocker, tmp_path):
     case = CaseStudy()
     project_path = "mock_template"
     
-    excluded_fields = ["dx", "dy"]
+    excluded_fields = ["dx", "dy", "turbine_turbulence_model"]
     expected_fields = [field for field in case.fields
                                            if field not in excluded_fields]
     

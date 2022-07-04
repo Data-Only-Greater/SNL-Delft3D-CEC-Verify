@@ -144,7 +144,7 @@ if __name__ == "__main__":
                               "'fm' or 'structured'"))
     parser.add_argument('--persistent',
                         action='store_true',
-                        help=("make model directory persistent"))
+                        help=("make model directories persistent"))
     
     args = parser.parse_args()
     main(args.MODEL, args.persistent)

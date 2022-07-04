@@ -77,6 +77,21 @@ class CaseStudy:
         in metres squared per second. Defaults to {vertical_eddy_diffusivity}
     :param simulate_turbines: simulate turbines, defaults to
         {simulate_turbines}
+    :param turbine_turbulence_model: turbine turbulence model. Set to 
+        ``'delft'`` for the default model or ``'canopy'`` to use the 
+        Réthoré (2009) canopy model. Defaults to {turbine_turbulence_model}
+    :param beta_p: turbine turbulence canopy model "production" coefficient, 
+        :math:`\\beta_p`. Applies to the ``'canopy'`` turbine turbulence model 
+        only. Defaults to {beta_p}.
+    :param beta_d: turbine turbulence canopy model "dissipation" coefficient, 
+        :math:`\\beta_d`. Applies to the ``'canopy'`` turbine turbulence model 
+        only. Defaults to {beta_d}.
+    :param c_epp: turbine turbulence canopy model "production" closure 
+        coefficient, :math:`C_{{\\varepsilon p}}`. Applies to the 
+        ``'canopy'`` turbine turbulence model only. Defaults to {c_epp}.
+    :param c_epd: turbine turbulence canopy model "dissipation" closure 
+        coefficient, :math:`C_{{\\varepsilon d}}`. Applies to the 
+        ``'canopy'`` turbine turbulence model only. Defaults to {c_epd}.
     :param horizontal_momentum_filter: use high-order horizontal momentum 
         filter. Applies to the ``'fm'`` model only. Defaults to 
         {horizontal_momentum_filter}
@@ -137,22 +152,24 @@ class CaseStudy:
     #: ``'canopy'`` to use the Réthoré (2009) canopy model.
     turbine_turbulence_model: OneOrMany[str] = 'delft'
     
-    #: turbine turbulence canopy model "production" coefficient, $\beta_p$.
-    #: Applies to the ``'canopy'`` turbine turbulence model only.
+    #: turbine turbulence canopy model "production" coefficient, 
+    #: :math:`\beta_p`. Applies to the ``'canopy'`` turbine turbulence model 
+    #: only.
     beta_p: OneOrMany[Num] = 1.
     
-    #: turbine turbulence canopy model "dissipation" coefficient, $\beta_d$.
-    #: Applies to the ``'canopy'`` turbine turbulence model only.
+    #: turbine turbulence canopy model "dissipation" coefficient, 
+    #: :math:`\beta_d`. Applies to the ``'canopy'`` turbine turbulence model 
+    #: only.
     beta_d: OneOrMany[Num] = 1.84
     
     #: turbine turbulence canopy model "production" closure coefficient, 
-    #: $\beta_{\varepsilon p}$. Applies to the ``'canopy'`` turbine turbulence 
-    #: model only.
+    #: :math:`C_{\varepsilon p}`. Applies to the ``'canopy'`` turbine 
+    #: turbulence model only.
     c_epp: OneOrMany[Num] =  0.77
     
     #: turbine turbulence canopy model "dissipation" closure coefficient, 
-    #: $\beta_{\varepsilon d}$. Applies to the ``'canopy'`` turbine turbulence 
-    #: model only.
+    #: :math:`C_{\varepsilon d}`. Applies to the ``'canopy'`` turbine 
+    #: turbulence model only.
     c_epd: OneOrMany[Num] = 0.13
     
     #: use high-order horizontal momentum filter. Applies to the ``'fm'`` 

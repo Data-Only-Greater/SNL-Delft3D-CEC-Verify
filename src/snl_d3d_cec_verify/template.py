@@ -220,6 +220,7 @@ class _FMTemplateExtras(_BaseTemplateExtras):
         
         data["simulate_turbines"] = simulate_turbines
         
+        assert isinstance(case.turbine_turbulence_model, str)
         turbine_turbulence_code = _get_turbine_turbulence_code(
                                             case.turbine_turbulence_model)
         data["turbine_turbulence_code"] = turbine_turbulence_code
@@ -251,6 +252,7 @@ class _StructuredTemplateExtras(_BaseTemplateExtras):
         
         data["simulate_turbines"] = simulate_turbines
         
+        assert isinstance(case.turbine_turbulence_model, str)
         turbine_turbulence_code = _get_turbine_turbulence_code(
                                             case.turbine_turbulence_model)
         data["turbine_turbulence_code"] = turbine_turbulence_code
