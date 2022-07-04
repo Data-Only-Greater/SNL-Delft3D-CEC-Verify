@@ -4,6 +4,7 @@ import os
 import platform
 import tempfile
 from pathlib import Path
+from contextlib import contextmanager
 from collections import defaultdict
 
 import pandas as pd
@@ -11,23 +12,8 @@ import matplotlib.pyplot as plt
 
 from snl_d3d_cec_verify import CaseStudy, Report, Result, Runner, Template
 
-def get_d3d_bin_path():
-    
-    env = dict(os.environ)
-    
-    if 'D3D_BIN' in env:
-        root = Path(env['D3D_BIN'].replace('"', ''))
-        print('D3D_BIN found')
-    else:
-        root = Path("..") / "src" / "bin"
-        print('D3D_BIN not found')
-    
-    print(f'Setting bin folder path to {root.resolve()}')
-    
-    return root.resolve()
 
-
-def main(template_type):
+def main(template_type, persistent=False):
     
     template = Template(template_type)
     runner = Runner(get_d3d_bin_path())
@@ -40,7 +26,7 @@ def main(template_type):
     
     for i, case in enumerate(cases):
     
-        with tempfile.TemporaryDirectory() as tmpdirname:
+        with mkdtemp_persistent(persistent=persistent) as tmpdirname:
             
             # Create the project and then run it
             template(case, tmpdirname)
@@ -84,6 +70,9 @@ def main(template_type):
                                      "Turbulent kinetic energy, $k$ "
                                      "(m^2^/s^2^)",
                                      width="5.7in")
+            
+            if persistent:
+                print(f"Template path: {tmpdirname}")
     
     df = pd.DataFrame(data)
     
@@ -118,6 +107,32 @@ def main(template_type):
         print(report)
 
 
+def get_d3d_bin_path():
+    
+    env = dict(os.environ)
+    
+    if 'D3D_BIN' in env:
+        root = Path(env['D3D_BIN'].replace('"', ''))
+        print('D3D_BIN found')
+    else:
+        root = Path("..") / "src" / "bin"
+        print('D3D_BIN not found')
+    
+    print(f'Setting bin folder path to {root.resolve()}')
+    
+    return root.resolve()
+
+
+def mkdtemp_persistent(*args, persistent=True, **kwargs):
+    if persistent:
+        @contextmanager
+        def normal_mkdtemp():
+            yield tempfile.mkdtemp(*args, **kwargs)
+        return normal_mkdtemp()
+    else:
+        return tempfile.TemporaryDirectory(*args, **kwargs)
+
+
 if __name__ == "__main__":
     
     import argparse
@@ -127,6 +142,9 @@ if __name__ == "__main__":
                         choices=['fm', 'structured'],
                         help=("the type of model to be exectuted - choose "
                               "'fm' or 'structured'"))
+    parser.add_argument('--persistent',
+                        action='store_true',
+                        help=("make model directory persistent"))
     
     args = parser.parse_args()
-    main(args.MODEL)
+    main(args.MODEL, args.persistent)

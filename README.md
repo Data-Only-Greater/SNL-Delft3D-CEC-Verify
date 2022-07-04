@@ -159,6 +159,14 @@ If successful, the report files (and images) will be placed into a
 sub-directory based on the model type. For the flexible mesh model, this is 
 `fm/basic_report`.
 
+By default, the temporary directories in which the models are run are deleted
+upon completion. To keep these directories, use the `--persistent` flag. For 
+example:
+
+```
+(snld3d) > python basic.py structured --persistent
+```
+
 ### Validation Example
 
 Required files:
